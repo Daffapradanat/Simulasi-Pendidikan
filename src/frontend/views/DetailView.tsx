@@ -102,11 +102,11 @@ export function DetailView({
                       <span className="badge badge-success" style={{ marginLeft: '4px' }}><i className="ti ti-wifi"></i> Aktif</span>
                     </div>
                   </div>
-                  <div className="webgl-container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', width: '100%', minHeight: '600px', background: '#f8f9fa', borderRadius: '8px', overflow: 'hidden', border: '1px solid var(--border)' }}>
+                  <div className="webgl-container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', width: '100%', aspectRatio: '16/9', background: '#f8f9fa', borderRadius: '8px', overflow: 'hidden', border: '1px solid var(--border)' }}>
                     {activeGame?.path ? (
                       <iframe 
                         src={activeGame.path} 
-                        style={{ width: '100%', height: '600px', border: 'none', background: 'transparent' }} 
+                        style={{ width: '100%', height: '100%', border: 'none', background: 'transparent' }} 
                         title={activeGame.title} 
                       />
                     ) : (

@@ -2,12 +2,31 @@ import React from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 export default function DashboardView({ modules, students, teachers }: { modules: any[], students: any[], teachers: any[] }) {
-  const chartData = [
-    { name: 'SD', Selesai: 120, Aktif: 300, BelumMulai: 50 },
-    { name: 'SMP', Selesai: 90, Aktif: 250, BelumMulai: 40 },
-    { name: 'SMA', Selesai: 60, Aktif: 180, BelumMulai: 60 },
-    { name: 'Umum', Selesai: 30, Aktif: 90, BelumMulai: 20 },
-  ];
+  const chartData = React.useMemo(() => {
+    const data = {
+      SD: { name: 'SD', Selesai: 0, Aktif: 0, BelumMulai: 0 },
+      SMP: { name: 'SMP', Selesai: 0, Aktif: 0, BelumMulai: 0 },
+      SMA: { name: 'SMA', Selesai: 0, Aktif: 0, BelumMulai: 0 },
+      Umum: { name: 'Umum', Selesai: 0, Aktif: 0, BelumMulai: 0 }
+    };
+    
+    students.forEach(s => {
+      if (s.isDeleted) return;
+      
+      let level = 'Umum';
+      const sekolah = (s.asalSekolah || '').toUpperCase();
+      if (sekolah.includes('SD ') || sekolah.startsWith('SDN') || sekolah.includes('SDN ')) level = 'SD';
+      else if (sekolah.includes('SMP')) level = 'SMP';
+      else if (sekolah.includes('SMA') || sekolah.includes('SMK') || sekolah.includes('SMU')) level = 'SMA';
+      
+      const p = s.progress || 0;
+      if (p === 100) data[level as keyof typeof data].Selesai++;
+      else if (p > 0) data[level as keyof typeof data].Aktif++;
+      else data[level as keyof typeof data].BelumMulai++;
+    });
+    
+    return [data.SD, data.SMP, data.SMA, data.Umum];
+  }, [students]);
 
   return (
     <div className="admin-content">

@@ -122,7 +122,7 @@ export default function ModulesAddEditView({
                            </div>
                            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', flex: 1 }}>
                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                               <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--primary)' }}><i className="ti ti-file-zip" style={{ marginRight: '6px' }}></i>{gf.file.name || 'existing.zip'} {(gf.file.size ? `(${(gf.file.size / 1024 / 1024).toFixed(2)} MB)` : '')}</span>
+                               <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--primary)' }}><i className="ti ti-file-zip" style={{ marginRight: '6px' }}></i>{gf.file ? gf.file.name : 'File Game Tersimpan'} {gf.file && gf.file.size ? `(${(gf.file.size / 1024 / 1024).toFixed(2)} MB)` : ''}</span>
                                <button type="button" className="btn btn-ghost btn-sm" style={{ color: 'var(--danger)', padding: '4px 8px' }} onClick={() => setModuleGameFiles(prev => prev.filter((_, idx) => idx !== i))}>
                                  <i className="ti ti-trash"></i>
                                </button>

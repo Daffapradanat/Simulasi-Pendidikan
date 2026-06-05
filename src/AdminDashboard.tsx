@@ -54,6 +54,14 @@ export default function AdminDashboard({ user, onLogout, onNavigate, onUpdateUse
   const [editingTeacher, setEditingTeacher] = useState<any | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<{type: 'module'|'student'|'teacher', id: number} | null>(null);
 
+  useEffect(() => {
+    if (showTeacherModal || showStudentModal || showLogoutConfirm || confirmDelete) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+  }, [showTeacherModal, showStudentModal, showLogoutConfirm, confirmDelete]);
+
   // Fetch initial data
   useEffect(() => {
     const fetchData = async () => {

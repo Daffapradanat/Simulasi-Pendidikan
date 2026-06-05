@@ -45,6 +45,14 @@ export default function App() {
   }, [completedModuleIds, appModules]);
 
   useEffect(() => {
+    if (showAllDoneModal || showLogoutConfirm) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+  }, [showAllDoneModal, showLogoutConfirm]);
+
+  useEffect(() => {
     fetch('/api/auth/me')
       .then(res => res.json())
       .then(data => {
