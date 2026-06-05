@@ -4,7 +4,7 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import jwt from "jsonwebtoken";
 import multer from "multer";
-import extractZip from "extract-zip";
+import AdmZip from "adm-zip";
 import { createServer as createViteServer } from "vite";
 import fs from "fs";
 import { configureSecurity } from "./serverSecurity";
@@ -111,62 +111,82 @@ async function startServer() {
   });
   
   app.post("/api/modules", upload.array('gameFiles'), async (req, res) => {
-    let { title, desc, level, duration, material, gamesMeta } = req.body;
-    try { material = JSON.parse(material || '[]'); } catch(e) {}
-    try { gamesMeta = JSON.parse(gamesMeta || '[]'); } catch(e) {}
+    try {
+      let { title, desc, level, duration, material, gamesMeta } = req.body;
+      try { material = JSON.parse(material || '[]'); } catch(e) {}
+      try { gamesMeta = JSON.parse(gamesMeta || '[]'); } catch(e) {}
 
-    // Process uploaded zip files if any
-    const files = req.files as Express.Multer.File[];
-    if (files && files.length > 0) {
-      for (let i = 0; i < files.length; i++) {
-        const file = files[i];
-        if (gamesMeta[i]) {
-          const gameDir = path.join(PUBLIC_GAMES_DIR, `game_${gamesMeta[i].id}`);
-          await extractZip(file.path, { dir: gameDir });
-          gamesMeta[i].path = `/games/game_${gamesMeta[i].id}/index.html`; // Assuming the zip contains an index.html at root
+      // Process uploaded zip files if any
+      const files = req.files as Express.Multer.File[];
+      if (files && files.length > 0) {
+        for (let i = 0; i < files.length; i++) {
+          const file = files[i];
+          if (gamesMeta[i]) {
+            const gameDir = path.join(PUBLIC_GAMES_DIR, `game_${gamesMeta[i].id}`);
+            try {
+              const zip = new AdmZip(file.path);
+              zip.extractAllTo(gameDir, true);
+              gamesMeta[i].path = `/games/game_${gamesMeta[i].id}/index.html`; // Assuming the zip contains an index.html at root
+            } catch (zipError) {
+              console.error("Failed to extract zip:", zipError);
+              // continue even if it fails, or you could throw error.
+            }
+          }
         }
       }
-    }
 
-    const newModule = { 
-      id: Date.now(), 
-      title, desc, level, duration, material, 
-      games: gamesMeta, gameCount: gamesMeta.length, 
-      status: 'locked' 
-    };
-    modulesData.push(newModule);
-    saveDb();
-    res.json({ success: true, module: newModule });
+      const newModule = { 
+        id: Date.now(), 
+        title, desc, level, duration, material, 
+        games: gamesMeta, gameCount: gamesMeta?.length || 0, 
+        status: 'locked' 
+      };
+      modulesData.push(newModule);
+      saveDb();
+      res.json({ success: true, module: newModule });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: "Failed to create module" });
+    }
   });
 
   app.put("/api/modules/:id", upload.array('gameFiles'), async (req, res) => {
-    const id = parseInt(req.params.id);
-    const index = modulesData.findIndex(m => m.id === id);
-    if (index === -1) return res.status(404).json({ error: "Not found" });
+    try {
+      const id = parseInt(req.params.id);
+      const index = modulesData.findIndex(m => m.id === id);
+      if (index === -1) return res.status(404).json({ error: "Not found" });
 
-    let { title, desc, level, duration, material, gamesMeta } = req.body;
-    try { material = JSON.parse(material || '[]'); } catch(e) {}
-    try { gamesMeta = JSON.parse(gamesMeta || '[]'); } catch(e) {}
+      let { title, desc, level, duration, material, gamesMeta } = req.body;
+      try { material = JSON.parse(material || '[]'); } catch(e) {}
+      try { gamesMeta = JSON.parse(gamesMeta || '[]'); } catch(e) {}
 
-    const files = req.files as Express.Multer.File[];
-    if (files && files.length > 0) {
-      // Very basic match strategy: just unzip them to their module specific folder
-      for (let i = 0; i < files.length; i++) {
-        const file = files[i];
-        if (gamesMeta[i]) {
-          const gameDir = path.join(PUBLIC_GAMES_DIR, `game_${gamesMeta[i].id}`);
-          await extractZip(file.path, { dir: gameDir });
-          gamesMeta[i].path = `/games/game_${gamesMeta[i].id}/index.html`;
+      const files = req.files as Express.Multer.File[];
+      if (files && files.length > 0) {
+        for (let i = 0; i < files.length; i++) {
+          const file = files[i];
+          if (gamesMeta[i]) {
+            const gameDir = path.join(PUBLIC_GAMES_DIR, `game_${gamesMeta[i].id}`);
+            try {
+              const zip = new AdmZip(file.path);
+              zip.extractAllTo(gameDir, true);
+              gamesMeta[i].path = `/games/game_${gamesMeta[i].id}/index.html`;
+            } catch (zipError) {
+              console.error("Failed to extract zip:", zipError);
+            }
+          }
         }
       }
-    }
 
-    modulesData[index] = { 
-      ...modulesData[index], 
-      title, desc, level, duration, material, games: gamesMeta, gameCount: gamesMeta.length
-    };
-    saveDb();
-    res.json({ success: true, module: modulesData[index] });
+      modulesData[index] = { 
+        ...modulesData[index], 
+        title, desc, level, duration, material, games: gamesMeta, gameCount: gamesMeta?.length || 0
+      };
+      saveDb();
+      res.json({ success: true, module: modulesData[index] });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: "Failed to update module" });
+    }
   });
 
   app.delete("/api/modules/:id", (req, res) => {
