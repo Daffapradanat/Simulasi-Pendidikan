@@ -1374,6 +1374,7 @@ input, textarea { font-family: inherit; }
   display: flex;
   flex-direction: column;
   gap: 0;
+  min-width: 0;
 }
 
 /* Toast icon fix */

@@ -102,20 +102,18 @@ export function DetailView({
                       <span className="badge badge-success" style={{ marginLeft: '4px' }}><i className="ti ti-wifi"></i> Aktif</span>
                     </div>
                   </div>
-                  <div className="webgl-container" style={{ background: '#000', display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '300px' }}>
+                  <div className="webgl-container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', width: '100%', minHeight: '600px', background: '#f8f9fa', borderRadius: '8px', overflow: 'hidden', border: '1px solid var(--border)' }}>
                     {activeGame?.path ? (
-                      <div style={{ width: '100%', aspectRatio: '16/9', display: 'flex' }}>
-                        <iframe 
-                          src={activeGame.path} 
-                          style={{ width: '100%', height: '100%', border: 'none', background: 'transparent' }} 
-                          title={activeGame.title} 
-                        />
-                      </div>
+                      <iframe 
+                        src={activeGame.path} 
+                        style={{ width: '100%', height: '600px', border: 'none', background: 'transparent' }} 
+                        title={activeGame.title} 
+                      />
                     ) : (
-                      <div className="webgl-placeholder" style={{ color: '#aaa' }}>
-                        <div className="play-icon" style={{ background: '#333', color: '#fff' }}><i className="ti ti-player-play"></i></div>
-                        <p>WebGL Game Placeholder</p>
-                        <small>Pastikan game telah diupload dan diformat dengan benar di backend (file index.html harus ada di dalam zip).</small>
+                      <div className="webgl-placeholder" style={{ color: '#aaa', textAlign: 'center' }}>
+                        <div className="play-icon" style={{ background: '#e9ecef', color: '#adb5bd', margin: '0 auto 16px', width: '64px', height: '64px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px' }}><i className="ti ti-device-gamepad-2"></i></div>
+                        <p style={{ fontWeight: 600, color: '#495057' }}>Game belum diupload</p>
+                        <small>Pastikan game telah diupload dan ada file index.html di root zip.</small>
                       </div>
                     )}
                   </div>
