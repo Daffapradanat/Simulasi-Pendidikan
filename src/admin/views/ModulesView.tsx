@@ -45,7 +45,15 @@ export default function ModulesView({
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredModules.map(mod => (
+                    {filteredModules.length === 0 ? (
+                      <tr>
+                        <td colSpan={5} style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)' }}>
+                          <i className="ti ti-box" style={{ fontSize: '32px', display: 'block', margin: '0 auto 8px', color: 'var(--border)' }}></i>
+                          Kosong
+                        </td>
+                      </tr>
+                    ) : (
+                      filteredModules.map(mod => (
                       <tr key={mod.id} style={{ ...(mod.isDeleted ? { filter: 'grayscale(100%)', opacity: 0.5 } : {}) }}>
                         <td>
                           <div style={{ fontWeight: 600 }}>#{mod.id}</div>
@@ -100,7 +108,7 @@ export default function ModulesView({
                           </div>
                         </td>
                       </tr>
-                    ))}
+                    )))}
                   </tbody>
                 </table>
               </div>

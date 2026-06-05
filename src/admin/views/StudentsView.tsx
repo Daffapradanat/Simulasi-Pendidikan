@@ -43,7 +43,15 @@ export default function StudentsView({
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredStudents.map(s => (
+                    {filteredStudents.length === 0 ? (
+                      <tr>
+                        <td colSpan={7} style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)' }}>
+                          <i className="ti ti-users" style={{ fontSize: '32px', display: 'block', margin: '0 auto 8px', color: 'var(--border)' }}></i>
+                          Kosong
+                        </td>
+                      </tr>
+                    ) : (
+                      filteredStudents.map(s => (
                       <tr key={s.id} style={{ ...(s.isDeleted ? { filter: 'grayscale(100%)', opacity: 0.5 } : {}) }}>
                         <td>
                           <div style={{ fontWeight: 600 }}>{s.id}</div>
@@ -84,7 +92,7 @@ export default function StudentsView({
                           )}
                         </td>
                       </tr>
-                    ))}
+                    )))}
                   </tbody>
                 </table>
               </div>

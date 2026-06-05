@@ -3,12 +3,13 @@ export type Module = {
   title: string;
   desc: string;
   status: string; // 'locked' | 'unlocked' | 'completed'
+  isDeleted?: boolean;
   material: {
     objectives: string[];
     theory: string;
     keyTerms: { term: string; def: string }[];
   } | null;
-  games: { id: number; title: string; desc: string }[];
+  games: { id: number; title: string; desc: string; path?: string }[];
   duration: string;
   level: string;
   gameCount: number;

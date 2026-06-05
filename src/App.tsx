@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { User, Toast } from './types';
-import { MODULES_DATA } from './data';
+import { User, Toast, Module } from './types';
 import { motion, AnimatePresence } from 'motion/react';
 
 import AdminDashboard from './AdminDashboard';
@@ -10,11 +9,11 @@ import { ModulesView } from './frontend/views/ModulesView';
 import { DetailView } from './frontend/views/DetailView';
 import { ProfileView } from './frontend/views/ProfileView';
 
-
 // --- MAIN APP COMPONENT ---
 export default function App() {
   const [viewMode, setViewMode] = useState<'main' | 'profile'>('main');
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [appModules, setAppModules] = useState<Module[]>([]);
   const [currentModuleId, setCurrentModuleId] = useState<number | null>(null);
   const [activeGameId, setActiveGameId] = useState<number | null>(null);
   const [playedGames, setPlayedGames] = useState<Set<number>>(new Set());
@@ -33,7 +32,7 @@ export default function App() {
 
   const computedModules = useMemo(() => {
     let prevCompleted = true;
-    return MODULES_DATA.map(mod => {
+    return appModules.map(mod => {
       let status = 'locked';
       if (completedModuleIds.has(mod.id)) {
         status = 'completed';
@@ -43,7 +42,7 @@ export default function App() {
       prevCompleted = (status === 'completed');
       return { ...mod, status };
     });
-  }, [completedModuleIds]);
+  }, [completedModuleIds, appModules]);
 
   useEffect(() => {
     fetch('/api/auth/me')
@@ -54,7 +53,21 @@ export default function App() {
         }
       })
       .catch(() => {});
+      
+    fetchModules();
   }, []);
+
+  const fetchModules = () => {
+    fetch('/api/modules')
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) {
+          // If we want filtering out deleted modules
+          setAppModules(data.filter(m => !m.isDeleted));
+        }
+      })
+      .catch(() => {});
+  };
 
   const handleLogin = async (email: string, pass: string) => {
     try {
@@ -128,7 +141,7 @@ export default function App() {
 
     setCompletedModuleIds(prev => {
       const next = new Set(prev).add(currentModule.id);
-      if (next.size === MODULES_DATA.length) {
+      if (next.size === appModules.length) {
          setShowAllDoneModal(true);
       }
       return next;
@@ -204,7 +217,7 @@ export default function App() {
 
         {currentUser && viewMode === 'profile' && (
           <motion.div key="profile" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} transition={{ duration: 0.3 }}>
-             <ProfileView user={currentUser} completedModuleIds={completedModuleIds} modules={MODULES_DATA} />
+             <ProfileView user={currentUser} completedModuleIds={completedModuleIds} modules={appModules} />
           </motion.div>
         )}
       </AnimatePresence>

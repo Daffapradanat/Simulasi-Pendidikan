@@ -102,11 +102,19 @@ export function DetailView({
                     </div>
                   </div>
                   <div className="webgl-container">
-                    <div className="webgl-placeholder">
-                      <div className="play-icon"><i className="ti ti-player-play"></i></div>
-                      <p>WebGL Game Placeholder</p>
-                      <small>Game akan dimuat di sini saat integrasi backend selesai.</small>
-                    </div>
+                    {activeGame?.path ? (
+                      <iframe 
+                        src={activeGame.path} 
+                        style={{ width: '100%', height: '500px', border: 'none', background: 'white' }} 
+                        title={activeGame.title} 
+                      />
+                    ) : (
+                      <div className="webgl-placeholder">
+                        <div className="play-icon"><i className="ti ti-player-play"></i></div>
+                        <p>WebGL Game Placeholder</p>
+                        <small>Pastikan game telah diupload dan diformat dengan benar di backend (file index.html harus ada di dalam zip).</small>
+                      </div>
+                    )}
                   </div>
                   <div className="webgl-controls">
                     <button className="btn btn-danger btn-sm" onClick={onCloseGame}>

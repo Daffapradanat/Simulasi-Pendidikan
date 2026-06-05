@@ -39,18 +39,9 @@ if (fs.existsSync(DB_FILE)) {
   teachersData = fileData.teachers || [];
   studentsData = fileData.students || [];
 } else {
-  modulesData = [
-    { id: 1, title: 'Modul 1: Pengenalan Platform', desc: 'Mempelajari cara navigasi dan fitur utama', status: 'unlocked', level: 'Dasar', gameCount: 0, duration: '15 Menit' },
-    { id: 2, title: 'Modul 2: Simulasi Mengajar', desc: 'Praktik mengajar di kelas virtual', status: 'locked', level: 'Menengah', gameCount: 2, duration: '45 Menit' },
-  ];
-  teachersData = [
-    { id: 1, name: 'Budi Santoso', nip: '198001012010011001', email: 'budi@sekolah.sch.id', subject: 'Matematika' },
-    { id: 2, name: 'Siti Aminah', nip: '198502022015022002', email: 'siti@sekolah.sch.id', subject: 'Bahasa Indonesia' }
-  ];
-  studentsData = [
-    { id: 1, name: 'Daffa Pradana', nisn: '0012345678', asalSekolah: 'SMKN 1 Jakarta', email: 'daffa.pradana4a@gmail.com', progress: 50 },
-    { id: 2, name: 'Siswa Demo', nisn: '0012345679', asalSekolah: 'SMKN 2 Jakarta', email: 'siswa@sekolah.sch.id', progress: 100 }
-  ];
+  modulesData = [];
+  teachersData = [];
+  studentsData = [];
   saveDb();
 }
 
@@ -273,6 +264,9 @@ async function startServer() {
     }
     res.json({ success: true, id });
   });
+
+  // Serve extracted games explicitly
+  app.use('/games', express.static(PUBLIC_GAMES_DIR));
 
   // Vite Integration
   if (process.env.NODE_ENV !== "production") {
