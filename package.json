@@ -29,7 +29,6 @@
     "react": "^19.0.1",
     "react-dom": "^19.0.1",
     "react-is": "^19.2.7",
-    "react-quill": "^2.0.0",
     "react-quill-new": "^3.8.3",
     "recharts": "^3.8.1",
     "vite": "^6.2.3",
