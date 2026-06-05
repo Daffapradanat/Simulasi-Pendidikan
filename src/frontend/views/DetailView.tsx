@@ -23,7 +23,8 @@ export function DetailView({
 }) {
   const activeGame = module.games.find(g => g.id === activeGameId);
   const totalGames = module.games.length;
-  const allPlayed = totalGames === 0 || module.games.every(g => playedGames.has(g.id));
+  const isModuleCompleted = module.status === 'completed';
+  const allPlayed = totalGames === 0 || isModuleCompleted || module.games.every(g => playedGames.has(g.id));
   
   useEffect(() => {
     if (activeGameId !== null) {
@@ -101,16 +102,18 @@ export function DetailView({
                       <span className="badge badge-success" style={{ marginLeft: '4px' }}><i className="ti ti-wifi"></i> Aktif</span>
                     </div>
                   </div>
-                  <div className="webgl-container">
+                  <div className="webgl-container" style={{ background: '#000', display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '300px' }}>
                     {activeGame?.path ? (
-                      <iframe 
-                        src={activeGame.path} 
-                        style={{ width: '100%', height: '500px', border: 'none', background: 'white' }} 
-                        title={activeGame.title} 
-                      />
+                      <div style={{ width: '100%', aspectRatio: '16/9', display: 'flex' }}>
+                        <iframe 
+                          src={activeGame.path} 
+                          style={{ width: '100%', height: '100%', border: 'none', background: 'transparent' }} 
+                          title={activeGame.title} 
+                        />
+                      </div>
                     ) : (
-                      <div className="webgl-placeholder">
-                        <div className="play-icon"><i className="ti ti-player-play"></i></div>
+                      <div className="webgl-placeholder" style={{ color: '#aaa' }}>
+                        <div className="play-icon" style={{ background: '#333', color: '#fff' }}><i className="ti ti-player-play"></i></div>
                         <p>WebGL Game Placeholder</p>
                         <small>Pastikan game telah diupload dan diformat dengan benar di backend (file index.html harus ada di dalam zip).</small>
                       </div>
@@ -137,25 +140,28 @@ export function DetailView({
                     <p>Game akan segera tersedia.</p>
                   </div>
                 ) : (
-                  module.games.map(game => (
-                    <div key={game.id} className={`game-card ${activeGameId === game.id ? 'active-game' : playedGames.has(game.id) ? 'played' : ''}`}>
-                      <div className="game-step-num">{game.id}</div>
-                      <div className="game-info">
-                        <div className="game-title">{game.title}</div>
-                        <div className="game-desc">{game.desc}</div>
+                  module.games.map((game, idx) => {
+                    const isPlayed = playedGames.has(game.id) || isModuleCompleted;
+                    return (
+                      <div key={game.id} className={`game-card ${activeGameId === game.id ? 'active-game' : isPlayed ? 'played' : ''}`}>
+                        <div className="game-step-num">{idx + 1}</div>
+                        <div className="game-info">
+                          <div className="game-title">{game.title}</div>
+                          <div className="game-desc">{game.desc}</div>
+                        </div>
+                        <div className="game-card-actions">
+                          <button className="btn btn-primary btn-sm" onClick={() => onLaunchGame(game.id, game.title)}>
+                            <i className="ti ti-player-play-filled"></i> Mainkan
+                          </button>
+                          {isPlayed && (
+                            <span className="played-badge">
+                              <i className="ti ti-check"></i> Selesai
+                            </span>
+                          )}
+                        </div>
                       </div>
-                      <div className="game-card-actions">
-                        <button className="btn btn-primary btn-sm" onClick={() => onLaunchGame(game.id, game.title)}>
-                          <i className="ti ti-player-play-filled"></i> Mainkan
-                        </button>
-                        {playedGames.has(game.id) && (
-                          <span className="played-badge">
-                            <i className="ti ti-check"></i> Selesai
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  ))
+                    );
+                  })
                 )}
               </div>
             </div>

@@ -50,6 +50,12 @@ export default function App() {
       .then(data => {
         if (data.user) {
           setCurrentUser(data.user);
+          try {
+            const played = localStorage.getItem(`simpend_played_${data.user.id}`);
+            if (played) setPlayedGames(new Set(JSON.parse(played)));
+            const completed = localStorage.getItem(`simpend_completed_${data.user.id}`);
+            if (completed) setCompletedModuleIds(new Set(JSON.parse(completed)));
+          } catch(e) {}
         }
       })
       .catch(() => {});
@@ -68,6 +74,13 @@ export default function App() {
       })
       .catch(() => {});
   };
+
+  useEffect(() => {
+    if (currentUser) {
+      localStorage.setItem(`simpend_played_${currentUser.id}`, JSON.stringify(Array.from(playedGames)));
+      localStorage.setItem(`simpend_completed_${currentUser.id}`, JSON.stringify(Array.from(completedModuleIds)));
+    }
+  }, [playedGames, completedModuleIds, currentUser]);
 
   const handleLogin = async (email: string, pass: string) => {
     try {
@@ -239,8 +252,8 @@ export default function App() {
               className="modal-content"
               style={{ background: 'white', padding: '36px', borderRadius: '20px', maxWidth: '420px', textAlign: 'center', boxShadow: '0 10px 40px rgba(0,0,0,0.3)', margin: '20px' }}
             >
-              <div style={{ fontSize: '56px', marginBottom: '16px', lineHeight: 1 }}>🏆</div>
-              <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '24px', color: 'var(--primary)', marginBottom: '12px' }}>Tamat! Luar Biasa!</h2>
+              <div style={{ fontSize: '48px', color: 'var(--success)', marginBottom: '16px' }}><i className="ti ti-circle-check-filled"></i></div>
+              <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '24px', color: 'var(--success)', marginBottom: '12px' }}>Modul Terselesaikan!</h2>
               <p style={{ color: 'var(--text-muted)', marginBottom: '28px', lineHeight: 1.5 }}>Selamat! Kamu telah menyelesaikan seluruh modul pada Simulasi Pendidikan ini. Terus pertahankan semangat belajarmu untuk masa depan yang gemilang!</p>
               <button className="btn btn-primary btn-full btn-lg" onClick={() => setShowAllDoneModal(false)}>
                 Tutup &amp; Lihat Progres
