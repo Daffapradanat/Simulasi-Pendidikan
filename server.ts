@@ -7,10 +7,7 @@ import multer from "multer";
 import { createServer as createViteServer } from "vite";
 import fs from "fs";
 import { configureSecurity } from "./serverSecurity";
-import { execFile } from "child_process";
-import util from "util";
-
-const execFileAsync = util.promisify(execFile);
+import AdmZip from "adm-zip";
 
 const PUBLIC_GAMES_DIR = path.join(process.cwd(), "public", "games");
 if (!fs.existsSync(PUBLIC_GAMES_DIR)) {
@@ -113,6 +110,22 @@ async function startServer() {
     res.json(modulesData);
   });
   
+  function findIndexPath(dir: string): string | null {
+    if (!fs.existsSync(dir)) return null;
+    const items = fs.readdirSync(dir);
+    if (items.includes('index.html')) return 'index.html';
+    
+    // Check in subfolders
+    for (const item of items) {
+      const fullPath = path.join(dir, item);
+      if (fs.statSync(fullPath).isDirectory()) {
+         const subSearch = findIndexPath(fullPath);
+         if (subSearch) return `${item}/${subSearch}`;
+      }
+    }
+    return null;
+  }
+
   app.post("/api/modules", upload.array('gameFiles'), async (req, res) => {
     try {
       let { title, desc, level, duration, material, gamesMeta } = req.body;
@@ -121,20 +134,22 @@ async function startServer() {
 
       // Process uploaded zip files if any
       const files = req.files as Express.Multer.File[];
+      let fileIndex = 0;
       if (files && files.length > 0) {
-        for (let i = 0; i < files.length; i++) {
-          const file = files[i];
-          if (gamesMeta[i]) {
+        for (let i = 0; i < gamesMeta.length; i++) {
+          if (gamesMeta[i].hasNewFile && fileIndex < files.length) {
+            const file = files[fileIndex++];
             const gameDir = path.join(PUBLIC_GAMES_DIR, `game_${gamesMeta[i].id}`);
             try {
               if (!fs.existsSync(gameDir)) {
                 fs.mkdirSync(gameDir, { recursive: true });
               }
-              await execFileAsync("unzip", ["-o", file.path, "-d", gameDir]);
-              gamesMeta[i].path = `/games/game_${gamesMeta[i].id}/index.html`; // Assuming the zip contains an index.html at root
+              const zip = new AdmZip(file.path);
+              zip.extractAllTo(gameDir, true);
+              const indexPath = findIndexPath(gameDir) || 'index.html';
+              gamesMeta[i].path = `/games/game_${gamesMeta[i].id}/${indexPath}`;
             } catch (zipError) {
               console.error("Failed to extract zip:", zipError);
-              // continue even if it fails, or you could throw error.
             }
           }
         }
@@ -166,17 +181,20 @@ async function startServer() {
       try { gamesMeta = JSON.parse(gamesMeta || '[]'); } catch(e) {}
 
       const files = req.files as Express.Multer.File[];
+      let fileIndex = 0;
       if (files && files.length > 0) {
-        for (let i = 0; i < files.length; i++) {
-          const file = files[i];
-          if (gamesMeta[i]) {
+        for (let i = 0; i < gamesMeta.length; i++) {
+          if (gamesMeta[i].hasNewFile && fileIndex < files.length) {
+            const file = files[fileIndex++];
             const gameDir = path.join(PUBLIC_GAMES_DIR, `game_${gamesMeta[i].id}`);
             try {
               if (!fs.existsSync(gameDir)) {
                 fs.mkdirSync(gameDir, { recursive: true });
               }
-              await execFileAsync("unzip", ["-o", file.path, "-d", gameDir]);
-              gamesMeta[i].path = `/games/game_${gamesMeta[i].id}/index.html`;
+              const zip = new AdmZip(file.path);
+              zip.extractAllTo(gameDir, true);
+              const indexPath = findIndexPath(gameDir) || 'index.html';
+              gamesMeta[i].path = `/games/game_${gamesMeta[i].id}/${indexPath}`;
             } catch (zipError) {
               console.error("Failed to extract zip:", zipError);
             }
@@ -293,7 +311,22 @@ async function startServer() {
   });
 
   // Serve extracted games explicitly
-  app.use('/games', express.static(PUBLIC_GAMES_DIR));
+  app.use('/games', (req, res, next) => {
+    if (req.url.endsWith('.gz')) {
+      res.set('Content-Encoding', 'gzip');
+      if (req.url.includes('.wasm')) res.set('Content-Type', 'application/wasm');
+      else if (req.url.includes('.js')) res.set('Content-Type', 'application/javascript');
+      else if (req.url.includes('.data')) res.set('Content-Type', 'application/octet-stream');
+    } else if (req.url.endsWith('.br')) {
+      res.set('Content-Encoding', 'br');
+      if (req.url.includes('.wasm')) res.set('Content-Type', 'application/wasm');
+      else if (req.url.includes('.js')) res.set('Content-Type', 'application/javascript');
+      else if (req.url.includes('.data')) res.set('Content-Type', 'application/octet-stream');
+    } else if (req.url.endsWith('.wasm')) {
+      res.set('Content-Type', 'application/wasm');
+    }
+    next();
+  }, express.static(PUBLIC_GAMES_DIR));
 
   // Vite Integration
   if (process.env.NODE_ENV !== "production") {

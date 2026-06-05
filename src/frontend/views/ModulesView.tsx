@@ -80,7 +80,7 @@ export function ModulesView({ modules, onOpenModule }: { modules: Module[], onOp
               <div className="module-thumb" dangerouslySetInnerHTML={{ __html: MODULE_THUMBS[mod.id] || '' }} />
               <div className="module-card-inner">
                 <div className="module-card-top">
-                  <div className="module-number">{mod.id}</div>
+                  <div className="module-number">{modules.findIndex(m => m.id === mod.id) + 1}</div>
                   {mod.status === 'locked' && <span className="module-lock-icon"><i className="ti ti-lock"></i></span>}
                   {mod.status === 'completed' && <span className="badge badge-success"><i className="ti ti-check"></i> Selesai</span>}
                   {mod.status === 'unlocked' && <span className="badge badge-primary"><i className="ti ti-lock-open"></i> Tersedia</span>}

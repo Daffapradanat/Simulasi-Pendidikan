@@ -25,7 +25,7 @@ export default function TeachersView({
                   </button>
                   <button className="btn btn-primary btn-sm" onClick={() => {
                     setEditingTeacher(null);
-                    setTeacherForm({ name: '', subject: '', nip: '' });
+                    setTeacherForm({ name: '', subject: '', nip: '', email: '' });
                     setShowTeacherModal(true);
                   }}>
                     <i className="ti ti-plus"></i> Tambah Guru
@@ -37,7 +37,7 @@ export default function TeachersView({
                   <thead>
                     <tr>
                       <th>ID / NIP</th>
-                      <th>Nama Guru</th>
+                      <th>Nama Guru & Email</th>
                       <th>Mata Pelajaran</th>
                       <th>Status</th>
                       <th>Aksi</th>
@@ -59,7 +59,10 @@ export default function TeachersView({
                           <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{t.nip || '-'}</div>
                           {t.isDeleted && <span className="badge" style={{ background: 'var(--border)', color: 'var(--text-muted)', marginTop: '6px', display: 'inline-block' }}>Dihapus</span>}
                         </td>
-                        <td style={{ textDecoration: t.isDeleted ? 'line-through' : 'none' }}>{t.name}</td>
+                        <td style={{ textDecoration: t.isDeleted ? 'line-through' : 'none' }}>
+                          <div style={{ fontWeight: 600 }}>{t.name}</div>
+                          <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{t.email || '-'}</div>
+                        </td>
                         <td style={{ textDecoration: t.isDeleted ? 'line-through' : 'none' }}>
                           <span className="badge badge-primary">{t.subject}</span>
                         </td>

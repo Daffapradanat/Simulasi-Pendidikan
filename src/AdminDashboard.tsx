@@ -16,7 +16,11 @@ import * as XLSX from 'xlsx';
 type AdminViewMode = 'dashboard' | 'modules' | 'modules_add_edit' | 'students' | 'teachers' | 'profile';
 
 export default function AdminDashboard({ user, onLogout, onNavigate, onUpdateUser }: { user: any, onLogout: () => void, onNavigate: (v: 'main' | 'profile') => void, onUpdateUser?: (u: any) => void }) {
-  const [view, setView] = useState<AdminViewMode>('dashboard');
+  const [view, setView] = useState<AdminViewMode>((localStorage.getItem('adminView') as AdminViewMode) || 'dashboard');
+  
+  useEffect(() => {
+    localStorage.setItem('adminView', view);
+  }, [view]);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   // States for data
@@ -35,10 +39,10 @@ export default function AdminDashboard({ user, onLogout, onNavigate, onUpdateUse
     objectives: '', theory: '', keyTerms: [] as {term: string, def: string}[] 
   });
   const [studentForm, setStudentForm] = useState({ name: '', email: '', nisn: '', asalSekolah: '' });
-  const [teacherForm, setTeacherForm] = useState({ name: '', subject: '', nip: '' });
+  const [teacherForm, setTeacherForm] = useState({ name: '', subject: '', nip: '', email: '' });
   const [profileForm, setProfileForm] = useState({ name: user?.name || '', email: user?.email || '', role: user?.role || '' });
   const [isEditingProfile, setIsEditingProfile] = useState(false);
-  const [moduleGameFiles, setModuleGameFiles] = useState<{file: File, title: string, desc: string}[]>([]);
+  const [moduleGameFiles, setModuleGameFiles] = useState<{file: File | null, title: string, desc: string, id?: number, path?: string}[]>([]);
 
   // Search states
   const [moduleSearch, setModuleSearch] = useState('');
@@ -90,7 +94,13 @@ export default function AdminDashboard({ user, onLogout, onNavigate, onUpdateUse
       formData.append('duration', moduleForm.duration);
       formData.append('material', JSON.stringify(material));
       
-      const gamesMeta = moduleGameFiles.map((gf, idx) => ({ id: Date.now() + idx, title: gf.title, desc: gf.desc }));
+      const gamesMeta = moduleGameFiles.map((gf, idx) => ({ 
+        id: gf.id || (Date.now() + idx), 
+        title: gf.title, 
+        desc: gf.desc,
+        path: gf.path,
+        hasNewFile: !!gf.file
+      }));
       formData.append('gamesMeta', JSON.stringify(gamesMeta));
       
       moduleGameFiles.forEach((gf, idx) => {
@@ -170,7 +180,7 @@ export default function AdminDashboard({ user, onLogout, onNavigate, onUpdateUse
       }
       setShowTeacherModal(false);
       setEditingTeacher(null);
-      setTeacherForm({ name: '', subject: '' });
+      setTeacherForm({ name: '', subject: '', nip: '', email: '' });
     } catch (err) {
       console.error(err);
     }
@@ -423,6 +433,10 @@ export default function AdminDashboard({ user, onLogout, onNavigate, onUpdateUse
                 <div style={{ marginBottom: '16px' }}>
                   <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: 500 }}>Nama Lengkap</label>
                   <input type="text" className="form-input" required value={teacherForm.name} onChange={e => setTeacherForm({...teacherForm, name: e.target.value})} placeholder="Masukkan nama..." />
+                </div>
+                <div style={{ marginBottom: '16px' }}>
+                  <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: 500 }}>Email</label>
+                  <input type="email" className="form-input" required value={teacherForm.email} onChange={e => setTeacherForm({...teacherForm, email: e.target.value})} placeholder="Masukkan email..." />
                 </div>
                 <div style={{ marginBottom: '24px' }}>
                   <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: 500 }}>Mata Pelajaran</label>

@@ -37,7 +37,7 @@ export default function ModulesView({
                 <table className="admin-table">
                   <thead>
                     <tr>
-                      <th style={{ width: '60px' }}>ID</th>
+                      <th style={{ width: '60px' }}>No</th>
                       <th>Detail Modul</th>
                       <th>Spesifikasi</th>
                       <th>Status</th>
@@ -56,7 +56,7 @@ export default function ModulesView({
                       filteredModules.map(mod => (
                       <tr key={mod.id} style={{ ...(mod.isDeleted ? { filter: 'grayscale(100%)', opacity: 0.5 } : {}) }}>
                         <td>
-                          <div style={{ fontWeight: 600 }}>#{mod.id}</div>
+                          <div style={{ fontWeight: 600 }}>{modules.findIndex(m => m.id === mod.id) + 1}</div>
                           {mod.isDeleted && <span className="badge" style={{ background: 'var(--border)', color: 'var(--text-muted)', marginTop: '6px', display: 'inline-block' }}>Dihapus</span>}
                         </td>
                         <td style={{ textDecoration: mod.isDeleted ? 'line-through' : 'none' }}>
@@ -92,7 +92,7 @@ export default function ModulesView({
                                 theory: mod.material?.theory || '',
                                 keyTerms: mod.material?.keyTerms || []
                               });
-                              setModuleGameFiles((mod.games || []).map(g => ({ file: new File([], "existing.zip"), title: g.title, desc: g.desc })));
+                              setModuleGameFiles((mod.games || []).map((g: any) => ({ file: null, title: g.title, desc: g.desc, id: g.id, path: g.path })));
                               setView('modules_add_edit');
                             }}
                           ><i className="ti ti-edit"></i> Edit</button>
