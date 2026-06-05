@@ -4,10 +4,13 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import jwt from "jsonwebtoken";
 import multer from "multer";
-import AdmZip from "adm-zip";
 import { createServer as createViteServer } from "vite";
 import fs from "fs";
 import { configureSecurity } from "./serverSecurity";
+import { execFile } from "child_process";
+import util from "util";
+
+const execFileAsync = util.promisify(execFile);
 
 const PUBLIC_GAMES_DIR = path.join(process.cwd(), "public", "games");
 if (!fs.existsSync(PUBLIC_GAMES_DIR)) {
@@ -124,8 +127,10 @@ async function startServer() {
           if (gamesMeta[i]) {
             const gameDir = path.join(PUBLIC_GAMES_DIR, `game_${gamesMeta[i].id}`);
             try {
-              const zip = new AdmZip(file.path);
-              zip.extractAllTo(gameDir, true);
+              if (!fs.existsSync(gameDir)) {
+                fs.mkdirSync(gameDir, { recursive: true });
+              }
+              await execFileAsync("unzip", ["-o", file.path, "-d", gameDir]);
               gamesMeta[i].path = `/games/game_${gamesMeta[i].id}/index.html`; // Assuming the zip contains an index.html at root
             } catch (zipError) {
               console.error("Failed to extract zip:", zipError);
@@ -167,8 +172,10 @@ async function startServer() {
           if (gamesMeta[i]) {
             const gameDir = path.join(PUBLIC_GAMES_DIR, `game_${gamesMeta[i].id}`);
             try {
-              const zip = new AdmZip(file.path);
-              zip.extractAllTo(gameDir, true);
+              if (!fs.existsSync(gameDir)) {
+                fs.mkdirSync(gameDir, { recursive: true });
+              }
+              await execFileAsync("unzip", ["-o", file.path, "-d", gameDir]);
               gamesMeta[i].path = `/games/game_${gamesMeta[i].id}/index.html`;
             } catch (zipError) {
               console.error("Failed to extract zip:", zipError);
