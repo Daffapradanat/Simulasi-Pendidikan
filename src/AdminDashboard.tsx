@@ -11,11 +11,13 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
 import * as XLSX from 'xlsx';
+import { useNavigate } from 'react-router-dom';
 
 // Types for Admin
 type AdminViewMode = 'dashboard' | 'modules' | 'modules_add_edit' | 'students' | 'teachers' | 'profile';
 
 export default function AdminDashboard({ user, onLogout, onNavigate, onUpdateUser }: { user: any, onLogout: () => void, onNavigate: (v: 'main' | 'profile') => void, onUpdateUser?: (u: any) => void }) {
+  const navigate = useNavigate();
   const [view, setView] = useState<AdminViewMode>('dashboard');
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
@@ -351,6 +353,10 @@ export default function AdminDashboard({ user, onLogout, onNavigate, onUpdateUse
           </button>
           <button className={`btn ${view === 'profile' ? 'btn-primary' : 'btn-ghost'} btn-full`} style={{ justifyContent: 'flex-start', border: view === 'profile' ? undefined : 'none' }} onClick={() => setView('profile')}>
             <i className="ti ti-user"></i> Profil
+          </button>
+          
+          <button className={`btn btn-ghost btn-full`} style={{ justifyContent: 'flex-start', border: 'none', marginTop: '16px', color: 'var(--primary)' }} onClick={() => navigate('/')}>
+            <i className="ti ti-arrow-up-right"></i> Akses Frontend
           </button>
 
           <div className="admin-logout-wrapper">

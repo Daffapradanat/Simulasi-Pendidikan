@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { User, Toast, Module } from './types';
 import { motion, AnimatePresence } from 'motion/react';
+import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 
 import AdminDashboard from './AdminDashboard';
 import { Navbar } from './frontend/components/Navbar';
@@ -11,6 +12,8 @@ import { ProfileView } from './frontend/views/ProfileView';
 
 // --- MAIN APP COMPONENT ---
 export default function App() {
+  const navigate = useNavigate();
+  const location = useLocation();
   const [viewMode, setViewMode] = useState<'main' | 'profile'>('main');
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [appModules, setAppModules] = useState<Module[]>([]);
@@ -80,7 +83,6 @@ export default function App() {
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data)) {
-          // If we want filtering out deleted modules
           setAppModules(data.filter(m => !m.isDeleted));
         }
       })
@@ -94,14 +96,14 @@ export default function App() {
     }
   }, [playedGames, completedModuleIds, currentUser]);
 
-  const handleLogin = async (email: string, pass: string, remember: boolean) => {
+  const handleLogin = async (email: string, pass: string, remember: boolean, mode: 'siswa' | 'guru' | 'admin') => {
     // Menggunakan mock system sementara, tanpa memanggil API /api/auth/login
     let user = null;
-    if ((email === 'siswa' || email === 'siswa@sekolah.sch.id') && pass === 'siswa') {
+    if (mode === 'siswa' && (email === 'siswa' || email === 'siswa@sekolah.sch.id') && pass === 'siswa') {
       user = { id: 1, name: "Siswa Siswi", email: "siswa@sekolah.sch.id", role: "siswa" };
-    } else if ((email === 'guru' || email === 'guru@sekolah.sch.id') && pass === 'guru') {
+    } else if (mode === 'guru' && (email === 'guru' || email === 'guru@sekolah.sch.id') && pass === 'guru') {
       user = { id: 2, name: "Guru Pengajar", email: "guru@sekolah.sch.id", role: "guru" };
-    } else if (email === 'admin' && pass === 'admin') {
+    } else if (mode === 'admin' && email === 'admin' && pass === 'admin') {
       user = { id: 3, name: "Administrator", email: "admin@sekolah.sch.id", role: "admin" };
     }
     
@@ -115,6 +117,13 @@ export default function App() {
       refreshUserData(user as any);
       fetchModules();
       showToast(`Selamat datang, ${user.name}!`, 'success');
+      
+      // Redirect based on role
+      if (user.role === 'admin' || user.role === 'guru') {
+        navigate('/admin');
+      } else {
+        navigate('/');
+      }
     } else {
       showToast('Username/Email atau password salah.', 'error');
     }
@@ -129,6 +138,7 @@ export default function App() {
     setCompletedModuleIds(new Set());
     setViewMode('main');
     showToast('Berhasil keluar.', 'info');
+    navigate('/login');
   };
 
   const currentModule = currentModuleId ? computedModules.find(m => m.id === currentModuleId) : null;
@@ -187,72 +197,88 @@ export default function App() {
     }, 1800);
   };
 
-  if (currentUser && (currentUser.role === 'admin' || currentUser.role === 'guru')) {
-    return (
-      <AdminDashboard 
-        user={currentUser} 
-        onLogout={handleLogout} 
-        onNavigate={setViewMode} 
-        onUpdateUser={setCurrentUser}
-      />
-    );
-  }
-
   return (
     <>
-      <Navbar 
-        user={currentUser} 
-        onLogout={() => setShowLogoutConfirm(true)} 
-        viewMode={viewMode}
-        onNavigate={(mode, resetModule) => {
-          setViewMode(mode);
-          if (resetModule) {
-            setCurrentModuleId(null);
-            setActiveGameId(null);
-          }
-        }} 
-        inDetail={!!currentModuleId} 
-      />
-
-      <AnimatePresence mode="wait">
-        {!currentUser && (
-          <motion.div key="login" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} transition={{ duration: 0.3 }}>
-            <LoginView onLogin={handleLogin} />
+      <Routes>
+        <Route path="/login" element={
+          currentUser ? (currentUser.role === 'siswa' ? <Navigate to="/" replace /> : <Navigate to="/admin" replace />) :
+          <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} transition={{ duration: 0.3 }}>
+            <LoginView onLogin={(e, p, r) => handleLogin(e, p, r, 'siswa')} defaultMode="siswa" />
           </motion.div>
-        )}
+        } />
+        
+        <Route path="/admin/login" element={
+          currentUser ? (currentUser.role === 'siswa' ? <Navigate to="/" replace /> : <Navigate to="/admin" replace />) :
+          <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} transition={{ duration: 0.3 }}>
+            <LoginView onLogin={(e, p, r) => handleLogin(e, p, r, 'guru')} defaultMode="guru" />
+          </motion.div>
+        } />
 
-        {currentUser && viewMode === 'main' && !currentModuleId && (
-          <motion.div key="modules" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} transition={{ duration: 0.3 }}>
-            <ModulesView 
-              modules={computedModules} 
-              onOpenModule={handleOpenModule} 
+        <Route path="/admin" element={
+          !currentUser ? <Navigate to="/admin/login" replace /> :
+          (currentUser.role === 'siswa' ? <Navigate to="/" replace /> :
+            <AdminDashboard 
+              user={currentUser} 
+              onLogout={handleLogout} 
+              onNavigate={setViewMode} 
+              onUpdateUser={setCurrentUser}
             />
-          </motion.div>
-        )}
+          )
+        } />
 
-        {currentUser && viewMode === 'main' && currentModuleId && currentModule && (
-          <motion.div key="detail" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} transition={{ duration: 0.3 }}>
-            <DetailView 
-              module={currentModule}
-              onBack={() => {
-                setCurrentModuleId(null);
-                setActiveGameId(null);
-              }}
-              activeGameId={activeGameId}
-              playedGames={playedGames}
-              onLaunchGame={handleLaunchGame}
-              onCloseGame={handleCloseGame}
-              onCompleteModule={handleCompleteModule}
-            />
-          </motion.div>
-        )}
+        <Route path="/*" element={
+          !currentUser ? <Navigate to="/login" replace /> :
+            <>
+              <Navbar 
+                user={currentUser} 
+                onLogout={() => setShowLogoutConfirm(true)} 
+                viewMode={viewMode}
+                onNavigate={(mode, resetModule) => {
+                  setViewMode(mode);
+                  if (resetModule) {
+                    setCurrentModuleId(null);
+                    setActiveGameId(null);
+                  }
+                }} 
+                inDetail={!!currentModuleId} 
+              />
 
-        {currentUser && viewMode === 'profile' && (
-          <motion.div key="profile" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} transition={{ duration: 0.3 }}>
-             <ProfileView user={currentUser} completedModuleIds={completedModuleIds} modules={appModules} />
-          </motion.div>
-        )}
-      </AnimatePresence>
+              <AnimatePresence mode="wait">
+                {viewMode === 'main' && !currentModuleId && (
+                  <motion.div key="modules" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} transition={{ duration: 0.3 }}>
+                    <ModulesView 
+                      modules={computedModules} 
+                      onOpenModule={handleOpenModule} 
+                    />
+                  </motion.div>
+                )}
+
+                {viewMode === 'main' && currentModuleId && currentModule && (
+                  <motion.div key="detail" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} transition={{ duration: 0.3 }}>
+                    <DetailView 
+                      module={currentModule}
+                      onBack={() => {
+                        setCurrentModuleId(null);
+                        setActiveGameId(null);
+                      }}
+                      activeGameId={activeGameId}
+                      playedGames={playedGames}
+                      onLaunchGame={handleLaunchGame}
+                      onCloseGame={handleCloseGame}
+                      onCompleteModule={handleCompleteModule}
+                    />
+                  </motion.div>
+                )}
+
+                {viewMode === 'profile' && (
+                  <motion.div key="profile" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} transition={{ duration: 0.3 }}>
+                     <ProfileView user={currentUser} completedModuleIds={completedModuleIds} modules={appModules} />
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </>
+        } />
+      </Routes>
 
       <AnimatePresence>
         {showAllDoneModal && (

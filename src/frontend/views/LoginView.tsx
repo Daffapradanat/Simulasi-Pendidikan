@@ -1,11 +1,10 @@
 import React, { useState } from 'react';
 
 // --- LOGIN VIEW ---
-export function LoginView({ onLogin }: { onLogin: (e: string, p: string, remember: boolean) => void }) {
+export function LoginView({ onLogin, defaultMode = 'siswa' }: { onLogin: (e: string, p: string, remember: boolean) => void, defaultMode?: 'siswa' | 'guru' | 'admin' }) {
   const [email, setEmail] = useState('');
   const [pass, setPass] = useState('');
   const [error, setError] = useState('');
-  const [loginMode, setLoginMode] = useState<'siswa' | 'guru'>('siswa');
   const [rememberMe, setRememberMe] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showForgotMsg, setShowForgotMsg] = useState(false);
@@ -28,40 +27,24 @@ export function LoginView({ onLogin }: { onLogin: (e: string, p: string, remembe
     onLogin(email, pass, rememberMe);
   };
   
+  const title = defaultMode === 'siswa' ? 'Siswa' : defaultMode === 'guru' ? 'Guru' : 'Admin';
+  
   return (
-    <div className="page active">
-      <div className="login-page">
-        <div className="login-card">
-          <div style={{ display: 'flex', gap: '12px', marginBottom: '24px' }}>
-            <button 
-              className={`btn ${loginMode === 'siswa' ? 'btn-primary' : 'btn-outline'}`} 
-              style={{ flex: 1 }} 
-              onClick={() => setLoginMode('siswa')}
-            >
-              Login Siswa
-            </button>
-            <button 
-              className={`btn ${loginMode === 'guru' ? 'btn-primary' : 'btn-outline'}`} 
-              style={{ flex: 1 }} 
-              onClick={() => setLoginMode('guru')}
-            >
-              Login Guru
-            </button>
-          </div>
-
-          <div className="login-logo">
+    <div className="login-page">
+      <div className="login-card">
+        <div className="login-logo">
             <img src="https://upload.wikimedia.org/wikipedia/id/4/44/Logo_PENS.png" className="logo-img" alt="PENS Logo" />
             <div className="login-logo-text">
               SimPend
               <span>Website Simulasi Pendidikan 2025/2026</span>
             </div>
           </div>
-          <div className="login-title">Masuk ke Akun {loginMode === 'guru' ? 'Guru' : 'Siswa'}</div>
+          <div className="login-title">Masuk ke Akun {title}</div>
           <div className="login-subtitle">Selamat datang! Silakan masuk untuk mengakses dashboard.</div>
           
           <div className="form-group">
-            <label className="form-label">Username / Email {loginMode === 'guru' ? 'Guru' : 'Siswa'}</label>
-            <input className="form-input" type="text" placeholder={`Masukkan username atau email ${loginMode}`} value={email} onChange={e => setEmail(e.target.value)} onKeyDown={e => e.key === 'Enter' && submit()} />
+            <label className="form-label">Username / Email {title}</label>
+            <input className="form-input" type="text" placeholder={`Masukkan username atau email ${title.toLowerCase()}`} value={email} onChange={e => setEmail(e.target.value)} onKeyDown={e => e.key === 'Enter' && submit()} />
           </div>
           
           <div className="form-group">
@@ -137,7 +120,6 @@ export function LoginView({ onLogin }: { onLogin: (e: string, p: string, remembe
           <button className="btn btn-primary btn-full btn-lg" onClick={submit}>
             Masuk <i className="ti ti-arrow-right"></i>
           </button>
-        </div>
       </div>
     </div>
   );

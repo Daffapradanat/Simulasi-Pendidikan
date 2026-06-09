@@ -15,7 +15,7 @@ export type Module = {
   gameCount: number;
 };
 
-export type User = { name: string; email: string; role: string };
+export type User = { id?: number; name: string; username?: string; email: string; role: string };
 
 export type Toast = {
   id: number;
