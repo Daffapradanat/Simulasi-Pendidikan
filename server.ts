@@ -86,19 +86,23 @@ async function startServer() {
   // Auth
   app.post("/api/auth/login", (req, res) => {
     const { email, password } = req.body;
-    let role = "siswa";
-    let user = { name: "Pengguna", email, role };
+    
+    // --- TEMPORARY MOCK DATABASE ---
+    // Nanti bisa disambungkan ke database beneran (seperti MySQL/PostgreSQL/MongoDB)
+    const mockUsers = [
+      { id: 1, name: "Siswa Siswi", username: "siswa", email: "siswa@sekolah.sch.id", password: "siswa", role: "siswa" },
+      { id: 2, name: "Guru Pengajar", username: "guru", email: "guru@sekolah.sch.id", password: "guru", role: "guru" }
+    ];
 
-    // Simple role determination for demonstration
-    if (email.includes("admin")) {
-      role = "admin";
-      user = { name: "Administrator", email, role };
-    } else if (email.includes("guru")) {
-      role = "guru";
-      user = { name: "Guru Pengajar", email, role };
+    const foundUser = mockUsers.find(u => (u.email === email || u.username === email) && u.password === password);
+
+    if (!foundUser) {
+      return res.status(401).json({ success: false, error: "Email atau password salah." });
     }
 
-    const token = jwt.sign({ email, role }, SECRET_KEY, { expiresIn: '1d' });
+    const user = { id: foundUser.id, name: foundUser.name, email: foundUser.email, role: foundUser.role };
+
+    const token = jwt.sign({ email: user.email, role: user.role }, SECRET_KEY, { expiresIn: '1d' });
     res.cookie('token', token, { 
       httpOnly: true, 
       secure: true,

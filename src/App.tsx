@@ -54,9 +54,26 @@ export default function App() {
   }, [showAllDoneModal, showLogoutConfirm]);
 
   useEffect(() => {
-    // Intentionally skipped auto-login to ensure user sees login page on start
+    // Check auto-login if remember me was checked
+    const savedUser = localStorage.getItem('simpend_auto_login');
+    if (savedUser) {
+      try {
+        const parsed = JSON.parse(savedUser);
+        setCurrentUser(parsed);
+        refreshUserData(parsed);
+      } catch(e) {}
+    }
     fetchModules();
   }, []);
+
+  const refreshUserData = (user: User) => {
+    try {
+      const played = localStorage.getItem(`simpend_played_${user.id}`);
+      if (played) setPlayedGames(new Set(JSON.parse(played)));
+      const completed = localStorage.getItem(`simpend_completed_${user.id}`);
+      if (completed) setCompletedModuleIds(new Set(JSON.parse(completed)));
+    } catch(e) {}
+  };
 
   const fetchModules = () => {
     fetch('/api/modules')
@@ -77,34 +94,34 @@ export default function App() {
     }
   }, [playedGames, completedModuleIds, currentUser]);
 
-  const handleLogin = async (email: string, pass: string) => {
-    try {
-      const res = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password: pass })
-      });
-      const data = await res.json();
-      if (data.success) {
-        setCurrentUser(data.user);
-        try {
-          const played = localStorage.getItem(`simpend_played_${data.user.id}`);
-          if (played) setPlayedGames(new Set(JSON.parse(played)));
-          const completed = localStorage.getItem(`simpend_completed_${data.user.id}`);
-          if (completed) setCompletedModuleIds(new Set(JSON.parse(completed)));
-        } catch(e) {}
-        fetchModules(); // Refresh modules from server after login
-        showToast(`Selamat datang, ${data.user.name}!`, 'success');
+  const handleLogin = async (email: string, pass: string, remember: boolean) => {
+    // Menggunakan mock system sementara, tanpa memanggil API /api/auth/login
+    let user = null;
+    if ((email === 'siswa' || email === 'siswa@sekolah.sch.id') && pass === 'siswa') {
+      user = { id: 1, name: "Siswa Siswi", email: "siswa@sekolah.sch.id", role: "siswa" };
+    } else if ((email === 'guru' || email === 'guru@sekolah.sch.id') && pass === 'guru') {
+      user = { id: 2, name: "Guru Pengajar", email: "guru@sekolah.sch.id", role: "guru" };
+    } else if (email === 'admin' && pass === 'admin') {
+      user = { id: 3, name: "Administrator", email: "admin@sekolah.sch.id", role: "admin" };
+    }
+    
+    if (user) {
+      setCurrentUser(user as any);
+      if (remember) {
+        localStorage.setItem('simpend_auto_login', JSON.stringify(user));
       } else {
-        showToast('Gagal masuk.', 'error');
+        localStorage.removeItem('simpend_auto_login');
       }
-    } catch (e) {
-      showToast('Koneksi ke server gagal.', 'error');
+      refreshUserData(user as any);
+      fetchModules();
+      showToast(`Selamat datang, ${user.name}!`, 'success');
+    } else {
+      showToast('Username/Email atau password salah.', 'error');
     }
   };
 
   const handleLogout = async () => {
-    await fetch('/api/auth/logout', { method: 'POST' });
+    localStorage.removeItem('simpend_auto_login');
     setCurrentUser(null);
     setCurrentModuleId(null);
     setActiveGameId(null);
