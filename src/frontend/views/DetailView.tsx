@@ -21,6 +21,10 @@ export function DetailView({
   onCloseGame: () => void;
   onCompleteModule: () => void;
 }) {
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }, [module.id]);
   const activeGame = module.games.find(g => g.id === activeGameId);
   const totalGames = module.games.length;
   const isModuleCompleted = module.status === 'completed';

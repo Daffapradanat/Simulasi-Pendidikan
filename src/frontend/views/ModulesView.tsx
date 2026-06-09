@@ -1,13 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Module } from '../../types';
-
-const THUMB_IMAGES: Record<number, string> = {
-  1: 'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?auto=format&fit=crop&w=600&q=80',
-  2: 'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=600&q=80',
-  3: 'https://images.unsplash.com/photo-1532094349884-543bc11b234d?auto=format&fit=crop&w=600&q=80',
-  4: 'https://images.unsplash.com/photo-1509062522246-3755977927d7?auto=format&fit=crop&w=600&q=80',
-  5: 'https://images.unsplash.com/photo-1542626991-cbc4e32524cc?auto=format&fit=crop&w=600&q=80',
-};
+import { MODULE_THUMBS } from '../../data';
 
 const renderLevelBadge = (level: string) => {
   let style: React.CSSProperties = { fontSize: '11px', fontWeight: 700, padding: '4px 10px', borderRadius: '100px', whiteSpace: 'nowrap', letterSpacing: '0.3px', margin: 0, display: 'inline-flex', alignItems: 'center', gap: '4px' };
@@ -147,13 +140,7 @@ export function ModulesView({ modules, onOpenModule, lastModuleId }: { modules: 
           ) : (
             currentModules.map(mod => (
               <div key={mod.id} className={`module-card ${mod.status}`} onClick={() => { if (mod.status !== 'locked') onOpenModule(mod.id); }} style={{ cursor: mod.status === 'locked' ? 'not-allowed' : 'pointer', opacity: mod.status === 'locked' ? 0.7 : 1 }}>
-                <div className="module-thumb">
-                  {THUMB_IMAGES[mod.id] ? (
-                    <img src={THUMB_IMAGES[mod.id]} alt={mod.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                  ) : (
-                    <div style={{width:'100%',height:'100%',background:'#0D1B2E',display:'flex',alignItems:'center',justifyContent:'center',color:'#64748b'}}><i className="ti ti-photo" style={{fontSize:'32px'}}></i></div>
-                  )}
-                </div>
+                <div className="module-thumb" dangerouslySetInnerHTML={{ __html: MODULE_THUMBS[mod.id] || '<div style="width:100%;height:100%;background:#0D1B2E;display:flex;align-items:center;justify-content:center;color:#64748b;"><i class="ti ti-photo" style="font-size:32px;"></i></div>' }} />
                 <div className="module-card-inner">
                   <div className="module-card-top">
                     <div className="module-number">{modules.findIndex(m => m.id === mod.id) + 1}</div>
