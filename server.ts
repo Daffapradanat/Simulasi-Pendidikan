@@ -32,22 +32,40 @@ const DB_FILE = path.join(process.cwd(), "database.json");
 let modulesData: any[] = [];
 let teachersData: any[] = [];
 let studentsData: any[] = [];
+let activitiesData: any[] = [];
 
 if (fs.existsSync(DB_FILE)) {
   const fileData = JSON.parse(fs.readFileSync(DB_FILE, 'utf-8'));
   modulesData = fileData.modules || [];
   teachersData = fileData.teachers || [];
   studentsData = fileData.students || [];
+  activitiesData = fileData.activities || [];
 } else {
   modulesData = [];
   teachersData = [];
   studentsData = [];
+  activitiesData = [];
   saveDb();
 }
 
 function saveDb() {
-  fs.writeFileSync(DB_FILE, JSON.stringify({ modules: modulesData, teachers: teachersData, students: studentsData }, null, 2));
+  fs.writeFileSync(DB_FILE, JSON.stringify({ modules: modulesData, teachers: teachersData, students: studentsData, activities: activitiesData }, null, 2));
 }
+
+function logActivity(action: string, user: string, desc: string) {
+  const newActivity = {
+    id: Date.now(),
+    action,
+    user,
+    time: new Date().toISOString(),
+    desc
+  };
+  activitiesData.unshift(newActivity);
+  // Keep only the last 100 activities
+  if (activitiesData.length > 100) activitiesData.pop();
+  saveDb();
+}
+
 
 const SECRET_KEY = "simpend_secret_key_2025";
 
@@ -83,14 +101,14 @@ async function startServer() {
     const token = jwt.sign({ email, role }, SECRET_KEY, { expiresIn: '1d' });
     res.cookie('token', token, { 
       httpOnly: true, 
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax' // CSRF protection (anti-cross link)
+      secure: true,
+      sameSite: 'none' // Allow iframe cross-origin
     });
     res.json({ success: true, user, token });
   });
 
   app.post("/api/auth/logout", (req, res) => {
-    res.clearCookie('token', { sameSite: 'lax' });
+    res.clearCookie('token', { sameSite: 'none', secure: true });
     res.json({ success: true });
   });
 
@@ -103,6 +121,10 @@ async function startServer() {
     } catch {
       res.status(401).json({ error: "Invalid token" });
     }
+  });
+
+  app.get("/api/activities", (req, res) => {
+    res.json(activitiesData);
   });
 
   // Modules CRUD
@@ -162,6 +184,7 @@ async function startServer() {
         status: 'locked' 
       };
       modulesData.push(newModule);
+      logActivity('module', 'Admin', `Menambahkan modul baru "${title}"`);
       saveDb();
       res.json({ success: true, module: newModule });
     } catch (error) {
@@ -206,6 +229,7 @@ async function startServer() {
         ...modulesData[index], 
         title, desc, level, duration, material, games: gamesMeta, gameCount: gamesMeta?.length || 0
       };
+      logActivity('module', 'Admin', `Mengubah modul "${title}"`);
       saveDb();
       res.json({ success: true, module: modulesData[index] });
     } catch (error) {
@@ -219,6 +243,7 @@ async function startServer() {
     const index = modulesData.findIndex(m => m.id === id);
     if (index !== -1) {
       modulesData[index].isDeleted = true;
+      logActivity('module', 'Admin', `Menghapus modul "${modulesData[index].title}"`);
       saveDb();
     }
     res.json({ success: true, id });
@@ -229,6 +254,7 @@ async function startServer() {
     const index = modulesData.findIndex(m => m.id === id);
     if (index !== -1) {
       modulesData[index].isDeleted = false;
+      logActivity('module', 'Admin', `Memulihkan modul "${modulesData[index].title}"`);
       saveDb();
     }
     res.json({ success: true, id });
@@ -241,6 +267,7 @@ async function startServer() {
   app.post("/api/teachers", (req, res) => {
     const newTeacher = { id: Date.now(), ...req.body };
     teachersData.push(newTeacher);
+    logActivity('teacher', 'Admin', `Mendaftarkan guru "${newTeacher.name}"`);
     saveDb();
     res.json({ success: true, teacher: newTeacher });
   });
@@ -249,6 +276,7 @@ async function startServer() {
     const index = teachersData.findIndex(t => t.id === id);
     if (index === -1) return res.status(404).json({ error: "Not found" });
     teachersData[index] = { ...teachersData[index], ...req.body };
+    logActivity('teacher', 'Admin', `Memperbarui data guru "${teachersData[index].name}"`);
     saveDb();
     res.json({ success: true, teacher: teachersData[index] });
   });
@@ -257,6 +285,7 @@ async function startServer() {
     const index = teachersData.findIndex(t => t.id === id);
     if (index !== -1) {
       teachersData[index].isDeleted = true;
+      logActivity('teacher', 'Admin', `Menonaktifkan guru "${teachersData[index].name}"`);
       saveDb();
     }
     res.json({ success: true, id });
@@ -267,6 +296,7 @@ async function startServer() {
     const index = teachersData.findIndex(t => t.id === id);
     if (index !== -1) {
       teachersData[index].isDeleted = false;
+      logActivity('teacher', 'Admin', `Mengaktifkan guru "${teachersData[index].name}"`);
       saveDb();
     }
     res.json({ success: true, id });
@@ -279,6 +309,7 @@ async function startServer() {
   app.post("/api/students", (req, res) => {
     const newStudent = { id: Date.now(), progress: 0, ...req.body };
     studentsData.push(newStudent);
+    logActivity('student', 'Admin', `Mendaftarkan siswa "${newStudent.name}"`);
     saveDb();
     res.json({ success: true, student: newStudent });
   });
@@ -287,6 +318,7 @@ async function startServer() {
     const index = studentsData.findIndex(s => s.id === id);
     if (index === -1) return res.status(404).json({ error: "Not found" });
     studentsData[index] = { ...studentsData[index], ...req.body };
+    logActivity('student', 'Admin', `Memperbarui data siswa "${studentsData[index].name}"`);
     saveDb();
     res.json({ success: true, student: studentsData[index] });
   });
@@ -295,6 +327,7 @@ async function startServer() {
     const index = studentsData.findIndex(s => s.id === id);
     if (index !== -1) {
       studentsData[index].isDeleted = true;
+      logActivity('student', 'Admin', `Menonaktifkan siswa "${studentsData[index].name}"`);
       saveDb();
     }
     res.json({ success: true, id });
@@ -305,6 +338,7 @@ async function startServer() {
     const index = studentsData.findIndex(s => s.id === id);
     if (index !== -1) {
       studentsData[index].isDeleted = false;
+      logActivity('student', 'Admin', `Mengaktifkan siswa "${studentsData[index].name}"`);
       saveDb();
     }
     res.json({ success: true, id });

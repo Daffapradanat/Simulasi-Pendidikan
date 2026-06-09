@@ -8,7 +8,7 @@ export function ModulesView({ modules, onOpenModule }: { modules: Module[], onOp
   const completed = modules.filter(m => m.status === 'completed').length;
   const available = modules.filter(m => m.status === 'unlocked').length;
   const locked = modules.filter(m => m.status === 'locked').length;
-  const pct = Math.round((completed / modules.length) * 100);
+  const pct = modules.length > 0 ? Math.round((completed / modules.length) * 100) : 0;
   
   const filteredModules = modules.filter(m => 
     m.title.toLowerCase().includes(searchQuery.toLowerCase()) || 

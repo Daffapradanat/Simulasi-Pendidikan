@@ -16,11 +16,7 @@ import * as XLSX from 'xlsx';
 type AdminViewMode = 'dashboard' | 'modules' | 'modules_add_edit' | 'students' | 'teachers' | 'profile';
 
 export default function AdminDashboard({ user, onLogout, onNavigate, onUpdateUser }: { user: any, onLogout: () => void, onNavigate: (v: 'main' | 'profile') => void, onUpdateUser?: (u: any) => void }) {
-  const [view, setView] = useState<AdminViewMode>((localStorage.getItem('adminView') as AdminViewMode) || 'dashboard');
-  
-  useEffect(() => {
-    localStorage.setItem('adminView', view);
-  }, [view]);
+  const [view, setView] = useState<AdminViewMode>('dashboard');
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   // States for data
@@ -52,6 +48,7 @@ export default function AdminDashboard({ user, onLogout, onNavigate, onUpdateUse
   // Modals & Delete
   const [showTeacherModal, setShowTeacherModal] = useState(false);
   const [editingTeacher, setEditingTeacher] = useState<any | null>(null);
+  const [editingStudent, setEditingStudent] = useState<any | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<{type: 'module'|'student'|'teacher', id: number} | null>(null);
 
   useEffect(() => {
@@ -60,6 +57,7 @@ export default function AdminDashboard({ user, onLogout, onNavigate, onUpdateUse
     } else {
       document.body.style.overflow = 'unset';
     }
+    return () => { document.body.style.overflow = 'unset'; };
   }, [showTeacherModal, showStudentModal, showLogoutConfirm, confirmDelete]);
 
   // Fetch initial data
@@ -148,14 +146,25 @@ export default function AdminDashboard({ user, onLogout, onNavigate, onUpdateUse
   const handleSaveStudent = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const res = await fetch('/api/students', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(studentForm)
-      });
-      const data = await res.json();
-      setStudents([...students, data.student]);
+      if (editingStudent) {
+        const res = await fetch(`/api/students/${editingStudent.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(studentForm)
+        });
+        const data = await res.json();
+        setStudents(students.map(s => s.id === editingStudent.id ? data.student : s));
+      } else {
+        const res = await fetch('/api/students', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(studentForm)
+        });
+        const data = await res.json();
+        setStudents([...students, data.student]);
+      }
       setShowStudentModal(false);
+      setEditingStudent(null);
       setStudentForm({ name: '', email: '', nisn: '', asalSekolah: '' });
     } catch (err) {
       console.error(err);
@@ -296,8 +305,8 @@ export default function AdminDashboard({ user, onLogout, onNavigate, onUpdateUse
       case 'students':
         return <StudentsView 
           students={students} studentSearch={studentSearch} setStudentSearch={setStudentSearch}
-          setShowStudentModal={setShowStudentModal} handleRestoreStudent={handleRestoreStudent}
-          handleDeleteStudent={handleDeleteStudent} exportToExcel={exportToExcel}
+          setShowStudentModal={setShowStudentModal} setEditingStudent={setEditingStudent} setStudentForm={setStudentForm}
+          handleRestoreStudent={handleRestoreStudent} handleDeleteStudent={handleDeleteStudent} exportToExcel={exportToExcel}
         />;
       case 'teachers':
         return <TeachersView 
@@ -473,7 +482,7 @@ export default function AdminDashboard({ user, onLogout, onNavigate, onUpdateUse
               className="modal-content"
               style={{ background: 'var(--surface)', padding: '32px', borderRadius: '16px', maxWidth: '500px', width: '100%', boxShadow: '0 10px 40px rgba(0,0,0,0.3)', margin: '20px' }}
             >
-              <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '20px', marginBottom: '20px' }}>Tambah Siswa</h2>
+              <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '20px', marginBottom: '20px' }}>{editingStudent ? 'Edit Siswa' : 'Tambah Siswa'}</h2>
               <form onSubmit={handleSaveStudent}>
                 <div style={{ marginBottom: '16px' }}>
                   <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: 500 }}>NISN</label>
@@ -493,7 +502,7 @@ export default function AdminDashboard({ user, onLogout, onNavigate, onUpdateUse
                 </div>
                 <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
                   <button type="button" className="btn btn-ghost" onClick={() => setShowStudentModal(false)}>Batal</button>
-                  <button type="submit" className="btn btn-primary">Simpan Siswa</button>
+                  <button type="submit" className="btn btn-primary">{editingStudent ? 'Simpan' : 'Simpan Siswa'}</button>
                 </div>
               </form>
             </motion.div>

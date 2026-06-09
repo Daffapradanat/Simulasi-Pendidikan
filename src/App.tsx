@@ -50,24 +50,11 @@ export default function App() {
     } else {
       document.body.style.overflow = 'unset';
     }
+    return () => { document.body.style.overflow = 'unset'; };
   }, [showAllDoneModal, showLogoutConfirm]);
 
   useEffect(() => {
-    fetch('/api/auth/me')
-      .then(res => res.json())
-      .then(data => {
-        if (data.user) {
-          setCurrentUser(data.user);
-          try {
-            const played = localStorage.getItem(`simpend_played_${data.user.id}`);
-            if (played) setPlayedGames(new Set(JSON.parse(played)));
-            const completed = localStorage.getItem(`simpend_completed_${data.user.id}`);
-            if (completed) setCompletedModuleIds(new Set(JSON.parse(completed)));
-          } catch(e) {}
-        }
-      })
-      .catch(() => {});
-      
+    // Intentionally skipped auto-login to ensure user sees login page on start
     fetchModules();
   }, []);
 
@@ -100,6 +87,13 @@ export default function App() {
       const data = await res.json();
       if (data.success) {
         setCurrentUser(data.user);
+        try {
+          const played = localStorage.getItem(`simpend_played_${data.user.id}`);
+          if (played) setPlayedGames(new Set(JSON.parse(played)));
+          const completed = localStorage.getItem(`simpend_completed_${data.user.id}`);
+          if (completed) setCompletedModuleIds(new Set(JSON.parse(completed)));
+        } catch(e) {}
+        fetchModules(); // Refresh modules from server after login
         showToast(`Selamat datang, ${data.user.name}!`, 'success');
       } else {
         showToast('Gagal masuk.', 'error');
