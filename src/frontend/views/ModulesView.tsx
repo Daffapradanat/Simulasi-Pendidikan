@@ -112,28 +112,28 @@ export function ModulesView({ modules, onOpenModule, lastModuleId }: { modules: 
             </div>
           ) : (
             currentModules.map(mod => (
-              <div key={mod.id} className={`module-card ${mod.status}`} onClick={() => onOpenModule(mod.id)}>
-              <div className="module-thumb" dangerouslySetInnerHTML={{ __html: MODULE_THUMBS[mod.id] || '' }} />
-              <div className="module-card-inner">
-                <div className="module-card-top">
-                  <div className="module-number">{modules.findIndex(m => m.id === mod.id) + 1}</div>
-                  {mod.status === 'locked' && <span className="module-lock-icon"><i className="ti ti-lock"></i></span>}
-                  {mod.status === 'completed' && <span className="badge badge-success"><i className="ti ti-check"></i> Selesai</span>}
-                  {mod.status === 'unlocked' && <span className="badge badge-primary"><i className="ti ti-lock-open"></i> Tersedia</span>}
-                </div>
-                <div className="module-card-body">
-                  <div className="module-card-title">{mod.title}</div>
-                  <div className="module-card-desc">{mod.desc}</div>
-                </div>
-                <div className="module-card-footer">
-                  <div className="module-meta">
-                    <i className="ti ti-device-gamepad-2"></i> {mod.gameCount} game &nbsp;·&nbsp; <i className="ti ti-clock"></i> {mod.duration}
+              <div key={mod.id} className={`module-card ${mod.status}`} onClick={() => { if (mod.status !== 'locked') onOpenModule(mod.id); }} style={{ cursor: mod.status === 'locked' ? 'not-allowed' : 'pointer', opacity: mod.status === 'locked' ? 0.7 : 1 }}>
+                <div className="module-thumb" dangerouslySetInnerHTML={{ __html: MODULE_THUMBS[mod.id] || '<div style="width:100%;height:100%;background:#0D1B2E;display:flex;align-items:center;justify-content:center;color:#64748b;"><i class="ti ti-photo" style="font-size:32px;"></i></div>' }} />
+                <div className="module-card-inner">
+                  <div className="module-card-top">
+                    <div className="module-number">{modules.findIndex(m => m.id === mod.id) + 1}</div>
+                    {mod.status === 'locked' && <span className="module-lock-icon"><i className="ti ti-lock"></i></span>}
+                    {mod.status === 'completed' && <span className="badge badge-success"><i className="ti ti-check"></i> Selesai</span>}
+                    {mod.status === 'unlocked' && <span className="badge badge-primary"><i className="ti ti-lock-open"></i> Tersedia</span>}
                   </div>
-                  <span className="module-level">{mod.level}</span>
+                  <div className="module-card-body">
+                    <div className="module-card-title">{mod.title}</div>
+                    <div className="module-card-desc">{mod.desc}</div>
+                  </div>
+                  <div className="module-card-footer">
+                    <div className="module-meta">
+                      <i className="ti ti-device-gamepad-2"></i> {mod.gameCount} game &nbsp;·&nbsp; <i className="ti ti-clock"></i> {mod.duration}
+                    </div>
+                    <span className="module-level">{mod.level}</span>
+                  </div>
                 </div>
               </div>
-            </div>
-          )))}
+            )))}
         </div>
 
         {totalPages > 1 && (
