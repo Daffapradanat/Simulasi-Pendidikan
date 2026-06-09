@@ -33,7 +33,7 @@ export function LoginView({ onLogin, defaultMode = 'siswa' }: { onLogin: (e: str
     <div className="login-page">
       <div className="login-card">
         <div className="login-logo">
-            <img src="https://upload.wikimedia.org/wikipedia/id/4/44/Logo_PENS.png" className="logo-img" alt="PENS Logo" />
+            <img src="/logo_pens.png" className="logo-img" alt="PENS Logo" />
             <div className="login-logo-text">
               SimPend
               <span>Website Simulasi Pendidikan 2025/2026</span>

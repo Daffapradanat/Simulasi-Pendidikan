@@ -1,10 +1,26 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Module } from '../../types';
 import { MODULE_THUMBS } from '../../data';
 
 // --- MODULES VIEW ---
 export function ModulesView({ modules, onOpenModule }: { modules: Module[], onOpenModule: (id: number) => void }) {
   const [searchQuery, setSearchQuery] = useState('');
+  const [currentPage, setCurrentPage] = useState(() => {
+    const saved = sessionStorage.getItem('simpend_module_page');
+    return saved ? parseInt(saved, 10) : 1;
+  });
+  
+  const ITEMS_PER_PAGE = 15;
+
+  useEffect(() => {
+    sessionStorage.setItem('simpend_module_page', currentPage.toString());
+  }, [currentPage]);
+
+  // Reset to page 1 on search
+  useEffect(() => {
+    if (searchQuery) setCurrentPage(1);
+  }, [searchQuery]);
+
   const completed = modules.filter(m => m.status === 'completed').length;
   const available = modules.filter(m => m.status === 'unlocked').length;
   const locked = modules.filter(m => m.status === 'locked').length;
@@ -14,6 +30,9 @@ export function ModulesView({ modules, onOpenModule }: { modules: Module[], onOp
     m.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
     m.desc.toLowerCase().includes(searchQuery.toLowerCase())
   );
+  
+  const totalPages = Math.ceil(filteredModules.length / ITEMS_PER_PAGE);
+  const currentModules = filteredModules.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
   
   return (
     <div className="page active">
@@ -69,13 +88,13 @@ export function ModulesView({ modules, onOpenModule }: { modules: Module[], onOp
         </div>
         
         <div className="modules-grid">
-          {filteredModules.length === 0 ? (
+          {currentModules.length === 0 ? (
             <div className="empty-state" style={{ gridColumn: '1 / -1' }}>
               <div className="empty-icon">🔍</div>
               <p>Modul tidak ditemukan untuk pencarian "{searchQuery}".</p>
             </div>
           ) : (
-            filteredModules.map(mod => (
+            currentModules.map(mod => (
               <div key={mod.id} className={`module-card ${mod.status}`} onClick={() => onOpenModule(mod.id)}>
               <div className="module-thumb" dangerouslySetInnerHTML={{ __html: MODULE_THUMBS[mod.id] || '' }} />
               <div className="module-card-inner">
@@ -99,6 +118,30 @@ export function ModulesView({ modules, onOpenModule }: { modules: Module[], onOp
             </div>
           )))}
         </div>
+
+        {totalPages > 1 && (
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', marginTop: '32px' }}>
+            <button 
+              className="btn btn-outline" 
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+              style={{ padding: '8px 12px' }}
+            >
+              <i className="ti ti-chevron-left"></i>
+            </button>
+            <span style={{ fontSize: '14px', fontWeight: 500, color: 'var(--text)', padding: '0 8px' }}>
+              Halaman {currentPage} dari {totalPages}
+            </span>
+            <button 
+              className="btn btn-outline" 
+              disabled={currentPage === totalPages}
+              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+              style={{ padding: '8px 12px' }}
+            >
+              <i className="ti ti-chevron-right"></i>
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

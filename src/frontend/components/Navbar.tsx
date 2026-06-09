@@ -11,7 +11,7 @@ export function Navbar({ user, onLogout, viewMode, inDetail, onNavigate }: { use
     <>
       <nav className="navbar">
         <div className="navbar-logo">
-          <img src="https://upload.wikimedia.org/wikipedia/id/4/44/Logo_PENS.png" className="logo-img" alt="PENS Logo URL" />
+          <img src="/logo_pens.png" className="logo-img" alt="PENS Logo URL" />
           <div className="logo-text">
             SimPend
             <span>Simulasi Pendidikan 2025/2026</span>

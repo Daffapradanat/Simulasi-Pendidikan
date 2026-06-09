@@ -93,6 +93,14 @@ export default function App() {
     if (currentUser) {
       localStorage.setItem(`simpend_played_${currentUser.id}`, JSON.stringify(Array.from(playedGames)));
       localStorage.setItem(`simpend_completed_${currentUser.id}`, JSON.stringify(Array.from(completedModuleIds)));
+      
+      let roleTitle = currentUser.role;
+      if (roleTitle === 'siswa') roleTitle = 'Siswa';
+      else if (roleTitle === 'guru') roleTitle = 'Guru';
+      else if (roleTitle === 'admin') roleTitle = 'Admin';
+      document.title = `SimPend \u2014 ${roleTitle}`;
+    } else {
+      document.title = 'SimPend \u2014 Website Simulasi Pendidikan 2025/2026';
     }
   }, [playedGames, completedModuleIds, currentUser]);
 
@@ -118,12 +126,8 @@ export default function App() {
       fetchModules();
       showToast(`Selamat datang, ${user.name}!`, 'success');
       
-      // Redirect based on role
-      if (user.role === 'admin' || user.role === 'guru') {
-        navigate('/admin');
-      } else {
-        navigate('/');
-      }
+      // Redirect to frontend
+      navigate('/');
     } else {
       showToast('Username/Email atau password salah.', 'error');
     }
@@ -201,15 +205,15 @@ export default function App() {
     <>
       <Routes>
         <Route path="/login" element={
-          currentUser ? (currentUser.role === 'siswa' ? <Navigate to="/" replace /> : <Navigate to="/admin" replace />) :
-          <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} transition={{ duration: 0.3 }}>
+          currentUser ? <Navigate to="/" replace /> :
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={{ type: 'spring', stiffness: 260, damping: 20 }}>
             <LoginView onLogin={(e, p, r) => handleLogin(e, p, r, 'siswa')} defaultMode="siswa" />
           </motion.div>
         } />
         
         <Route path="/admin/login" element={
-          currentUser ? (currentUser.role === 'siswa' ? <Navigate to="/" replace /> : <Navigate to="/admin" replace />) :
-          <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} transition={{ duration: 0.3 }}>
+          currentUser ? <Navigate to="/" replace /> :
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={{ type: 'spring', stiffness: 260, damping: 20 }}>
             <LoginView onLogin={(e, p, r) => handleLogin(e, p, r, 'guru')} defaultMode="guru" />
           </motion.div>
         } />
@@ -245,7 +249,7 @@ export default function App() {
 
               <AnimatePresence mode="wait">
                 {viewMode === 'main' && !currentModuleId && (
-                  <motion.div key="modules" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} transition={{ duration: 0.3 }}>
+                  <motion.div key="modules" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={{ type: 'spring', stiffness: 260, damping: 20 }}>
                     <ModulesView 
                       modules={computedModules} 
                       onOpenModule={handleOpenModule} 
@@ -254,7 +258,7 @@ export default function App() {
                 )}
 
                 {viewMode === 'main' && currentModuleId && currentModule && (
-                  <motion.div key="detail" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} transition={{ duration: 0.3 }}>
+                  <motion.div key="detail" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={{ type: 'spring', stiffness: 260, damping: 20 }}>
                     <DetailView 
                       module={currentModule}
                       onBack={() => {
@@ -271,7 +275,7 @@ export default function App() {
                 )}
 
                 {viewMode === 'profile' && (
-                  <motion.div key="profile" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} transition={{ duration: 0.3 }}>
+                  <motion.div key="profile" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={{ type: 'spring', stiffness: 260, damping: 20 }}>
                      <ProfileView user={currentUser} completedModuleIds={completedModuleIds} modules={appModules} />
                   </motion.div>
                 )}
