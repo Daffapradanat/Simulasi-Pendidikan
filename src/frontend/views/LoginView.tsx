@@ -203,14 +203,28 @@ export function LoginView({ onLogin, defaultMode = 'siswa' }: { onLogin: (e: str
             </div>
             
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '16px' }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '14px', color: '#4b5563', fontWeight: 500, userSelect: 'none' }}>
-                <input 
-                  type="checkbox" 
-                  checked={rememberMe} 
-                  onChange={e => setRememberMe(e.target.checked)} 
-                  style={{ width: '18px', height: '18px', accentColor: 'var(--primary)', cursor: 'pointer', margin: 0, borderRadius: '4px' }}
-                />
-                Ingat Saya
+              <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', userSelect: 'none' }}>
+                <div style={{
+                  width: '22px', 
+                  height: '22px', 
+                  borderRadius: '6px', 
+                  border: rememberMe ? '2px solid var(--primary)' : '2px solid var(--border)', 
+                  background: rememberMe ? 'var(--primary)' : 'white',
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'center',
+                  transition: 'all 0.2s ease',
+                  boxShadow: rememberMe ? '0 2px 8px rgba(13, 71, 161, 0.2)' : 'none'
+                }}>
+                  <input 
+                    type="checkbox" 
+                    checked={rememberMe} 
+                    onChange={e => setRememberMe(e.target.checked)} 
+                    style={{ position: 'absolute', opacity: 0, width: 0, height: 0, margin: 0 }}
+                  />
+                  {rememberMe && <i className="ti ti-check" style={{ color: 'white', fontSize: '14px', fontWeight: 'bold' }}></i>}
+                </div>
+                <span style={{ fontSize: '14px', color: 'var(--text)', fontWeight: 500 }}>Ingat Saya</span>
               </label>
               {(defaultMode === 'admin' || defaultMode === 'guru') ? (
                 <button 

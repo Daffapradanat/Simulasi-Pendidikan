@@ -30,8 +30,8 @@ export function Navbar({ user, onLogout, viewMode, inDetail, onNavigate }: { use
         )}
         {user && (
           <div className="navbar-user">
-            <div className="navbar-avatar">
-              <span>{user.name.charAt(0)}</span>
+            <div className="navbar-avatar" style={{ background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)', color: 'white', border: '2px solid rgba(255,255,255,0.8)' }}>
+              <i className="ti ti-user" style={{ fontSize: '16px' }}></i>
             </div>
             <span className="navbar-username">{user.name}</span>
           </div>

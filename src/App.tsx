@@ -29,6 +29,7 @@ export default function App() {
   const [playedGames, setPlayedGames] = useState<Set<number>>(new Set());
   const [completedModuleIds, setCompletedModuleIds] = useState<Set<number>>(new Set());
   const [showAllDoneModal, setShowAllDoneModal] = useState(false);
+  const [completedModulePopup, setCompletedModulePopup] = useState<Module | null>(null);
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   
@@ -84,13 +85,13 @@ export default function App() {
   }, [completedModuleIds, appModules]);
 
   useEffect(() => {
-    if (showAllDoneModal || showLogoutConfirm) {
+    if (showAllDoneModal || showLogoutConfirm || completedModulePopup) {
       document.body.style.overflow = 'hidden';
     } else {
       document.body.style.overflow = 'unset';
     }
     return () => { document.body.style.overflow = 'unset'; };
-  }, [showAllDoneModal, showLogoutConfirm]);
+  }, [showAllDoneModal, showLogoutConfirm, completedModulePopup]);
 
   useEffect(() => {
     // Check auto-login if remember me was checked
@@ -110,10 +111,30 @@ export default function App() {
     // Only poll if not currently playing a module
     if (currentModuleId !== null) return;
     
-    const interval = setInterval(() => {
-      fetchModules();
-    }, 5000);
-    return () => clearInterval(interval);
+    let interval: NodeJS.Timeout;
+    
+    const startPolling = () => {
+      interval = setInterval(() => {
+        if (document.visibilityState === 'visible') {
+          fetchModules();
+        }
+      }, 15000); // 15 seconds saves resources
+    };
+    
+    startPolling();
+    
+    const handleVisChange = () => {
+      if (document.visibilityState === 'visible') {
+        fetchModules(); // Fetch immediately when tab becomes active
+      }
+    };
+    
+    document.addEventListener('visibilitychange', handleVisChange);
+    
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', handleVisChange);
+    };
   }, [currentModuleId]);
 
   const refreshUserData = (user: User) => {
@@ -177,12 +198,9 @@ export default function App() {
       let user = data.user || data.foundUser; // if returned differently
       if (!user) user = data; // fallback
       
-      // If user tries to login with admin using siswa login page or vice versa
-      if (mode === 'admin' && user.role !== 'admin') {
-         throw new Error("Akun bukan administrator.");
-      }
-      if (mode === 'siswa' && user.role === 'admin') {
-         throw new Error("Admin tidak bisa login melalui halaman siswa.");
+      if (user) {
+        // If an admin/guru attempts to login through "siswa" page, they will just be redirected to their dashboard.
+        // It's more convenient this way.
       }
 
       setLoginAttempts(0);
@@ -198,7 +216,7 @@ export default function App() {
       showToast(`Selamat datang, ${user.name}!`, 'success');
       
       // Redirect based on login mode
-      if (mode === 'admin' && user.role === 'admin') {
+      if (user.role === 'admin' || user.role === 'guru') {
         navigate('/admin');
       } else {
         navigate('/');
@@ -280,16 +298,14 @@ export default function App() {
       const next = new Set(prev).add(currentModule.id);
       if (next.size === appModules.length) {
          setShowAllDoneModal(true);
+      } else {
+         setCompletedModulePopup(currentModule);
       }
       return next;
     });
     setActiveGameId(null);
-    showToast(`✓ Modul "${currentModule.title}" selesai! Modul berikutnya terbuka.`, 'success');
-    
-    setTimeout(() => {
-      setCurrentModuleId(null);
-      setPlayedGames(new Set());
-    }, 1800);
+    setCurrentModuleId(null); // Return to module list immediately
+    setPlayedGames(new Set()); // Reset played games sequence
   };
 
   return (
@@ -311,7 +327,7 @@ export default function App() {
 
         <Route path="/admin" element={
           !currentUser ? <Navigate to="/admin/login" replace /> :
-          (currentUser.role === 'admin' ? 
+          ((currentUser.role === 'admin' || currentUser.role === 'guru') ? 
             <AdminDashboard 
               user={currentUser} 
               onLogout={handleLogout} 
@@ -378,6 +394,32 @@ export default function App() {
       </Routes>
 
       <AnimatePresence>
+        {completedModulePopup && (
+          <motion.div 
+            className="modal-overlay" 
+            initial={{ opacity: 0 }} 
+            animate={{ opacity: 1 }} 
+            exit={{ opacity: 0 }}
+            style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+          >
+            <motion.div 
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ delay: 0.1, type: 'spring', damping: 20 }}
+              exit={{ scale: 0.8, opacity: 0 }}
+              className="modal-content"
+              style={{ background: 'white', padding: '36px', borderRadius: '20px', maxWidth: '420px', textAlign: 'center', boxShadow: '0 10px 40px rgba(0,0,0,0.3)', margin: '20px' }}
+            >
+              <div style={{ fontSize: '48px', color: 'var(--success)', marginBottom: '16px' }}><i className="ti ti-circle-check-filled"></i></div>
+              <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '24px', color: 'var(--success)', marginBottom: '12px' }}>Selamat!</h2>
+              <p style={{ color: 'var(--text-muted)', marginBottom: '28px', lineHeight: 1.5 }}>Kamu telah menyelesaikan modul <strong>{completedModulePopup.title}</strong>.</p>
+              <button className="btn btn-primary btn-full btn-lg" onClick={() => setCompletedModulePopup(null)}>
+                Lanjut ke Modul Berikutnya
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+
         {showAllDoneModal && (
           <motion.div 
             className="modal-overlay" 

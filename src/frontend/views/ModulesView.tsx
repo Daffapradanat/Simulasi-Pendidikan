@@ -177,7 +177,17 @@ export function ModulesView({ modules, onOpenModule, lastModuleId }: { modules: 
                   </div>
                   <div className="module-card-body">
                     <div className="module-card-title">{mod.title}</div>
-                    <div className="module-card-desc">{mod.desc}</div>
+                    <div className="module-card-desc">
+                      <div style={{ marginBottom: (mod.material && typeof mod.material === 'object' && mod.material.theory) ? '8px' : '0' }}>
+                        <strong>Deskripsi:</strong> {mod.desc}
+                      </div>
+                      {(mod.material && typeof mod.material === 'object' && mod.material.theory) && (
+                        <div>
+                          <strong>Materi:</strong>{' '}
+                          <div style={{ display: 'inline' }} dangerouslySetInnerHTML={{ __html: mod.material.theory.replace(/<[^>]+>/g, '').substring(0, 80) + '...' }}></div>
+                        </div>
+                      )}
+                    </div>
                   </div>
                   <div className="module-card-footer">
                     <div className="module-meta">

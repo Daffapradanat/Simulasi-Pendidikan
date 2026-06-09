@@ -15,12 +15,12 @@ export default function ProfileView({
           <div style={{ height: '120px', background: 'linear-gradient(135deg, var(--primary), var(--primary-dark))' }}></div>
           <div style={{ padding: '0 32px 32px', position: 'relative' }}>
             <div style={{ 
-              width: '100px', height: '100px', borderRadius: '50%', background: 'white', 
+              width: '100px', height: '100px', borderRadius: '50%', background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)', 
               display: 'flex', alignItems: 'center', justifyContent: 'center', 
               marginTop: '-50px', border: '5px solid white', boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
-              color: 'var(--primary)', fontSize: '36px', fontWeight: 800, marginBottom: '20px'
+              color: 'white', marginBottom: '20px'
             }}>
-              {user.name.charAt(0).toUpperCase()}
+              <i className="ti ti-user" style={{ fontSize: '48px' }}></i>
             </div>
             
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
