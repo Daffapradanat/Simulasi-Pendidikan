@@ -45,8 +45,17 @@ if (fs.existsSync(DB_FILE)) {
   teachersData = [];
   studentsData = [];
   activitiesData = [];
-  saveDb();
 }
+
+// Add example users if missing
+if (!studentsData.find(s => s.id === 1)) {
+  studentsData.push({ id: 1, name: "Siswa Siswi", email: "siswa@sekolah.sch.id", nisn: "1234567890", asalSekolah: "SMP Negeri 1", progress: 0 });
+}
+if (!teachersData.find(t => t.id === 2)) {
+  teachersData.push({ id: 2, name: "Guru Pengajar", email: "guru@sekolah.sch.id", nip: "198001012005011001", subject: "Ilmu Pengetahuan Alam" });
+}
+
+saveDb();
 
 function saveDb() {
   fs.writeFileSync(DB_FILE, JSON.stringify({ modules: modulesData, teachers: teachersData, students: studentsData, activities: activitiesData }, null, 2));
@@ -87,14 +96,42 @@ async function startServer() {
   app.post("/api/auth/login", (req, res) => {
     const { email, password } = req.body;
     
-    // --- TEMPORARY MOCK DATABASE ---
-    // Nanti bisa disambungkan ke database beneran (seperti MySQL/PostgreSQL/MongoDB)
-    const mockUsers = [
-      { id: 1, name: "Siswa Siswi", username: "siswa", email: "siswa@sekolah.sch.id", password: "siswa", role: "siswa" },
-      { id: 2, name: "Guru Pengajar", username: "guru", email: "guru@sekolah.sch.id", password: "guru", role: "guru" }
-    ];
-
-    const foundUser = mockUsers.find(u => (u.email === email || u.username === email) && u.password === password);
+    let foundUser = null;
+    
+    // Check Admin
+    if (email === 'admin' && password === 'admin') {
+      foundUser = { id: 3, name: "Administrator", email: "admin@sekolah.sch.id", role: "admin" };
+    }
+    
+    // Check Students
+    if (!foundUser) {
+      const student = studentsData.find(s => !s.isDeleted && s.email === email);
+      // For simplicity, allow password to be 'siswa' for any student, or their email prefix if they don't have a password set. But since they are mock users, let's allow 'siswa' as a fallback password for the student account.
+      // Wait, let's assume the user wants `siswa` password `siswa` to login as student.
+      const isStudentPasswordValid = (email === 'siswa@sekolah.sch.id' && password === 'siswa') || (student && password === 'siswa');
+      if (student && isStudentPasswordValid) {
+        foundUser = { ...student, role: "siswa" };
+      } else if (email === 'siswa' && password === 'siswa') {
+         // Fallback if no student
+         const s = studentsData.find(s => s.id === 1);
+         if (s) foundUser = { ...s, role: "siswa" };
+         else foundUser = { id: 1, name: "Siswa Siswi", email: "siswa@sekolah.sch.id", role: "siswa" };
+      }
+    }
+    
+    // Check Teachers
+    if (!foundUser) {
+      const teacher = teachersData.find(t => !t.isDeleted && t.email === email);
+      const isTeacherPasswordValid = (email === 'guru@sekolah.sch.id' && password === 'guru') || (teacher && password === 'guru');
+      if (teacher && isTeacherPasswordValid) {
+        foundUser = { ...teacher, role: "guru" };
+      } else if (email === 'guru' && password === 'guru') {
+         // Fallback if no teacher
+         const t = teachersData.find(t => t.id === 2);
+         if (t) foundUser = { ...t, role: "guru" };
+         else foundUser = { id: 2, name: "Guru Pengajar", email: "guru@sekolah.sch.id", role: "guru" };
+      }
+    }
 
     if (!foundUser) {
       return res.status(401).json({ success: false, error: "Email atau password salah." });

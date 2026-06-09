@@ -202,13 +202,13 @@ export function LoginView({ onLogin, defaultMode = 'siswa' }: { onLogin: (e: str
               </button>
             </div>
             
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '12px' }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '13px', color: 'var(--text-muted)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '16px' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '14px', color: '#4b5563', fontWeight: 500, userSelect: 'none' }}>
                 <input 
                   type="checkbox" 
                   checked={rememberMe} 
                   onChange={e => setRememberMe(e.target.checked)} 
-                  style={{ width: '16px', height: '16px', accentColor: 'var(--primary)', cursor: 'pointer', margin: 0 }}
+                  style={{ width: '18px', height: '18px', accentColor: 'var(--primary)', cursor: 'pointer', margin: 0, borderRadius: '4px' }}
                 />
                 Ingat Saya
               </label>

@@ -58,25 +58,28 @@ export function DetailView({
         
         <div className="detail-layout">
           <div className="detail-main">
-            {module.material && (
-              <div className="section-card material-card">
-                <div className="section-card-title">
-                  <i className="ti ti-book-2"></i> Materi Pembelajaran
-                  <span className="step-chip">Langkah 1</span>
-                </div>
-                
-                <div className="material-block">
-                  <div className="material-subtitle"><i className="ti ti-target"></i> Tujuan Pembelajaran</div>
-                  <ul className="material-objectives">
-                    {module.material.objectives.map((obj, i) => <li key={i}>{obj}</li>)}
-                  </ul>
-                </div>
-                
-                <div className="material-block">
-                  <div className="material-subtitle"><i className="ti ti-file-text"></i> Materi Singkat</div>
-                  <div className="material-theory" dangerouslySetInnerHTML={{ __html: module.material.theory }} />
-                </div>
-                
+            <div className="section-card material-card" style={{ marginBottom: '24px' }}>
+              <div className="section-card-title">
+                <i className="ti ti-book-2"></i> Materi Pembelajaran
+                <span className="step-chip">Langkah 1</span>
+              </div>
+              
+              <div className="material-block">
+                <div className="material-subtitle"><i className="ti ti-target"></i> Tujuan Pembelajaran</div>
+                <ul className="material-objectives">
+                  {module.material && typeof module.material === 'object' && !Array.isArray(module.material) && module.material.objectives ? 
+                    module.material.objectives.map((obj, i) => <li key={i}>{obj}</li>) : 
+                    <li style={{ color: 'var(--text-muted)' }}>Belum ada tujuan pembelajaran.</li>
+                  }
+                </ul>
+              </div>
+              
+              <div className="material-block">
+                <div className="material-subtitle"><i className="ti ti-file-text"></i> Materi Singkat</div>
+                <div className="material-theory" dangerouslySetInnerHTML={{ __html: (module.material && typeof module.material === 'object' && !Array.isArray(module.material) && module.material.theory) || '<span style="color:var(--text-muted)">Belum ada materi pembelajaran yang ditambahkan.</span>' }} />
+              </div>
+              
+              {(module.material && typeof module.material === 'object' && !Array.isArray(module.material) && module.material.keyTerms && module.material.keyTerms.length > 0) && (
                 <div className="material-block" style={{ marginBottom: 0 }}>
                   <div className="material-subtitle"><i className="ti ti-vocabulary"></i> Istilah Kunci</div>
                   <div className="material-terms">
@@ -88,8 +91,8 @@ export function DetailView({
                     ))}
                   </div>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
             
             <div className="section-card">
               <div className="section-card-title">

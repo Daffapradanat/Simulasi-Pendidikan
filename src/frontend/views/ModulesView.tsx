@@ -2,6 +2,33 @@ import React, { useState, useEffect } from 'react';
 import { Module } from '../../types';
 import { MODULE_THUMBS } from '../../data';
 
+const getFallbackThumb = (id: number) => {
+  const themes = [
+    { bg: '#0f172a', g1: '#3b82f6', g2: '#1d4ed8' },
+    { bg: '#312e81', g1: '#8b5cf6', g2: '#6d28d9' },
+    { bg: '#064e3b', g1: '#10b981', g2: '#059669' },
+    { bg: '#831843', g1: '#f43f5e', g2: '#be123c' },
+    { bg: '#451a03', g1: '#f59e0b', g2: '#d97706' }
+  ];
+  const t = themes[id % themes.length];
+  return `<svg viewBox="0 0 280 140" xmlns="http://www.w3.org/2000/svg">
+    <rect width="280" height="140" fill="${t.bg}"/>
+    <rect x="0" y="0" width="280" height="140" fill="url(#g${id})" opacity="0.6"/>
+    <defs>
+      <linearGradient id="g${id}" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stop-color="${t.g1}"/>
+        <stop offset="100%" stop-color="${t.g2}"/>
+      </linearGradient>
+      <pattern id="pat${id}" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse">
+        <circle cx="2" cy="2" r="1.5" fill="rgba(255,255,255,0.1)"/>
+      </pattern>
+    </defs>
+    <rect width="280" height="140" fill="url(#pat${id})"/>
+    <circle cx="140" cy="70" r="30" fill="rgba(255,255,255,0.1)" stroke="rgba(255,255,255,0.2)" stroke-width="2"/>
+    <circle cx="140" cy="70" r="15" fill="rgba(255,255,255,0.2)"/>
+  </svg>`;
+};
+
 const renderLevelBadge = (level: string) => {
   let style: React.CSSProperties = { fontSize: '11px', fontWeight: 700, padding: '4px 10px', borderRadius: '100px', whiteSpace: 'nowrap', letterSpacing: '0.3px', margin: 0, display: 'inline-flex', alignItems: 'center', gap: '4px' };
   let icon = 'ti-school';
@@ -140,7 +167,7 @@ export function ModulesView({ modules, onOpenModule, lastModuleId }: { modules: 
           ) : (
             currentModules.map(mod => (
               <div key={mod.id} className={`module-card ${mod.status}`} onClick={() => { if (mod.status !== 'locked') onOpenModule(mod.id); }} style={{ cursor: mod.status === 'locked' ? 'not-allowed' : 'pointer', opacity: mod.status === 'locked' ? 0.7 : 1 }}>
-                <div className="module-thumb" dangerouslySetInnerHTML={{ __html: MODULE_THUMBS[mod.id] || '<div style="width:100%;height:100%;background:#0D1B2E;display:flex;align-items:center;justify-content:center;color:#64748b;"><i class="ti ti-photo" style="font-size:32px;"></i></div>' }} />
+                <div className="module-thumb" dangerouslySetInnerHTML={{ __html: MODULE_THUMBS[mod.id] || getFallbackThumb(mod.id) }} />
                 <div className="module-card-inner">
                   <div className="module-card-top">
                     <div className="module-number">{modules.findIndex(m => m.id === mod.id) + 1}</div>

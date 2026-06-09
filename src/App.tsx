@@ -15,7 +15,13 @@ export default function App() {
   const navigate = useNavigate();
   const location = useLocation();
   const [viewMode, setViewMode] = useState<'main' | 'profile'>('main');
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [currentUser, setCurrentUser] = useState<User | null>(() => {
+    const saved = localStorage.getItem('simpend_current_user');
+    if (saved) {
+      try { return JSON.parse(saved); } catch (e) {}
+    }
+    return null;
+  });
   const [appModules, setAppModules] = useState<Module[]>([]);
   const [lastModuleId, setLastModuleId] = useState<number | null>(null);
   const [currentModuleId, setCurrentModuleId] = useState<number | null>(null);
@@ -99,6 +105,17 @@ export default function App() {
     fetchModules();
   }, []);
 
+  // Polling for new modules
+  useEffect(() => {
+    // Only poll if not currently playing a module
+    if (currentModuleId !== null) return;
+    
+    const interval = setInterval(() => {
+      fetchModules();
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [currentModuleId]);
+
   const refreshUserData = (user: User) => {
     try {
       const played = localStorage.getItem(`simpend_played_${user.id}`);
@@ -123,6 +140,7 @@ export default function App() {
 
   useEffect(() => {
     if (currentUser) {
+      localStorage.setItem('simpend_current_user', JSON.stringify(currentUser));
       localStorage.setItem(`simpend_played_${currentUser.id}`, JSON.stringify(Array.from(playedGames)));
       localStorage.setItem(`simpend_completed_${currentUser.id}`, JSON.stringify(Array.from(completedModuleIds)));
       
@@ -143,20 +161,33 @@ export default function App() {
       return;
     }
 
-    // Menggunakan mock system sementara, tanpa memanggil API /api/auth/login
-    let user = null;
-    if (mode === 'siswa' && (email === 'siswa' || email === 'siswa@sekolah.sch.id') && pass === 'siswa') {
-      user = { id: 1, name: "Siswa Siswi", email: "siswa@sekolah.sch.id", role: "siswa" };
-    } else if (mode === 'guru' && (email === 'guru' || email === 'guru@sekolah.sch.id') && pass === 'guru') {
-      user = { id: 2, name: "Guru Pengajar", email: "guru@sekolah.sch.id", role: "guru" };
-    } else if (email === 'admin' && pass === 'admin') {
-      user = { id: 3, name: "Administrator", email: "admin@sekolah.sch.id", role: "admin" };
-    }
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password: pass })
+      });
+      
+      const data = await res.json();
+      
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Login gagal.');
+      }
+      
+      let user = data.user || data.foundUser; // if returned differently
+      if (!user) user = data; // fallback
+      
+      // If user tries to login with admin using siswa login page or vice versa
+      if (mode === 'admin' && user.role !== 'admin') {
+         throw new Error("Akun bukan administrator.");
+      }
+      if (mode === 'siswa' && user.role === 'admin') {
+         throw new Error("Admin tidak bisa login melalui halaman siswa.");
+      }
 
-    if (user) {
       setLoginAttempts(0);
       setLoginBlockTime(null);
-      setCurrentUser(user as any);
+      setCurrentUser(user);
       if (remember) {
         localStorage.setItem('simpend_auto_login', JSON.stringify(user));
       } else {
@@ -166,26 +197,27 @@ export default function App() {
       fetchModules();
       showToast(`Selamat datang, ${user.name}!`, 'success');
       
-      // Redirect based on role
-      if (user.role === 'admin') {
+      // Redirect based on login mode
+      if (mode === 'admin' && user.role === 'admin') {
         navigate('/admin');
       } else {
         navigate('/');
       }
-    } else {
+    } catch (err: any) {
       const newAttempts = loginAttempts + 1;
       setLoginAttempts(newAttempts);
       if (newAttempts >= 5) {
         setLoginBlockTime(Date.now() + 60000); // 1 minute block
         showToast('Terlalu banyak percobaan gagal. Akun diblokir sementara.', 'error');
       } else {
-        showToast('Username/Email atau password salah.', 'error');
+        showToast(err.message || 'Username/Email atau password salah.', 'error');
       }
     }
   };
 
   const handleLogout = async () => {
     localStorage.removeItem('simpend_auto_login');
+    localStorage.removeItem('simpend_current_user');
     setCurrentUser(null);
     setCurrentModuleId(null);
     setActiveGameId(null);
@@ -264,14 +296,14 @@ export default function App() {
     <>
       <Routes>
         <Route path="/login" element={
-          currentUser ? (currentUser.role === 'admin' ? <Navigate to="/admin" replace /> : <Navigate to="/" replace />) :
+          currentUser ? <Navigate to="/" replace /> :
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}>
             <LoginView onLogin={(e, p, r) => handleLogin(e, p, r, 'siswa')} defaultMode="siswa" />
           </motion.div>
         } />
         
         <Route path="/admin/login" element={
-          currentUser ? (currentUser.role === 'admin' ? <Navigate to="/admin" replace /> : <Navigate to="/" replace />) :
+          currentUser ? <Navigate to="/admin" replace /> :
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}>
             <LoginView onLogin={(e, p, r) => handleLogin(e, p, r, 'admin')} defaultMode="admin" />
           </motion.div>
