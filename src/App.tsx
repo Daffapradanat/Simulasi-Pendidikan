@@ -149,10 +149,10 @@ export default function App() {
       user = { id: 1, name: "Siswa Siswi", email: "siswa@sekolah.sch.id", role: "siswa" };
     } else if (mode === 'guru' && (email === 'guru' || email === 'guru@sekolah.sch.id') && pass === 'guru') {
       user = { id: 2, name: "Guru Pengajar", email: "guru@sekolah.sch.id", role: "guru" };
-    } else if (email === 'admin' && pass === 'admin') {
+    } else if (mode === 'admin' && email === 'admin' && pass === 'admin') {
       user = { id: 3, name: "Administrator", email: "admin@sekolah.sch.id", role: "admin" };
     }
-    
+
     if (user) {
       setLoginAttempts(0);
       setLoginBlockTime(null);

@@ -1,6 +1,28 @@
 import React, { useState, useEffect } from 'react';
 import { Module } from '../../types';
-import { MODULE_THUMBS } from '../../data';
+
+const THUMB_IMAGES: Record<number, string> = {
+  1: 'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?auto=format&fit=crop&w=600&q=80',
+  2: 'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=600&q=80',
+  3: 'https://images.unsplash.com/photo-1532094349884-543bc11b234d?auto=format&fit=crop&w=600&q=80',
+  4: 'https://images.unsplash.com/photo-1509062522246-3755977927d7?auto=format&fit=crop&w=600&q=80',
+  5: 'https://images.unsplash.com/photo-1542626991-cbc4e32524cc?auto=format&fit=crop&w=600&q=80',
+};
+
+const renderLevelBadge = (level: string) => {
+  let style: React.CSSProperties = { fontSize: '11px', fontWeight: 700, padding: '4px 10px', borderRadius: '100px', whiteSpace: 'nowrap', letterSpacing: '0.3px', margin: 0, display: 'inline-flex', alignItems: 'center', gap: '4px' };
+  let icon = 'ti-school';
+  if (level.toUpperCase().includes('SD')) {
+    style = { ...style, background: '#dc2626', color: '#ffffff', border: '1px solid #b91c1c' };
+  } else if (level.toUpperCase().includes('SMP')) {
+    style = { ...style, background: '#0284c7', color: '#ffffff', border: '1px solid #0369a1' };
+  } else if (level.toUpperCase().includes('SMA')) {
+    style = { ...style, background: '#f3f4f6', color: '#111827', border: '1px solid #e5e7eb' };
+  } else {
+    style = { ...style, background: 'var(--primary-light)', color: 'var(--primary)' };
+  }
+  return <span style={style}><i className={`ti ${icon}`}></i> {level}</span>;
+}
 
 // --- MODULES VIEW ---
 export function ModulesView({ modules, onOpenModule, lastModuleId }: { modules: Module[], onOpenModule: (id: number) => void, lastModuleId: number | null }) {
@@ -76,18 +98,30 @@ export function ModulesView({ modules, onOpenModule, lastModuleId }: { modules: 
         </div>
 
         {lastModuleId && modules.find(m => m.id === lastModuleId) && (
-          <div className="section-card" style={{ marginBottom: '24px', background: 'var(--primary-light)', borderColor: 'var(--primary)', padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'var(--primary)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>
-                <i className="ti ti-player-play"></i>
+          <div className="section-card continue-session-card" style={{ 
+            marginBottom: '28px', 
+            background: 'var(--primary)', 
+            color: 'white',
+            border: 'none', 
+            padding: '20px 24px', 
+            display: 'flex', 
+            flexWrap: 'wrap',
+            alignItems: 'center', 
+            justifyContent: 'space-between',
+            gap: '16px',
+            boxShadow: '0 8px 24px rgba(13,71,161,0.2)'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flex: '1 1 min-content' }}>
+              <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: 'rgba(255,255,255,0.2)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', flexShrink: 0 }}>
+                <i className="ti ti-player-play-filled"></i>
               </div>
-              <div>
-                <div style={{ fontSize: '13px', color: 'var(--primary)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '2px' }}>Mode Lanjutkan</div>
-                <div style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text-dark)' }}>{modules.find(m => m.id === lastModuleId)?.title}</div>
+              <div style={{ minWidth: '150px' }}>
+                <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.8)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '4px' }}>Lanjutkan Sesi Terakhir</div>
+                <div style={{ fontSize: '18px', fontWeight: 700, color: 'white', lineHeight: 1.3 }}>{modules.find(m => m.id === lastModuleId)?.title}</div>
               </div>
             </div>
-            <button className="btn btn-primary" onClick={() => onOpenModule(lastModuleId)}>
-              Lanjutkan Sesi
+            <button className="btn" style={{ background: 'white', color: 'var(--primary)', fontWeight: 700, padding: '10px 20px', whiteSpace: 'nowrap', border: 'none' }} onClick={() => onOpenModule(lastModuleId)}>
+              Lanjutkan Sekarang <i className="ti ti-arrow-right"></i>
             </button>
           </div>
         )}
@@ -113,7 +147,13 @@ export function ModulesView({ modules, onOpenModule, lastModuleId }: { modules: 
           ) : (
             currentModules.map(mod => (
               <div key={mod.id} className={`module-card ${mod.status}`} onClick={() => { if (mod.status !== 'locked') onOpenModule(mod.id); }} style={{ cursor: mod.status === 'locked' ? 'not-allowed' : 'pointer', opacity: mod.status === 'locked' ? 0.7 : 1 }}>
-                <div className="module-thumb" dangerouslySetInnerHTML={{ __html: MODULE_THUMBS[mod.id] || '<div style="width:100%;height:100%;background:#0D1B2E;display:flex;align-items:center;justify-content:center;color:#64748b;"><i class="ti ti-photo" style="font-size:32px;"></i></div>' }} />
+                <div className="module-thumb">
+                  {THUMB_IMAGES[mod.id] ? (
+                    <img src={THUMB_IMAGES[mod.id]} alt={mod.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  ) : (
+                    <div style={{width:'100%',height:'100%',background:'#0D1B2E',display:'flex',alignItems:'center',justifyContent:'center',color:'#64748b'}}><i className="ti ti-photo" style={{fontSize:'32px'}}></i></div>
+                  )}
+                </div>
                 <div className="module-card-inner">
                   <div className="module-card-top">
                     <div className="module-number">{modules.findIndex(m => m.id === mod.id) + 1}</div>
@@ -129,7 +169,7 @@ export function ModulesView({ modules, onOpenModule, lastModuleId }: { modules: 
                     <div className="module-meta">
                       <i className="ti ti-device-gamepad-2"></i> {mod.gameCount} game &nbsp;·&nbsp; <i className="ti ti-clock"></i> {mod.duration}
                     </div>
-                    <span className="module-level">{mod.level}</span>
+                    {renderLevelBadge(mod.level)}
                   </div>
                 </div>
               </div>
