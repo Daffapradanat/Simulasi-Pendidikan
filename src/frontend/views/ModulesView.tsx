@@ -3,7 +3,7 @@ import { Module } from '../../types';
 import { MODULE_THUMBS } from '../../data';
 
 // --- MODULES VIEW ---
-export function ModulesView({ modules, onOpenModule }: { modules: Module[], onOpenModule: (id: number) => void }) {
+export function ModulesView({ modules, onOpenModule, lastModuleId }: { modules: Module[], onOpenModule: (id: number) => void, lastModuleId: number | null }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(() => {
     const saved = sessionStorage.getItem('simpend_module_page');
@@ -74,6 +74,23 @@ export function ModulesView({ modules, onOpenModule }: { modules: Module[], onOp
           <div className="page-title">Daftar Modul Simulasi</div>
           <div className="page-subtitle">Selesaikan setiap modul secara berurutan untuk membuka modul berikutnya.</div>
         </div>
+
+        {lastModuleId && modules.find(m => m.id === lastModuleId) && (
+          <div className="section-card" style={{ marginBottom: '24px', background: 'var(--primary-light)', borderColor: 'var(--primary)', padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'var(--primary)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>
+                <i className="ti ti-player-play"></i>
+              </div>
+              <div>
+                <div style={{ fontSize: '13px', color: 'var(--primary)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '2px' }}>Mode Lanjutkan</div>
+                <div style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text-dark)' }}>{modules.find(m => m.id === lastModuleId)?.title}</div>
+              </div>
+            </div>
+            <button className="btn btn-primary" onClick={() => onOpenModule(lastModuleId)}>
+              Lanjutkan Sesi
+            </button>
+          </div>
+        )}
 
         <div className="search-box" style={{ marginBottom: '24px', position: 'relative' }}>
           <i className="ti ti-search" style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-light)', fontSize: '18px' }}></i>

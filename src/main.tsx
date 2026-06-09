@@ -4,6 +4,10 @@ import { BrowserRouter } from 'react-router-dom';
 import App from './App.tsx';
 import './index.css';
 
+// Register service worker
+import { registerSW } from 'virtual:pwa-register';
+registerSW({ immediate: true });
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <BrowserRouter>

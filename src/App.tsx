@@ -17,6 +17,7 @@ export default function App() {
   const [viewMode, setViewMode] = useState<'main' | 'profile'>('main');
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [appModules, setAppModules] = useState<Module[]>([]);
+  const [lastModuleId, setLastModuleId] = useState<number | null>(null);
   const [currentModuleId, setCurrentModuleId] = useState<number | null>(null);
   const [activeGameId, setActiveGameId] = useState<number | null>(null);
   const [playedGames, setPlayedGames] = useState<Set<number>>(new Set());
@@ -24,6 +25,35 @@ export default function App() {
   const [showAllDoneModal, setShowAllDoneModal] = useState(false);
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  
+  // Anti spam state
+  const [loginAttempts, setLoginAttempts] = useState(0);
+  const [loginBlockTime, setLoginBlockTime] = useState<number | null>(null);
+
+  // Anti-inspect implementation
+  useEffect(() => {
+    const handleContextMenu = (e: MouseEvent) => {
+      e.preventDefault();
+    };
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (
+        e.code === 'F12' ||
+        (e.ctrlKey && e.shiftKey && (e.code === 'KeyI' || e.code === 'KeyJ' || e.code === 'KeyC')) ||
+        (e.ctrlKey && e.code === 'KeyU')
+      ) {
+        e.preventDefault();
+      }
+    };
+
+    document.addEventListener('contextmenu', handleContextMenu);
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.removeEventListener('contextmenu', handleContextMenu);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);
 
   const showToast = (msg: string, type: 'success' | 'error' | 'info' = 'info') => {
     const id = Date.now() + Math.random();
@@ -75,6 +105,8 @@ export default function App() {
       if (played) setPlayedGames(new Set(JSON.parse(played)));
       const completed = localStorage.getItem(`simpend_completed_${user.id}`);
       if (completed) setCompletedModuleIds(new Set(JSON.parse(completed)));
+      const lastMod = localStorage.getItem(`simpend_last_module_${user.id}`);
+      if (lastMod) setLastModuleId(parseInt(lastMod, 10));
     } catch(e) {}
   };
 
@@ -105,17 +137,25 @@ export default function App() {
   }, [playedGames, completedModuleIds, currentUser]);
 
   const handleLogin = async (email: string, pass: string, remember: boolean, mode: 'siswa' | 'guru' | 'admin') => {
+    if (loginBlockTime && Date.now() < loginBlockTime) {
+      const waitTime = Math.ceil((loginBlockTime - Date.now()) / 1000);
+      showToast(`Terlalu banyak percobaan. Coba lagi dalam ${waitTime} detik.`, 'error');
+      return;
+    }
+
     // Menggunakan mock system sementara, tanpa memanggil API /api/auth/login
     let user = null;
     if (mode === 'siswa' && (email === 'siswa' || email === 'siswa@sekolah.sch.id') && pass === 'siswa') {
       user = { id: 1, name: "Siswa Siswi", email: "siswa@sekolah.sch.id", role: "siswa" };
     } else if (mode === 'guru' && (email === 'guru' || email === 'guru@sekolah.sch.id') && pass === 'guru') {
       user = { id: 2, name: "Guru Pengajar", email: "guru@sekolah.sch.id", role: "guru" };
-    } else if (mode === 'admin' && email === 'admin' && pass === 'admin') {
+    } else if (email === 'admin' && pass === 'admin') {
       user = { id: 3, name: "Administrator", email: "admin@sekolah.sch.id", role: "admin" };
     }
     
     if (user) {
+      setLoginAttempts(0);
+      setLoginBlockTime(null);
       setCurrentUser(user as any);
       if (remember) {
         localStorage.setItem('simpend_auto_login', JSON.stringify(user));
@@ -126,10 +166,21 @@ export default function App() {
       fetchModules();
       showToast(`Selamat datang, ${user.name}!`, 'success');
       
-      // Redirect to frontend
-      navigate('/');
+      // Redirect based on role
+      if (user.role === 'admin') {
+        navigate('/admin');
+      } else {
+        navigate('/');
+      }
     } else {
-      showToast('Username/Email atau password salah.', 'error');
+      const newAttempts = loginAttempts + 1;
+      setLoginAttempts(newAttempts);
+      if (newAttempts >= 5) {
+        setLoginBlockTime(Date.now() + 60000); // 1 minute block
+        showToast('Terlalu banyak percobaan gagal. Akun diblokir sementara.', 'error');
+      } else {
+        showToast('Username/Email atau password salah.', 'error');
+      }
     }
   };
 
@@ -146,6 +197,14 @@ export default function App() {
   };
 
   const currentModule = currentModuleId ? computedModules.find(m => m.id === currentModuleId) : null;
+
+  // Track last viewed module
+  useEffect(() => {
+    if (currentUser && currentModuleId) {
+      localStorage.setItem(`simpend_last_module_${currentUser.id}`, currentModuleId.toString());
+      setLastModuleId(currentModuleId);
+    }
+  }, [currentModuleId, currentUser]);
 
   const handleOpenModule = (id: number) => {
     const target = computedModules.find(m => m.id === id);
@@ -205,28 +264,29 @@ export default function App() {
     <>
       <Routes>
         <Route path="/login" element={
-          currentUser ? <Navigate to="/" replace /> :
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={{ type: 'spring', stiffness: 260, damping: 20 }}>
+          currentUser ? (currentUser.role === 'admin' ? <Navigate to="/admin" replace /> : <Navigate to="/" replace />) :
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}>
             <LoginView onLogin={(e, p, r) => handleLogin(e, p, r, 'siswa')} defaultMode="siswa" />
           </motion.div>
         } />
         
         <Route path="/admin/login" element={
-          currentUser ? <Navigate to="/" replace /> :
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={{ type: 'spring', stiffness: 260, damping: 20 }}>
+          currentUser ? (currentUser.role === 'admin' ? <Navigate to="/admin" replace /> : <Navigate to="/" replace />) :
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}>
             <LoginView onLogin={(e, p, r) => handleLogin(e, p, r, 'guru')} defaultMode="guru" />
           </motion.div>
         } />
 
         <Route path="/admin" element={
           !currentUser ? <Navigate to="/admin/login" replace /> :
-          (currentUser.role === 'siswa' ? <Navigate to="/" replace /> :
+          (currentUser.role === 'admin' ? 
             <AdminDashboard 
               user={currentUser} 
               onLogout={handleLogout} 
               onNavigate={setViewMode} 
               onUpdateUser={setCurrentUser}
-            />
+            /> : 
+            <Navigate to="/" replace />
           )
         } />
 
@@ -249,16 +309,17 @@ export default function App() {
 
               <AnimatePresence mode="wait">
                 {viewMode === 'main' && !currentModuleId && (
-                  <motion.div key="modules" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={{ type: 'spring', stiffness: 260, damping: 20 }}>
+                  <motion.div key="modules" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}>
                     <ModulesView 
                       modules={computedModules} 
                       onOpenModule={handleOpenModule} 
+                      lastModuleId={lastModuleId}
                     />
                   </motion.div>
                 )}
 
                 {viewMode === 'main' && currentModuleId && currentModule && (
-                  <motion.div key="detail" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={{ type: 'spring', stiffness: 260, damping: 20 }}>
+                  <motion.div key="detail" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}>
                     <DetailView 
                       module={currentModule}
                       onBack={() => {
@@ -275,7 +336,7 @@ export default function App() {
                 )}
 
                 {viewMode === 'profile' && (
-                  <motion.div key="profile" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={{ type: 'spring', stiffness: 260, damping: 20 }}>
+                  <motion.div key="profile" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}>
                      <ProfileView user={currentUser} completedModuleIds={completedModuleIds} modules={appModules} />
                   </motion.div>
                 )}
