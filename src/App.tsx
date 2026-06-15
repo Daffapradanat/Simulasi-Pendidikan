@@ -169,9 +169,9 @@ export default function App() {
       if (roleTitle === 'siswa') roleTitle = 'Siswa';
       else if (roleTitle === 'guru') roleTitle = 'Guru';
       else if (roleTitle === 'admin') roleTitle = 'Admin';
-      document.title = `SimPend \u2014 ${roleTitle}`;
+      document.title = `Pusmendik \u2014 ${roleTitle}`;
     } else {
-      document.title = 'SimPend \u2014 Website Simulasi Pendidikan 2025/2026';
+      document.title = 'Pusmendik \u2014 Website Simulasi Pendidikan 2025/2026';
     }
   }, [playedGames, completedModuleIds, currentUser]);
 
