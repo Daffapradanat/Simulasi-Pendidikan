@@ -7,7 +7,7 @@ import multer from "multer";
 import { createServer as createViteServer } from "vite";
 import fs from "fs";
 import { configureSecurity } from "./serverSecurity";
-import AdmZip from "adm-zip";
+import extract from "extract-zip";
 import sqlite3 from "sqlite3";
 import { open } from "sqlite";
 
@@ -273,8 +273,7 @@ async function startServer() {
               if (!fs.existsSync(gameDir)) {
                 fs.mkdirSync(gameDir, { recursive: true });
               }
-              const zip = new AdmZip(file.path);
-              zip.extractAllTo(gameDir, true);
+              await extract(file.path, { dir: path.resolve(gameDir) });
               const indexPath = findIndexPath(gameDir) || 'index.html';
               gamesMeta[i].path = `/games/game_${gamesMeta[i].id}/${indexPath}`;
             } catch (zipError) {
@@ -323,8 +322,7 @@ async function startServer() {
               if (!fs.existsSync(gameDir)) {
                 fs.mkdirSync(gameDir, { recursive: true });
               }
-              const zip = new AdmZip(file.path);
-              zip.extractAllTo(gameDir, true);
+              await extract(file.path, { dir: path.resolve(gameDir) });
               const indexPath = findIndexPath(gameDir) || 'index.html';
               gamesMeta[i].path = `/games/game_${gamesMeta[i].id}/${indexPath}`;
             } catch (zipError) {
