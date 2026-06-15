@@ -122,6 +122,7 @@ export default function AdminDashboard({ user, onLogout, onNavigate, onUpdateUse
           method: 'PUT',
           body: formData
         });
+        if (!res.ok) throw new Error(await res.text());
         const data = await res.json();
         setModules(modules.map(m => m.id === editingModule.id ? data.module : m));
       } else {
@@ -129,6 +130,7 @@ export default function AdminDashboard({ user, onLogout, onNavigate, onUpdateUse
           method: 'POST',
           body: formData
         });
+        if (!res.ok) throw new Error(await res.text());
         const data = await res.json();
         setModules([...modules, data.module]);
       }
@@ -136,7 +138,8 @@ export default function AdminDashboard({ user, onLogout, onNavigate, onUpdateUse
       setEditingModule(null);
       setModuleForm({ title: '', desc: '', level: 'SD', duration: '', objectives: '', theory: '', keyTerms: [] });
       setModuleGameFiles([]);
-    } catch (err) {
+    } catch (err: any) {
+      alert(`Error saving module: ${err.message}`);
       console.error(err);
     }
   };
@@ -154,6 +157,7 @@ export default function AdminDashboard({ user, onLogout, onNavigate, onUpdateUse
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(studentForm)
         });
+        if (!res.ok) throw new Error(await res.text());
         const data = await res.json();
         setStudents(students.map(s => s.id === editingStudent.id ? data.student : s));
       } else {
@@ -162,13 +166,15 @@ export default function AdminDashboard({ user, onLogout, onNavigate, onUpdateUse
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(studentForm)
         });
+        if (!res.ok) throw new Error(await res.text());
         const data = await res.json();
         setStudents([...students, data.student]);
       }
       setShowStudentModal(false);
       setEditingStudent(null);
       setStudentForm({ name: '', email: '', nisn: '', asalSekolah: '' });
-    } catch (err) {
+    } catch (err: any) {
+      alert(`Error saving student: ${err.message}`);
       console.error(err);
     }
   };

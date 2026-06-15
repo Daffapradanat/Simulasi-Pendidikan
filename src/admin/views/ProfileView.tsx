@@ -50,15 +50,29 @@ export default function ProfileView({
         {isEditingProfile && (
           <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.2 }} className="section-card" style={{ flex: 1 }}>
             <div className="section-card-title"><i className="ti ti-settings"></i> Pengaturan Akun</div>
-            <form onSubmit={e => {
+            <form onSubmit={async e => {
               e.preventDefault();
-              if (onUpdateUser) {
-                onUpdateUser({ ...user, ...profileForm });
-              } else {
-                user.name = profileForm.name;
-                user.email = profileForm.email;
+              try {
+                const res = await fetch('/api/auth/profile', {
+                  method: 'PUT',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ ...user, ...profileForm })
+                });
+                if (res.ok) {
+                  const data = await res.json();
+                  if (onUpdateUser) {
+                    onUpdateUser(data.user);
+                  } else {
+                    user.name = data.user.name;
+                    user.email = data.user.email;
+                  }
+                  setIsEditingProfile(false);
+                } else {
+                  console.error('Failed to update profile');
+                }
+              } catch (e) {
+                console.error(e);
               }
-              setIsEditingProfile(false);
             }} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
               <div className="form-group" style={{ marginBottom: 0 }}>
                 <label className="form-label" style={{ fontWeight: 600 }}>Nama Lengkap</label>

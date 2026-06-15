@@ -191,6 +191,25 @@ async function startServer() {
     }
   });
 
+  app.put("/api/auth/profile", (req, res) => {
+    const { id, name, email, role } = req.body;
+    let found = false;
+    if (role === 'siswa') {
+      const idx = studentsData.findIndex(s => s.id === id);
+      if (idx !== -1) { studentsData[idx] = { ...studentsData[idx], name, email }; found = true; }
+    } else if (role === 'guru') {
+      const idx = teachersData.findIndex(t => t.id === id);
+      if (idx !== -1) { teachersData[idx] = { ...teachersData[idx], name, email }; found = true; }
+    }
+    if (found) {
+      logActivity('system', role, `Pembaruan profil ${name}`);
+      saveDb();
+      res.json({ success: true, user: { id, name, email, role } });
+    } else {
+      res.status(404).json({ error: "User not found" });
+    }
+  });
+
   app.get("/api/activities", (req, res) => {
     res.json(activitiesData);
   });
