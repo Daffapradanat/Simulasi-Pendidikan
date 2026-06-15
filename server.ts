@@ -8,6 +8,8 @@ import { createServer as createViteServer } from "vite";
 import fs from "fs";
 import { configureSecurity } from "./serverSecurity";
 import AdmZip from "adm-zip";
+import sqlite3 from "sqlite3";
+import { open } from "sqlite";
 
 const PUBLIC_GAMES_DIR = path.join(process.cwd(), "public", "games");
 if (!fs.existsSync(PUBLIC_GAMES_DIR)) {
@@ -27,38 +29,69 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 // Database Persistence
-const DB_FILE = path.join(process.cwd(), "database.json");
+const DB_FILE = path.join(process.cwd(), "database.sqlite");
+let db: any;
 
 let modulesData: any[] = [];
 let teachersData: any[] = [];
 let studentsData: any[] = [];
 let activitiesData: any[] = [];
 
-if (fs.existsSync(DB_FILE)) {
-  const fileData = JSON.parse(fs.readFileSync(DB_FILE, 'utf-8'));
-  modulesData = fileData.modules || [];
-  teachersData = fileData.teachers || [];
-  studentsData = fileData.students || [];
-  activitiesData = fileData.activities || [];
-} else {
-  modulesData = [];
-  teachersData = [];
-  studentsData = [];
-  activitiesData = [];
+async function initDB() {
+  db = await open({
+    filename: DB_FILE,
+    driver: sqlite3.Database
+  });
+
+  await db.exec(`
+    CREATE TABLE IF NOT EXISTS app_state (
+      id INTEGER PRIMARY KEY,
+      data TEXT
+    )
+  `);
+
+  const row = await db.get('SELECT data FROM app_state WHERE id = 1');
+  if (row) {
+    const fileData = JSON.parse(row.data);
+    modulesData = fileData.modules || [];
+    teachersData = fileData.teachers || [];
+    studentsData = fileData.students || [];
+    activitiesData = fileData.activities || [];
+  } else {
+    // Migrate from database.json if exists
+    const OLD_DB_FILE = path.join(process.cwd(), "database.json");
+    if (fs.existsSync(OLD_DB_FILE)) {
+      const fileData = JSON.parse(fs.readFileSync(OLD_DB_FILE, 'utf-8'));
+      modulesData = fileData.modules || [];
+      teachersData = fileData.teachers || [];
+      studentsData = fileData.students || [];
+      activitiesData = fileData.activities || [];
+    } else {
+      modulesData = [];
+      teachersData = [];
+      studentsData = [];
+      activitiesData = [];
+    }
+
+    // Add example users if missing
+    if (!studentsData.find((s: any) => s.id === 1)) {
+      studentsData.push({ id: 1, name: "Siswa Siswi", email: "siswa@sekolah.sch.id", nisn: "1234567890", asalSekolah: "SMP Negeri 1", progress: 0 });
+    }
+    if (!teachersData.find((t: any) => t.id === 2)) {
+      teachersData.push({ id: 2, name: "Guru Pengajar", email: "guru@sekolah.sch.id", nip: "198001012005011001", subject: "Ilmu Pengetahuan Alam" });
+    }
+    await saveDb();
+  }
 }
 
-// Add example users if missing
-if (!studentsData.find(s => s.id === 1)) {
-  studentsData.push({ id: 1, name: "Siswa Siswi", email: "siswa@sekolah.sch.id", nisn: "1234567890", asalSekolah: "SMP Negeri 1", progress: 0 });
+async function doSaveDb() {
+  if (!db) return;
+  const data = JSON.stringify({ modules: modulesData, teachers: teachersData, students: studentsData, activities: activitiesData });
+  await db.run('INSERT OR REPLACE INTO app_state (id, data) VALUES (1, ?)', data);
 }
-if (!teachersData.find(t => t.id === 2)) {
-  teachersData.push({ id: 2, name: "Guru Pengajar", email: "guru@sekolah.sch.id", nip: "198001012005011001", subject: "Ilmu Pengetahuan Alam" });
-}
-
-saveDb();
 
 function saveDb() {
-  fs.writeFileSync(DB_FILE, JSON.stringify({ modules: modulesData, teachers: teachersData, students: studentsData, activities: activitiesData }, null, 2));
+  doSaveDb().catch(console.error);
 }
 
 function logActivity(action: string, user: string, desc: string) {
@@ -75,10 +108,10 @@ function logActivity(action: string, user: string, desc: string) {
   saveDb();
 }
 
-
 const SECRET_KEY = "simpend_secret_key_2025";
 
 async function startServer() {
+  await initDB();
   const app = express();
   const PORT = 3000;
 
