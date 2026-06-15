@@ -463,22 +463,23 @@ async function startServer() {
   });
 
   // Serve extracted games explicitly
-  app.use('/games', (req, res, next) => {
-    if (req.url.endsWith('.gz')) {
-      res.set('Content-Encoding', 'gzip');
-      if (req.url.includes('.wasm')) res.set('Content-Type', 'application/wasm');
-      else if (req.url.includes('.js')) res.set('Content-Type', 'application/javascript');
-      else if (req.url.includes('.data')) res.set('Content-Type', 'application/octet-stream');
-    } else if (req.url.endsWith('.br')) {
-      res.set('Content-Encoding', 'br');
-      if (req.url.includes('.wasm')) res.set('Content-Type', 'application/wasm');
-      else if (req.url.includes('.js')) res.set('Content-Type', 'application/javascript');
-      else if (req.url.includes('.data')) res.set('Content-Type', 'application/octet-stream');
-    } else if (req.url.endsWith('.wasm')) {
-      res.set('Content-Type', 'application/wasm');
+  app.use('/games', express.static(PUBLIC_GAMES_DIR, {
+    setHeaders: (res, filePath) => {
+      if (filePath.endsWith('.gz')) {
+        res.set('Content-Encoding', 'gzip');
+        if (filePath.includes('.wasm')) res.set('Content-Type', 'application/wasm');
+        else if (filePath.includes('.js')) res.set('Content-Type', 'application/javascript');
+        else if (filePath.includes('.data')) res.set('Content-Type', 'application/octet-stream');
+      } else if (filePath.endsWith('.br')) {
+        res.set('Content-Encoding', 'br');
+        if (filePath.includes('.wasm')) res.set('Content-Type', 'application/wasm');
+        else if (filePath.includes('.js')) res.set('Content-Type', 'application/javascript');
+        else if (filePath.includes('.data')) res.set('Content-Type', 'application/octet-stream');
+      } else if (filePath.endsWith('.wasm')) {
+        res.set('Content-Type', 'application/wasm');
+      }
     }
-    next();
-  }, express.static(PUBLIC_GAMES_DIR));
+  }));
 
   // Vite Integration
   if (process.env.NODE_ENV !== "production") {
