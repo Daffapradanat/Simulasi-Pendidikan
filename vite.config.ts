@@ -18,8 +18,8 @@ export default defineConfig(() => {
           globPatterns: ['**/*.{js,css,html,ico,png,svg,json}'],
         },
         manifest: {
-          name: 'SimPend',
-          short_name: 'SimPend',
+          name: 'Pusmendik',
+          short_name: 'Pusmendik',
           theme_color: '#1a56db',
           icons: [
             {
