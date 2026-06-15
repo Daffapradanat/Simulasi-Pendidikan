@@ -214,6 +214,26 @@ async function startServer() {
     res.json(activitiesData);
   });
 
+  app.post("/api/admin/clear_all", (req, res) => {
+    // Clear modulesData
+    modulesData = [];
+    
+    // Clear uploads directory
+    try {
+      const uFiles = fs.readdirSync(UPLOADS_DIR);
+      for (const file of uFiles) fs.unlinkSync(path.join(UPLOADS_DIR, file));
+    } catch(e) {}
+    
+    // Clear public/games directory
+    try {
+      const gFiles = fs.readdirSync(PUBLIC_GAMES_DIR);
+      for (const file of gFiles) fs.rmSync(path.join(PUBLIC_GAMES_DIR, file), { recursive: true, force: true });
+    } catch(e) {}
+    
+    saveDb();
+    res.json({ success: true });
+  });
+
   // Modules CRUD
   app.get("/api/modules", (req, res) => {
     res.json(modulesData);
@@ -259,6 +279,8 @@ async function startServer() {
               gamesMeta[i].path = `/games/game_${gamesMeta[i].id}/${indexPath}`;
             } catch (zipError) {
               console.error("Failed to extract zip:", zipError);
+            } finally {
+              try { fs.unlinkSync(file.path); } catch(err){}
             }
           }
         }
@@ -307,6 +329,8 @@ async function startServer() {
               gamesMeta[i].path = `/games/game_${gamesMeta[i].id}/${indexPath}`;
             } catch (zipError) {
               console.error("Failed to extract zip:", zipError);
+            } finally {
+              try { fs.unlinkSync(file.path); } catch(err){}
             }
           }
         }
@@ -329,8 +353,17 @@ async function startServer() {
     const id = parseInt(req.params.id);
     const index = modulesData.findIndex(m => m.id === id);
     if (index !== -1) {
-      modulesData[index].isDeleted = true;
-      logActivity('module', 'Admin', `Menghapus modul "${modulesData[index].title}"`);
+      const module = modulesData[index];
+      if (module.games && Array.isArray(module.games)) {
+        module.games.forEach((g: any) => {
+          const gameDir = path.join(PUBLIC_GAMES_DIR, `game_${g.id}`);
+          if (fs.existsSync(gameDir)) {
+             try { fs.rmSync(gameDir, { recursive: true, force: true }); } catch (e) {}
+          }
+        });
+      }
+      logActivity('module', 'Admin', `Menghapus modul "${module.title}" secara permanen`);
+      modulesData.splice(index, 1);
       saveDb();
     }
     res.json({ success: true, id });

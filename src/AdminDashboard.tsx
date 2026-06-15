@@ -87,8 +87,12 @@ export default function AdminDashboard({ user, onLogout, onNavigate, onUpdateUse
     setShowLogoutConfirm(true);
   };
 
+  const [isSavingModule, setIsSavingModule] = useState(false);
+
   const handleSaveModule = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSavingModule) return;
+    setIsSavingModule(true);
     try {
       const material = {
         objectives: moduleForm.objectives.split('\n').filter(s => s.trim()),
@@ -141,6 +145,8 @@ export default function AdminDashboard({ user, onLogout, onNavigate, onUpdateUse
     } catch (err: any) {
       alert(`Error saving module: ${err.message}`);
       console.error(err);
+    } finally {
+      setIsSavingModule(false);
     }
   };
 
@@ -248,7 +254,7 @@ export default function AdminDashboard({ user, onLogout, onNavigate, onUpdateUse
     try {
       if (type === 'module') {
         await fetch(`/api/modules/${id}`, { method: 'DELETE' });
-        setModules(modules.map(m => m.id === id ? { ...m, isDeleted: true } : m));
+        setModules(modules.filter(m => m.id !== id));
       } else if (type === 'student') {
         await fetch(`/api/students/${id}`, { method: 'DELETE' });
         setStudents(students.map(s => s.id === id ? { ...s, isDeleted: true } : s));
@@ -309,6 +315,7 @@ export default function AdminDashboard({ user, onLogout, onNavigate, onUpdateUse
           editingModule={editingModule} moduleForm={moduleForm} setModuleForm={setModuleForm} 
           setView={setView} handleSaveModule={handleSaveModule} 
           moduleGameFiles={moduleGameFiles} setModuleGameFiles={setModuleGameFiles}
+          isSaving={isSavingModule}
         />;
       case 'students':
         return <StudentsView 

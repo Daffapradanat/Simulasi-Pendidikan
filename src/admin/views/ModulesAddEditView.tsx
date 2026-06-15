@@ -3,7 +3,7 @@ import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
 
 export default function ModulesAddEditView({ 
-  editingModule, moduleForm, setModuleForm, setView, handleSaveModule, moduleGameFiles, setModuleGameFiles
+  editingModule, moduleForm, setModuleForm, setView, handleSaveModule, moduleGameFiles, setModuleGameFiles, isSaving
 }: any) {
   return (
           <div className="admin-content" style={{ maxWidth: '800px', margin: '0 auto' }}>
@@ -146,8 +146,10 @@ export default function ModulesAddEditView({
                   )}
                 </div>
                 <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
-                  <button type="button" className="btn btn-ghost" onClick={() => setView('modules')}>Batal</button>
-                  <button type="submit" className="btn btn-primary">{editingModule ? 'Simpan Perubahan' : 'Tambah Modul'}</button>
+                  <button type="button" className="btn btn-ghost" onClick={() => setView('modules')} disabled={isSaving}>Batal</button>
+                  <button type="submit" className="btn btn-primary" disabled={isSaving}>
+                    {isSaving ? 'Menyimpan...' : (editingModule ? 'Simpan Perubahan' : 'Tambah Modul')}
+                  </button>
                 </div>
               </form>
             </div>

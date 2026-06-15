@@ -27,9 +27,30 @@ export default function ModulesView({
   const totalPages = Math.ceil(filteredModules.length / itemsPerPage);
   const displayedModules = filteredModules.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
+  const confirmClearAll = async () => {
+    if (window.confirm("PERINGATAN: Apakah Anda yakin ingin menghapus SEMUA modul beserta file games dan uploads? Tindakan ini tidak dapat dibatalkan!")) {
+      try {
+        const res = await fetch("/api/admin/clear_all", { method: "POST" });
+        if (res.ok) {
+          alert("Semua modul dan file berhasil dikosongkan!");
+          window.location.reload();
+        } else {
+          alert("Gagal mengosongkan modul.");
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    }
+  };
+
   return (
     <div className="admin-content">
-      <h2 className="page-title">Manajemen Modul</h2>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+        <h2 className="page-title" style={{ margin: 0 }}>Manajemen Modul</h2>
+        <button className="btn btn-outline" style={{ borderColor: 'var(--error)', color: 'var(--error)', padding: '6px 16px', fontSize: '13px' }} onClick={confirmClearAll}>
+          <i className="ti ti-trash"></i> Kosongkan Semua Modul
+        </button>
+      </div>
       <div className="section-card">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
           <div className="section-card-title" style={{ borderBottom: 'none', paddingBottom: 0, marginBottom: 0 }}><i className="ti ti-list"></i> Daftar Modul</div>
