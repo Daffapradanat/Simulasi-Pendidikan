@@ -331,11 +331,7 @@ export default function AdminDashboard({ user, onLogout, onNavigate, onUpdateUse
       <div className="admin-sidebar">
         <div style={{ padding: '24px', borderBottom: '1px solid var(--border)' }}>
           <div className="navbar-logo" style={{ marginBottom: 0 }}>
-            <img src="/logo_pens.png" className="logo-img" alt="PENS Logo URL" />
-            <div className="logo-text" style={{ color: 'var(--primary)' }}>
-              SimPend
-              <span style={{ color: 'var(--text-muted)' }}>Admin Panel</span>
-            </div>
+            <img src="/Pusmendik-dashboard.png" className="logo-img" alt="Pusmendik Dashboard Logo" />
           </div>
         </div>
         <div className="admin-sidebar-menu">

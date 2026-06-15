@@ -11,11 +11,7 @@ export function Navbar({ user, onLogout, viewMode, inDetail, onNavigate }: { use
     <>
       <nav className="navbar">
         <div className="navbar-logo">
-          <img src="/logo_pens.png" className="logo-img" alt="PENS Logo URL" />
-          <div className="logo-text">
-            SimPend
-            <span>Simulasi Pendidikan 2025/2026</span>
-          </div>
+          <img src="/Pusmendik-dashboard.png" className="logo-img" alt="Pusmendik Dashboard Logo" />
         </div>
         <div className="navbar-spacer"></div>
         {user && (

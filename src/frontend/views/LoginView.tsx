@@ -76,12 +76,8 @@ export function LoginView({ onLogin, defaultMode = 'siswa' }: { onLogin: (e: str
     return (
       <div className="login-page">
         <div className="login-card">
-          <div className="login-logo">
-            <img src="/logo_pens.png" className="logo-img" alt="PENS Logo" />
-            <div className="login-logo-text">
-              SimPend
-              <span>Reset Password</span>
-            </div>
+          <div className="login-logo" style={{ justifyContent: 'center' }}>
+            <img src="/Pusmendik.jpg" className="logo-img" alt="Pusmendik Logo" />
           </div>
           
           {resetSuccess ? (
@@ -154,12 +150,8 @@ export function LoginView({ onLogin, defaultMode = 'siswa' }: { onLogin: (e: str
   return (
     <div className="login-page">
       <div className="login-card">
-        <div className="login-logo">
-            <img src="/logo_pens.png" className="logo-img" alt="PENS Logo" />
-            <div className="login-logo-text">
-              SimPend
-              <span>Website Simulasi Pendidikan 2025/2026</span>
-            </div>
+        <div className="login-logo" style={{ justifyContent: 'center' }}>
+            <img src="/Pusmendik.jpg" className="logo-img" alt="Pusmendik Logo" />
           </div>
           <div className="login-title">Masuk ke Akun {title}</div>
           <div className="login-subtitle">Selamat datang! Silakan masuk untuk mengakses dashboard.</div>
