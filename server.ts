@@ -75,7 +75,7 @@ async function initDB() {
 
     // Add example users if missing
     if (!studentsData.find((s: any) => s.id === 1)) {
-      studentsData.push({ id: 1, name: "Siswa Siswi", email: "siswa@sekolah.sch.id", nisn: "1234567890", asalSekolah: "SMP Negeri 1", progress: 0 });
+      studentsData.push({ id: 1, name: "Siswa Siswi", email: "siswa@murid.sekolah.sch.id", nisn: "1234567890", asalSekolah: "SMP Negeri 1", progress: 0 });
     }
     if (!teachersData.find((t: any) => t.id === 2)) {
       teachersData.push({ id: 2, name: "Guru Pengajar", email: "guru@sekolah.sch.id", nip: "198001012005011001", subject: "Ilmu Pengetahuan Alam" });
@@ -132,37 +132,31 @@ async function startServer() {
     let foundUser = null;
     
     // Check Admin
-    if (email === 'admin' && password === 'admin') {
-      foundUser = { id: 3, name: "Administrator", email: "admin@sekolah.sch.id", role: "admin" };
+    if ((email === 'admin' || email === 'admin@sch.id') && password === 'admin123') {
+      foundUser = { id: 3, name: "Administrator", email: "admin@sch.id", role: "admin" };
     }
     
     // Check Students
     if (!foundUser) {
       const student = studentsData.find(s => !s.isDeleted && s.email === email);
-      // For simplicity, allow password to be 'siswa' for any student, or their email prefix if they don't have a password set. But since they are mock users, let's allow 'siswa' as a fallback password for the student account.
-      // Wait, let's assume the user wants `siswa` password `siswa` to login as student.
-      const isStudentPasswordValid = (email === 'siswa@sekolah.sch.id' && password === 'siswa') || (student && password === 'siswa');
-      if (student && isStudentPasswordValid) {
+      if ((email === 'siswa' || email === 'siswa@murid.sekolah.sch.id') && password === 'siswa') {
+        const s = studentsData.find(s => s.email === 'siswa@murid.sekolah.sch.id') || studentsData.find(s => s.id === 1);
+        if (s) foundUser = { ...s, role: "siswa", name: s.name, email: 'siswa@murid.sekolah.sch.id' };
+        else foundUser = { id: 1, name: "Siswa Siswi", email: "siswa@murid.sekolah.sch.id", role: "siswa" };
+      } else if (student && password === 'siswa') {
         foundUser = { ...student, role: "siswa" };
-      } else if (email === 'siswa' && password === 'siswa') {
-         // Fallback if no student
-         const s = studentsData.find(s => s.id === 1);
-         if (s) foundUser = { ...s, role: "siswa" };
-         else foundUser = { id: 1, name: "Siswa Siswi", email: "siswa@sekolah.sch.id", role: "siswa" };
       }
     }
     
     // Check Teachers
     if (!foundUser) {
       const teacher = teachersData.find(t => !t.isDeleted && t.email === email);
-      const isTeacherPasswordValid = (email === 'guru@sekolah.sch.id' && password === 'guru') || (teacher && password === 'guru');
-      if (teacher && isTeacherPasswordValid) {
+      if ((email === 'guru' || email === 'guru@sekolah.sch.id') && password === 'guru') {
+        const t = teachersData.find(t => t.email === 'guru@sekolah.sch.id') || teachersData.find(t => t.id === 2);
+        if (t) foundUser = { ...t, role: "guru", name: t.name, email: 'guru@sekolah.sch.id' };
+        else foundUser = { id: 2, name: "Guru Pengajar", email: "guru@sekolah.sch.id", role: "guru" };
+      } else if (teacher && password === 'guru') {
         foundUser = { ...teacher, role: "guru" };
-      } else if (email === 'guru' && password === 'guru') {
-         // Fallback if no teacher
-         const t = teachersData.find(t => t.id === 2);
-         if (t) foundUser = { ...t, role: "guru" };
-         else foundUser = { id: 2, name: "Guru Pengajar", email: "guru@sekolah.sch.id", role: "guru" };
       }
     }
 
