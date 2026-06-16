@@ -527,6 +527,11 @@ async function startServer() {
     res.status(404).send('Game file not found.');
   });
 
+  // Provide JSON 404 for unhandled API routes instead of falling back to Vite SPA
+  app.all('/api/*', (req, res) => {
+    res.status(404).json({ error: 'API Endpoint not found' });
+  });
+
   // Vite Integration
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
@@ -541,6 +546,12 @@ async function startServer() {
       res.sendFile(path.join(distPath, "index.html"));
     });
   }
+
+  // Global Error Handler to catch express-rate-limit validation errors or other crashes
+  app.use((err: any, req: any, res: any, next: any) => {
+    console.error("Global Error Caught:", err);
+    res.status(500).json({ success: false, error: "Internal Server Error" });
+  });
 
   app.listen(PORT, "0.0.0.0", () => {
     console.log(`Server running on http://localhost:${PORT}`);

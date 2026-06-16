@@ -155,7 +155,7 @@ export function LoginView({ onLogin, defaultMode = 'siswa' }: { onLogin: (e: str
           </div>
           <div className="login-title">Masuk ke Akun {title}</div>
           <div className="login-subtitle">Selamat datang! Silakan masuk untuk mengakses dashboard.</div>
-          
+
           <div className="form-group">
             <label className="form-label">Username / Email {title}</label>
             <input className="form-input" type="text" placeholder={`Masukkan username atau email ${title.toLowerCase()}`} value={email} onChange={e => setEmail(e.target.value)} onKeyDown={e => e.key === 'Enter' && submit()} />

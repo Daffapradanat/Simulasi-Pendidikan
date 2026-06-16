@@ -24,6 +24,7 @@ export function configureSecurity(app: Application) {
     },
     crossOriginEmbedderPolicy: false, // Prevents issues with external resources
     crossOriginOpenerPolicy: false,
+    crossOriginResourcePolicy: false,
   }));
 
   // 2. Rate Limiting to prevent brute-force and DoS
