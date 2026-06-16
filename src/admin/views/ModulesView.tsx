@@ -122,6 +122,11 @@ export default function ModulesView({
                   <td style={{ textDecoration: mod.isDeleted ? 'line-through' : 'none' }}>
                     <div style={{ fontWeight: 700, fontSize: '14px', marginBottom: '4px', color: 'var(--primary-dark)' }}>{mod.title}</div>
                     <div style={{ fontSize: '12px', color: 'var(--text-muted)', maxWidth: '300px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{mod.desc}</div>
+                    {(!mod.material || !mod.material.theory || mod.material.theory.trim() === '') && (
+                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: '#FFF3E0', color: '#E65100', padding: '4px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: 600, marginTop: '8px' }}>
+                        <i className="ti ti-alert-triangle"></i> Penjelasan Materi Kosong
+                      </div>
+                    )}
                   </td>
                   <td style={{ textDecoration: mod.isDeleted ? 'line-through' : 'none' }}>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>

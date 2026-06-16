@@ -44,21 +44,43 @@ async function initDB() {
   });
 
   await db.exec(`
-    CREATE TABLE IF NOT EXISTS app_state (
-      id INTEGER PRIMARY KEY,
-      data TEXT
-    )
+    CREATE TABLE IF NOT EXISTS modules (id INTEGER PRIMARY KEY, title TEXT, data TEXT);
+    CREATE TABLE IF NOT EXISTS teachers (id INTEGER PRIMARY KEY, name TEXT, email TEXT, data TEXT);
+    CREATE TABLE IF NOT EXISTS students (id INTEGER PRIMARY KEY, name TEXT, email TEXT, data TEXT);
+    CREATE TABLE IF NOT EXISTS activities (id INTEGER PRIMARY KEY, time TEXT, data TEXT);
   `);
 
-  const row = await db.get('SELECT data FROM app_state WHERE id = 1');
-  if (row) {
-    const fileData = JSON.parse(row.data);
-    modulesData = fileData.modules || [];
-    teachersData = fileData.teachers || [];
-    studentsData = fileData.students || [];
-    activitiesData = fileData.activities || [];
+  // Migrate old app_state if necessary
+  const tableCheck = await db.get("SELECT name FROM sqlite_master WHERE type='table' AND name='app_state'");
+  if (tableCheck) {
+    const row = await db.get('SELECT data FROM app_state WHERE id = 1');
+    if (row && row.data) {
+      const fileData = JSON.parse(row.data);
+      modulesData = fileData.modules || [];
+      teachersData = fileData.teachers || [];
+      studentsData = fileData.students || [];
+      activitiesData = fileData.activities || [];
+      
+      // Drop old
+      await db.exec("DROP TABLE app_state");
+    }
   } else {
-    // Migrate from database.json if exists
+    // Load from new tables
+    const mods = await db.all("SELECT data FROM modules");
+    modulesData = mods.map((r: any) => JSON.parse(r.data));
+    
+    const teas = await db.all("SELECT data FROM teachers");
+    teachersData = teas.map((r: any) => JSON.parse(r.data));
+    
+    const stus = await db.all("SELECT data FROM students");
+    studentsData = stus.map((r: any) => JSON.parse(r.data));
+    
+    const acts = await db.all("SELECT data FROM activities ORDER BY id DESC LIMIT 100");
+    activitiesData = acts.map((r: any) => JSON.parse(r.data));
+  }
+
+  // Migrate from database.json if completely empty
+  if (modulesData.length === 0 && studentsData.length === 0 && teachersData.length === 0) {
     const OLD_DB_FILE = path.join(process.cwd(), "database.json");
     if (fs.existsSync(OLD_DB_FILE)) {
       const fileData = JSON.parse(fs.readFileSync(OLD_DB_FILE, 'utf-8'));
@@ -66,28 +88,47 @@ async function initDB() {
       teachersData = fileData.teachers || [];
       studentsData = fileData.students || [];
       activitiesData = fileData.activities || [];
-    } else {
-      modulesData = [];
-      teachersData = [];
-      studentsData = [];
-      activitiesData = [];
     }
-
-    // Add example users if missing
-    if (!studentsData.find((s: any) => s.id === 1)) {
-      studentsData.push({ id: 1, name: "Siswa Siswi", email: "siswa@murid.sekolah.sch.id", nisn: "1234567890", asalSekolah: "SMP Negeri 1", progress: 0 });
-    }
-    if (!teachersData.find((t: any) => t.id === 2)) {
-      teachersData.push({ id: 2, name: "Guru Pengajar", email: "guru@sekolah.sch.id", nip: "198001012005011001", subject: "Ilmu Pengetahuan Alam" });
-    }
-    await saveDb();
   }
+
+  // Add example users if missing
+  if (!studentsData.find((s: any) => s.id === 1)) {
+    studentsData.push({ id: 1, name: "Siswa Siswi", email: "siswa@murid.sekolah.sch.id", nisn: "1234567890", asalSekolah: "SMP Negeri 1", progress: 0 });
+  }
+  if (!teachersData.find((t: any) => t.id === 2)) {
+    teachersData.push({ id: 2, name: "Guru Pengajar", email: "guru@sekolah.sch.id", nip: "198001012005011001", subject: "Ilmu Pengetahuan Alam" });
+  }
+  await saveDb();
 }
 
 async function doSaveDb() {
   if (!db) return;
-  const data = JSON.stringify({ modules: modulesData, teachers: teachersData, students: studentsData, activities: activitiesData });
-  await db.run('INSERT OR REPLACE INTO app_state (id, data) VALUES (1, ?)', data);
+  await db.exec("BEGIN TRANSACTION");
+  try {
+    await db.run("DELETE FROM modules");
+    for (const m of modulesData) {
+      await db.run("INSERT INTO modules (id, title, data) VALUES (?, ?, ?)", [m.id, m.title, JSON.stringify(m)]);
+    }
+
+    await db.run("DELETE FROM teachers");
+    for (const t of teachersData) {
+      await db.run("INSERT INTO teachers (id, name, email, data) VALUES (?, ?, ?, ?)", [t.id, t.name, t.email, JSON.stringify(t)]);
+    }
+
+    await db.run("DELETE FROM students");
+    for (const s of studentsData) {
+      await db.run("INSERT INTO students (id, name, email, data) VALUES (?, ?, ?, ?)", [s.id, s.name, s.email, JSON.stringify(s)]);
+    }
+
+    await db.run("DELETE FROM activities");
+    for (const a of activitiesData) {
+      await db.run("INSERT INTO activities (id, time, data) VALUES (?, ?, ?)", [a.id, a.time, JSON.stringify(a)]);
+    }
+    await db.exec("COMMIT");
+  } catch (error) {
+    await db.exec("ROLLBACK");
+    console.error("Failed to save database:", error);
+  }
 }
 
 function saveDb() {
@@ -116,7 +157,7 @@ async function startServer() {
   const PORT = 3000;
 
   // Security controls are moved to /serverSecurity.ts and currently disabled
-  // configureSecurity(app);
+  configureSecurity(app);
 
   app.use(cors());
   
@@ -480,6 +521,11 @@ async function startServer() {
       }
     }
   }));
+
+  // If a file under /games is not found, return 404 instead of falling through to the React App
+  app.use('/games', (req, res) => {
+    res.status(404).send('Game file not found.');
+  });
 
   // Vite Integration
   if (process.env.NODE_ENV !== "production") {

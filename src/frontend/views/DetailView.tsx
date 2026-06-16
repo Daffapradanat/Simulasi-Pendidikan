@@ -60,33 +60,50 @@ export function DetailView({
           <div className="detail-main">
             <div className="section-card material-card" style={{ marginBottom: '24px' }}>
               <div className="section-card-title">
-                <i className="ti ti-book-2"></i> Materi Pembelajaran
+                <i className="ti ti-book-2"></i> Materi Simulasi
                 <span className="step-chip">Langkah 1</span>
               </div>
               
-              <div className="material-block">
-                <div className="material-subtitle"><i className="ti ti-target"></i> Tujuan Pembelajaran</div>
-                <ul className="material-objectives">
-                  {module.material && typeof module.material === 'object' && !Array.isArray(module.material) && module.material.objectives ? 
-                    module.material.objectives.map((obj, i) => <li key={i}>{obj}</li>) : 
-                    <li style={{ color: 'var(--text-muted)' }}>Belum ada tujuan pembelajaran.</li>
-                  }
-                </ul>
+              <div className="material-intro" style={{ marginBottom: '24px', paddingBottom: '20px', borderBottom: '1px solid var(--border)' }}>
+                <p style={{ fontSize: '15px', color: 'var(--text)', lineHeight: 1.6 }}>
+                  {module.desc}
+                </p>
               </div>
+
+              {(module.material && typeof module.material === 'object' && !Array.isArray(module.material) && module.material.objectives && module.material.objectives.length > 0) && (
+                <div className="material-block" style={{ marginBottom: '28px' }}>
+                  <div className="material-subtitle"><i className="ti ti-target" style={{ color: 'var(--primary)' }}></i> Tujuan Pembelajaran</div>
+                  <ul className="material-objectives" style={{ display: 'grid', gap: '10px', background: 'var(--surface-2)', padding: '16px 20px', borderRadius: '8px' }}>
+                    {module.material.objectives.map((obj, i) => (
+                      <li key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', fontSize: '14px', lineHeight: 1.5 }}>
+                        <i className="ti ti-check" style={{ color: 'var(--success)', marginTop: '2px', flexShrink: 0, fontWeight: 800 }}></i>
+                        <span style={{ color: 'var(--text)' }}>{obj}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
               
-              <div className="material-block">
-                <div className="material-subtitle"><i className="ti ti-file-text"></i> Materi Singkat</div>
-                <div className="material-theory" dangerouslySetInnerHTML={{ __html: (module.material && typeof module.material === 'object' && !Array.isArray(module.material) && module.material.theory) || '<span style="color:var(--text-muted)">Belum ada materi pembelajaran yang ditambahkan.</span>' }} />
+              <div className="material-block" style={{ marginBottom: '28px' }}>
+                <div className="material-subtitle"><i className="ti ti-file-text" style={{ color: 'var(--primary)' }}></i> Penjelasan Materi</div>
+                {module.material && typeof module.material === 'object' && !Array.isArray(module.material) && module.material.theory ? (
+                  <div className="material-theory" style={{ background: 'var(--white)', border: '1px solid var(--border)', padding: '24px', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }} dangerouslySetInnerHTML={{ __html: module.material.theory }} />
+                ) : (
+                  <div style={{ background: 'var(--surface)', padding: '24px', borderRadius: '12px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '14px' }}>
+                    <i className="ti ti-note" style={{ fontSize: '24px', display: 'block', marginBottom: '8px', color: 'var(--text-light)' }}></i>
+                    Belum ada penjelasan materi yang ditambahkan.
+                  </div>
+                )}
               </div>
               
               {(module.material && typeof module.material === 'object' && !Array.isArray(module.material) && module.material.keyTerms && module.material.keyTerms.length > 0) && (
                 <div className="material-block" style={{ marginBottom: 0 }}>
-                  <div className="material-subtitle"><i className="ti ti-vocabulary"></i> Istilah Kunci</div>
-                  <div className="material-terms">
+                  <div className="material-subtitle"><i className="ti ti-vocabulary" style={{ color: 'var(--primary)' }}></i> Istilah Kunci</div>
+                  <div className="material-terms" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '12px' }}>
                     {module.material.keyTerms.map((term, i) => (
-                      <div key={i} className="term-item">
-                        <span className="term-name">{term.term}</span>
-                        <span className="term-def">{term.def}</span>
+                      <div key={i} className="term-item" style={{ background: 'var(--surface)', border: '1px solid var(--border)', padding: '14px 16px', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        <span className="term-name" style={{ fontSize: '14px', color: 'var(--primary)', fontWeight: 700 }}>{term.term}</span>
+                        <span className="term-def" style={{ fontSize: '13px', color: 'var(--text)', lineHeight: 1.5 }}>{term.def}</span>
                       </div>
                     ))}
                   </div>

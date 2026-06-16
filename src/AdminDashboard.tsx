@@ -4,6 +4,7 @@ import StudentsView from './admin/views/StudentsView';
 import ModulesAddEditView from './admin/views/ModulesAddEditView';
 import ModulesView from './admin/views/ModulesView';
 import DashboardView from './admin/views/DashboardView';
+import AuditView from './admin/views/AuditView';
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Module } from './types';
@@ -14,7 +15,7 @@ import * as XLSX from 'xlsx';
 import { useNavigate } from 'react-router-dom';
 
 // Types for Admin
-type AdminViewMode = 'dashboard' | 'modules' | 'modules_add_edit' | 'students' | 'teachers' | 'profile';
+type AdminViewMode = 'dashboard' | 'modules' | 'modules_add_edit' | 'students' | 'teachers' | 'profile' | 'audit';
 
 export default function AdminDashboard({ user, onLogout, onNavigate, onUpdateUser }: { user: any, onLogout: () => void, onNavigate: (v: 'main' | 'profile') => void, onUpdateUser?: (u: any) => void }) {
   const navigate = useNavigate();
@@ -317,6 +318,8 @@ export default function AdminDashboard({ user, onLogout, onNavigate, onUpdateUse
           moduleGameFiles={moduleGameFiles} setModuleGameFiles={setModuleGameFiles}
           isSaving={isSavingModule}
         />;
+      case 'audit':
+        return <AuditView modules={modules} />;
       case 'students':
         return <StudentsView 
           students={students} studentSearch={studentSearch} setStudentSearch={setStudentSearch}
@@ -353,6 +356,9 @@ export default function AdminDashboard({ user, onLogout, onNavigate, onUpdateUse
           </button>
           <button className={`btn ${view === 'modules' || view === 'modules_add_edit' ? 'btn-primary' : 'btn-ghost'} btn-full`} style={{ justifyContent: 'flex-start', border: (view === 'modules' || view === 'modules_add_edit') ? undefined : 'none' }} onClick={() => setView('modules')}>
             <i className="ti ti-books"></i> Manajemen Modul
+          </button>
+          <button className={`btn ${view === 'audit' ? 'btn-primary' : 'btn-ghost'} btn-full`} style={{ justifyContent: 'flex-start', border: view === 'audit' ? undefined : 'none' }} onClick={() => setView('audit')}>
+            <i className="ti ti-clipboard-check"></i> Audit Konten
           </button>
           {user?.role === 'admin' && (
             <>
