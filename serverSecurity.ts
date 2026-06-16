@@ -28,15 +28,17 @@ export function configureSecurity(app: Application) {
   }));
 
   // 2. Rate Limiting to prevent brute-force and DoS
-  const limiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 300, // Reasonable limit
-    standardHeaders: true,
-    legacyHeaders: false,
-    message: "Terlalu banyak request dari IP ini, coba lagi nanti.",
-    validate: { trustProxy: false, xForwardedForHeader: false },
-  });
-  app.use("/api", limiter);
+  // const limiter = rateLimit({
+  //   windowMs: 15 * 60 * 1000, // 15 minutes
+  //   max: 3000, // Reasonable limit
+  //   standardHeaders: true,
+  //   legacyHeaders: false,
+  //   handler: (req, res, next, options) => {
+  //     res.status(options.statusCode).json({ success: false, error: "Terlalu banyak request dari IP ini, coba lagi nanti." });
+  //   },
+  //   validate: { trustProxy: false, xForwardedForHeader: false },
+  // });
+  // app.use("/api", limiter);
 
   // 3. Apply CORS
   app.use(cors({

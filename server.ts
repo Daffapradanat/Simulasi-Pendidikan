@@ -156,7 +156,7 @@ async function startServer() {
   const app = express();
   const PORT = 3000;
 
-  // Security controls are moved to /serverSecurity.ts and currently disabled
+  // Security controls are moved to /serverSecurity.ts
   configureSecurity(app);
 
   app.use(cors());
