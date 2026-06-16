@@ -37,31 +37,6 @@ export default function App() {
   const [loginAttempts, setLoginAttempts] = useState(0);
   const [loginBlockTime, setLoginBlockTime] = useState<number | null>(null);
 
-  // Anti-inspect implementation
-  useEffect(() => {
-    const handleContextMenu = (e: MouseEvent) => {
-      e.preventDefault();
-    };
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (
-        e.code === 'F12' ||
-        (e.ctrlKey && e.shiftKey && (e.code === 'KeyI' || e.code === 'KeyJ' || e.code === 'KeyC')) ||
-        (e.ctrlKey && e.code === 'KeyU')
-      ) {
-        e.preventDefault();
-      }
-    };
-
-    document.addEventListener('contextmenu', handleContextMenu);
-    document.addEventListener('keydown', handleKeyDown);
-
-    return () => {
-      document.removeEventListener('contextmenu', handleContextMenu);
-      document.removeEventListener('keydown', handleKeyDown);
-    };
-  }, []);
-
   const showToast = (msg: string, type: 'success' | 'error' | 'info' = 'info') => {
     const id = Date.now() + Math.random();
     setToasts(prev => [...prev, { id, msg, type }]);

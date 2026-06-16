@@ -16,6 +16,7 @@ export default defineConfig(() => {
         },
         workbox: {
           globPatterns: ['**/*.{js,css,html,ico,png,svg,json}'],
+          navigateFallbackDenylist: [/^\/api/, /^\/games/], // Prevent SW returning index.html for API or Games
         },
         manifest: {
           name: 'Pusmendik',
