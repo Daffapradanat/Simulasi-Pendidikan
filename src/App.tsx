@@ -69,8 +69,11 @@ export default function App() {
   }, [showAllDoneModal, showLogoutConfirm, completedModulePopup]);
 
   useEffect(() => {
-    // Check auto-login if remember me was checked
-    const savedUser = localStorage.getItem('simpend_auto_login');
+    // Check auto-login if remember me was checked, or current session
+    let savedUser = localStorage.getItem('simpend_auto_login');
+    if (!savedUser) {
+      savedUser = localStorage.getItem('simpend_current_user');
+    }
     if (savedUser) {
       try {
         const parsed = JSON.parse(savedUser);
@@ -112,12 +115,19 @@ export default function App() {
     };
   }, [currentModuleId]);
 
-  const refreshUserData = (user: User) => {
+  const refreshUserData = async (user: User) => {
     try {
-      const played = localStorage.getItem(`simpend_played_${user.id}`);
-      if (played) setPlayedGames(new Set(JSON.parse(played)));
-      const completed = localStorage.getItem(`simpend_completed_${user.id}`);
-      if (completed) setCompletedModuleIds(new Set(JSON.parse(completed)));
+      const res = await fetch(`/api/users/${user.id}/progress`);
+      if (res.ok) {
+         const data = await res.json();
+         if (data.playedGames && data.playedGames.length > 0) setPlayedGames(new Set(data.playedGames));
+         if (data.completedModuleIds && data.completedModuleIds.length > 0) setCompletedModuleIds(new Set(data.completedModuleIds));
+      } else {
+         const played = localStorage.getItem(`simpend_played_${user.id}`);
+         if (played) setPlayedGames(new Set(JSON.parse(played)));
+         const completed = localStorage.getItem(`simpend_completed_${user.id}`);
+         if (completed) setCompletedModuleIds(new Set(JSON.parse(completed)));
+      }
       const lastMod = localStorage.getItem(`simpend_last_module_${user.id}`);
       if (lastMod) setLastModuleId(parseInt(lastMod, 10));
     } catch(e) {}
@@ -137,9 +147,18 @@ export default function App() {
   useEffect(() => {
     if (currentUser) {
       localStorage.setItem('simpend_current_user', JSON.stringify(currentUser));
-      localStorage.setItem(`simpend_played_${currentUser.id}`, JSON.stringify(Array.from(playedGames)));
-      localStorage.setItem(`simpend_completed_${currentUser.id}`, JSON.stringify(Array.from(completedModuleIds)));
+      const pArr = Array.from(playedGames);
+      const cArr = Array.from(completedModuleIds);
+      localStorage.setItem(`simpend_played_${currentUser.id}`, JSON.stringify(pArr));
+      localStorage.setItem(`simpend_completed_${currentUser.id}`, JSON.stringify(cArr));
       
+      // Sync with server
+      fetch(`/api/users/${currentUser.id}/progress`, {
+         method: 'POST',
+         headers: { 'Content-Type': 'application/json' },
+         body: JSON.stringify({ playedGames: pArr, completedModuleIds: cArr })
+      }).catch(console.error);
+
       let roleTitle = currentUser.role;
       if (roleTitle === 'siswa') roleTitle = 'Siswa';
       else if (roleTitle === 'guru') roleTitle = 'Guru';
@@ -240,7 +259,6 @@ export default function App() {
     }
     setCurrentModuleId(id);
     setActiveGameId(null);
-    setPlayedGames(new Set());
   };
 
   const handleLaunchGame = (id: number, title: string) => {
@@ -280,7 +298,6 @@ export default function App() {
     });
     setActiveGameId(null);
     setCurrentModuleId(null); // Return to module list immediately
-    setPlayedGames(new Set()); // Reset played games sequence
   };
 
   return (

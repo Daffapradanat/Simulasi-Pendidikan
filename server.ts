@@ -36,6 +36,7 @@ let modulesData: any[] = [];
 let teachersData: any[] = [];
 let studentsData: any[] = [];
 let activitiesData: any[] = [];
+let userProgressData: Record<number, any> = {};
 
 async function initDB() {
   db = await open({
@@ -48,6 +49,7 @@ async function initDB() {
     CREATE TABLE IF NOT EXISTS teachers (id INTEGER PRIMARY KEY, name TEXT, email TEXT, data TEXT);
     CREATE TABLE IF NOT EXISTS students (id INTEGER PRIMARY KEY, name TEXT, email TEXT, data TEXT);
     CREATE TABLE IF NOT EXISTS activities (id INTEGER PRIMARY KEY, time TEXT, data TEXT);
+    CREATE TABLE IF NOT EXISTS user_progress (id INTEGER PRIMARY KEY, data TEXT);
   `);
 
   // Migrate old app_state if necessary
@@ -77,6 +79,11 @@ async function initDB() {
     
     const acts = await db.all("SELECT data FROM activities ORDER BY id DESC LIMIT 100");
     activitiesData = acts.map((r: any) => JSON.parse(r.data));
+
+    const progs = await db.all("SELECT id, data FROM user_progress");
+    progs.forEach((r: any) => {
+      userProgressData[r.id] = JSON.parse(r.data);
+    });
   }
 
   // Migrate from database.json if completely empty
@@ -124,6 +131,12 @@ async function doSaveDb() {
     for (const a of activitiesData) {
       await db.run("INSERT INTO activities (id, time, data) VALUES (?, ?, ?)", [a.id, a.time, JSON.stringify(a)]);
     }
+
+    await db.run("DELETE FROM user_progress");
+    for (const [id, data] of Object.entries(userProgressData)) {
+      await db.run("INSERT INTO user_progress (id, data) VALUES (?, ?)", [id, JSON.stringify(data)]);
+    }
+
     await db.exec("COMMIT");
   } catch (error) {
     await db.exec("ROLLBACK");
@@ -230,6 +243,33 @@ async function startServer() {
     } catch {
       res.status(401).json({ error: "Invalid token" });
     }
+  });
+
+  // User Progress
+  app.get("/api/users/:id/progress", (req, res) => {
+    const id = parseInt(req.params.id);
+    res.json(userProgressData[id] || { playedGames: [], completedModuleIds: [] });
+  });
+
+  app.post("/api/users/:id/progress", (req, res) => {
+    const id = parseInt(req.params.id);
+    const { playedGames, completedModuleIds } = req.body;
+    userProgressData[id] = { playedGames: playedGames || [], completedModuleIds: completedModuleIds || [] };
+    saveDb();
+    res.json({ success: true });
+  });
+
+  app.post("/api/admin/complete_all/:id", (req, res) => {
+    const id = parseInt(req.params.id);
+    const completedModuleIds = modulesData.filter(m => !m.isDeleted).map(m => m.id);
+    let playedGames: number[] = [];
+    modulesData.filter(m => !m.isDeleted).forEach(m => {
+       m.games.forEach((g: any) => playedGames.push(g.id));
+    });
+    userProgressData[id] = { playedGames, completedModuleIds };
+    saveDb();
+    logActivity('admin', 'Admin', `Menyelesaikan semua modul untuk user ID ${id}`);
+    res.json({ success: true, progress: userProgressData[id] });
   });
 
   app.put("/api/auth/profile", (req, res) => {

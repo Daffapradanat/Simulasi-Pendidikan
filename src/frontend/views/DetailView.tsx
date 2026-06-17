@@ -131,7 +131,19 @@ export function DetailView({
                       <iframe 
                         src={activeGame.path} 
                         style={{ width: '100%', height: '100%', border: 'none', background: 'transparent' }} 
-                        title={activeGame.title} 
+                        title={activeGame.title}
+                        onLoad={(e) => {
+                          try {
+                            const win = (e.target as HTMLIFrameElement).contentWindow;
+                            if (win) {
+                              const noop = () => {};
+                              win.console.log = noop;
+                              win.console.info = noop;
+                              win.console.debug = noop;
+                              win.console.warn = noop;
+                            }
+                          } catch (err) {}
+                        }}
                       />
                     ) : (
                       <div className="webgl-placeholder" style={{ color: '#aaa', textAlign: 'center' }}>
