@@ -1157,9 +1157,7 @@ select.form-input {
   font-family: var(--font-display);
   font-weight: 700;
   color: var(--primary);
-  white-space: nowrap;
   flex-shrink: 0;
-  min-width: 120px;
 }
 
 .term-def {

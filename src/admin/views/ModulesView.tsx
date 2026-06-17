@@ -86,6 +86,7 @@ export default function ModulesView({
               onClick={() => {
                 setEditingModule(null);
                 setModuleForm({ title: '', desc: '', level: 'SD', duration: '', objectives: '', theory: '', keyTerms: [] });
+                setModuleGameFiles([]);
                 setView('modules_add_edit');
               }}
             >

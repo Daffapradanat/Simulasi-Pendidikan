@@ -75,8 +75,7 @@ export function DetailView({
                   <div className="material-subtitle"><i className="ti ti-target" style={{ color: 'var(--primary)' }}></i> Tujuan Pembelajaran</div>
                   <ul className="material-objectives" style={{ display: 'grid', gap: '10px', background: 'var(--surface-2)', padding: '16px 20px', borderRadius: '8px' }}>
                     {module.material.objectives.map((obj, i) => (
-                      <li key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', fontSize: '14px', lineHeight: 1.5 }}>
-                        <i className="ti ti-check" style={{ color: 'var(--success)', marginTop: '2px', flexShrink: 0, fontWeight: 800 }}></i>
+                      <li key={i} style={{ wordWrap: 'break-word', wordBreak: 'break-word' }}>
                         <span style={{ color: 'var(--text)' }}>{obj}</span>
                       </li>
                     ))}
@@ -101,9 +100,9 @@ export function DetailView({
                   <div className="material-subtitle"><i className="ti ti-vocabulary" style={{ color: 'var(--primary)' }}></i> Istilah Kunci</div>
                   <div className="material-terms" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '12px' }}>
                     {module.material.keyTerms.map((term, i) => (
-                      <div key={i} className="term-item" style={{ background: 'var(--surface)', border: '1px solid var(--border)', padding: '14px 16px', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                        <span className="term-name" style={{ fontSize: '14px', color: 'var(--primary)', fontWeight: 700 }}>{term.term}</span>
-                        <span className="term-def" style={{ fontSize: '13px', color: 'var(--text)', lineHeight: 1.5 }}>{term.def}</span>
+                      <div key={i} className="term-item" style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', borderLeft: '4px solid var(--primary)', padding: '14px 16px', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '6px', wordWrap: 'break-word', wordBreak: 'break-word' }}>
+                        <span className="term-name" style={{ fontSize: '15px', color: 'var(--primary-dark)', fontWeight: 700 }}>{term.term}</span>
+                        <span className="term-def" style={{ fontSize: '14px', color: 'var(--text-muted)', lineHeight: 1.5 }}>{term.def}</span>
                       </div>
                     ))}
                   </div>
