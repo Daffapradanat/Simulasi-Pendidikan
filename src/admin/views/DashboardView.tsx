@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
-export default function DashboardView({ modules, students, teachers }: { modules: any[], students: any[], teachers: any[] }) {
+export default function DashboardView({ modules, students, teachers, user }: { modules: any[], students: any[], teachers: any[], user: any }) {
   const [activities, setActivities] = useState<any[]>([]);
   const [showAllActivities, setShowAllActivities] = useState(false);
 
@@ -58,7 +58,7 @@ export default function DashboardView({ modules, students, teachers }: { modules
       <div style={{ position: 'relative', overflow: 'hidden', borderRadius: '16px', background: 'linear-gradient(to right, var(--primary-dark), var(--primary))', color: 'white', padding: '32px', boxShadow: 'var(--shadow-lg)' }}>
         <div style={{ position: 'relative', zIndex: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '24px' }}>
           <div>
-            <h2 style={{ fontSize: '28px', fontWeight: 800, marginBottom: '8px', fontFamily: 'var(--font-display)' }}>Selamat Datang, Admin!</h2>
+            <h2 style={{ fontSize: '28px', fontWeight: 800, marginBottom: '8px', fontFamily: 'var(--font-display)' }}>Selamat Datang, {user?.role === 'admin' ? 'Admin' : 'Guru'} {user?.name}!</h2>
             <p style={{ color: 'rgba(255, 255, 255, 0.9)', maxWidth: '600px', fontSize: '15px' }}>
               Berikut adalah ringkasan statistik dan progres pembelajaran terkini. Kelola modul, siswa, dan instruktur dengan efisien di sini.
             </p>

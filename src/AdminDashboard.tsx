@@ -304,7 +304,7 @@ export default function AdminDashboard({ user, onLogout, onNavigate, onUpdateUse
 
     switch (view) {
       case 'dashboard':
-        return <DashboardView modules={modules} students={students} teachers={teachers} />;
+        return <DashboardView modules={modules} students={students} teachers={teachers} user={user} />;
       case 'modules':
         return <ModulesView 
           modules={modules} setView={setView} setEditingModule={setEditingModule} 

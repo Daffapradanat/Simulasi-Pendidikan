@@ -172,7 +172,10 @@ async function startServer() {
   // Security controls are moved to /serverSecurity.ts
   configureSecurity(app);
 
-  app.use(cors());
+  app.use(cors({
+    origin: true,
+    credentials: true
+  }));
   
   app.use(express.json());
   app.use(cookieParser());
@@ -220,7 +223,7 @@ async function startServer() {
 
     const user = { id: foundUser.id, name: foundUser.name, email: foundUser.email, role: foundUser.role };
 
-    const token = jwt.sign({ email: user.email, role: user.role }, SECRET_KEY, { expiresIn: '1d' });
+    const token = jwt.sign({ id: user.id, email: user.email, role: user.role, name: user.name }, SECRET_KEY, { expiresIn: '1d' });
     res.cookie('token', token, { 
       httpOnly: true, 
       secure: true,
@@ -239,7 +242,7 @@ async function startServer() {
     if (!token) return res.status(401).json({ error: "Unauthorized" });
     try {
       const decoded = jwt.verify(token, SECRET_KEY) as any;
-      res.json({ user: { email: decoded.email, role: decoded.role, name: decoded.role === 'admin' ? 'Administrator' : 'Siswa' } });
+      res.json({ user: { id: decoded.id, email: decoded.email, role: decoded.role, name: decoded.name } });
     } catch {
       res.status(401).json({ error: "Invalid token" });
     }
