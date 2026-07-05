@@ -1,12 +1,16 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Module, User, Subject } from '../../types';
 
 // --- PROFILE VIEW ---
-export function ProfileView({ user, completedModuleIds, modules, subjects = [] }: { user: User, completedModuleIds: Set<number>, modules: Module[], subjects?: Subject[] }) {
+export function ProfileView({ user, completedModuleIds, modules, subjects = [], setUser }: { user: User, completedModuleIds: Set<number>, modules: Module[], subjects?: Subject[], setUser: (u: User) => void }) {
   const completedCount = completedModuleIds.size;
   const pct = modules.length ? Math.round((completedCount / modules.length) * 100) : 0;
   
+  const [isEditing, setIsEditing] = useState(false);
+  const [editForm, setEditForm] = useState({ name: user.name, email: user.email, password: '' });
+  const [showPassword, setShowPassword] = useState(false);
+
   // Group by subjects
   const subjectProgress = subjects.map(sub => {
     const subModules = modules.filter(m => m.subject_id === sub.id);
@@ -24,8 +28,42 @@ export function ProfileView({ user, completedModuleIds, modules, subjects = [] }
         </div>
 
         <div className="section-card" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', padding: '40px 24px', gap: '16px' }}>
-          <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '32px', fontWeight: 'bold' }}>
-            <i className="ti ti-user" style={{ fontSize: '40px' }}></i>
+          <div style={{ position: 'relative' }}>
+            <div style={{ width: '100px', height: '100px', borderRadius: '50%', background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '32px', fontWeight: 'bold', overflow: 'hidden' }}>
+              {(user as any).avatar ? (
+                <img src={(user as any).avatar} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              ) : (
+                <i className="ti ti-user" style={{ fontSize: '40px' }}></i>
+              )}
+            </div>
+            <label htmlFor="upload-my-avatar" style={{ position: 'absolute', bottom: '0', right: '0', width: '32px', height: '32px', borderRadius: '50%', background: 'var(--primary)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,0,0,0.2)' }}>
+              <i className="ti ti-camera" style={{ fontSize: '16px' }}></i>
+            </label>
+            <input type="file" id="upload-my-avatar" style={{ display: 'none' }} accept="image/*" onChange={async (e) => {
+              const file = e.target.files?.[0];
+              if (!file) return;
+              if (file.size > 5 * 1024 * 1024) { alert('Maksimal ukuran gambar adalah 5MB.'); e.target.value = ''; return; }
+              const formData = new FormData();
+              formData.append('avatar', file);
+              
+              try {
+                const res = await fetch('/api/upload-avatar', { method: 'POST', body: formData });
+                if (res.ok) {
+                  const data = await res.json();
+                  if (data.url) {
+                     // Update the user avatar in backend
+                     await fetch(`/api/users/${user.id}/avatar`, {
+                       method: 'PUT',
+                       headers: { 'Content-Type': 'application/json' },
+                       body: JSON.stringify({ avatar: data.url, role: user.role })
+                     });
+                     setUser({...user, avatar: data.url} as User);
+                  }
+                }
+              } catch (error) {
+                console.error("Failed to upload avatar", error);
+              }
+            }} />
           </div>
           <div>
             <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '24px', fontWeight: '800', color: 'var(--text)' }}>{user.name}</h2>
@@ -79,6 +117,69 @@ export function ProfileView({ user, completedModuleIds, modules, subjects = [] }
           )}
         </div>
       </div>
+
+      {isEditing && (
+        <div className="modal-overlay" style={{ zIndex: 1000 }}>
+          <div className="modal" style={{ maxWidth: '400px', width: '100%' }}>
+            <div className="modal-header">
+              <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 700 }}>Edit Profil</h3>
+              <button className="btn btn-ghost" style={{ padding: '8px' }} onClick={() => setIsEditing(false)}>
+                <i className="ti ti-x" style={{ fontSize: '20px' }}></i>
+              </button>
+            </div>
+            <div className="modal-body" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div className="form-group">
+                <label className="form-label">Nama Lengkap</label>
+                <div className="input-group">
+                  <div className="input-icon"><i className="ti ti-user"></i></div>
+                  <input type="text" className="input" value={editForm.name} onChange={e => setEditForm({...editForm, name: e.target.value})} />
+                </div>
+              </div>
+              <div className="form-group">
+                <label className="form-label">Email</label>
+                <div className="input-group">
+                  <div className="input-icon"><i className="ti ti-mail"></i></div>
+                  <input type="email" className="input" value={editForm.email} onChange={e => setEditForm({...editForm, email: e.target.value})} />
+                </div>
+              </div>
+              <div className="form-group">
+                <label className="form-label">Password Baru (Opsional)</label>
+                <div className="input-group">
+                  <div className="input-icon"><i className="ti ti-lock"></i></div>
+                  <input type={showPassword ? "text" : "password"} className="input" placeholder="Kosongkan jika tidak diubah" value={editForm.password} onChange={e => setEditForm({...editForm, password: e.target.value})} />
+                  <div className="input-addon" style={{ cursor: 'pointer' }} onClick={() => setShowPassword(!showPassword)}>
+                    <i className={`ti ${showPassword ? 'ti-eye-off' : 'ti-eye'}`}></i>
+                  </div>
+                </div>
+                <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>Jika diisi, ini akan mereset password Anda.</div>
+              </div>
+            </div>
+            <div className="modal-footer" style={{ padding: '16px 24px', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+              <button className="btn btn-ghost" onClick={() => setIsEditing(false)}>Batal</button>
+              <button className="btn btn-primary" onClick={async () => {
+                 try {
+                   const res = await fetch('/api/auth/profile', {
+                     method: 'PUT',
+                     headers: { 'Content-Type': 'application/json' },
+                     body: JSON.stringify({ id: user.id, name: editForm.name, email: editForm.email, role: user.role, password: editForm.password })
+                   });
+                   if (res.ok) {
+                     const data = await res.json();
+                     if (data.success) {
+                       setUser({ ...user, name: editForm.name, email: editForm.email });
+                       setIsEditing(false);
+                       alert('Profil berhasil diperbarui.');
+                     }
+                   }
+                 } catch (err) {
+                   console.error("Gagal mengupdate profil", err);
+                 }
+              }}>Simpan Perubahan</button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

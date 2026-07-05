@@ -219,7 +219,28 @@ async function startServer() {
   app.use(express.urlencoded({ extended: true, limit: "100mb" }));
   app.use(cookieParser());
 
+  
   // --- API ROUTES ---
+  
+  // Safe avatar serve route (Prevents directory traversal)
+  app.get("/api/avatars/:filename", (req, res) => {
+    const filename = req.params.filename;
+    if (filename.includes('/') || filename.includes('..') || filename.includes('\\')) {
+      return res.status(400).json({ error: "Invalid filename" });
+    }
+    const filepath = require('path').join(AVATAR_DIR, filename);
+    if (!fs.existsSync(filepath)) {
+      return res.status(404).json({ error: "Not found" });
+    }
+    res.sendFile(filepath);
+  });
+
+  // Avatar upload route
+  app.post("/api/upload-avatar", uploadAvatar.single('avatar'), (req, res) => {
+    if (!req.file) return res.status(400).json({ error: "No file uploaded or invalid format" });
+    res.json({ success: true, url: `/api/avatars/${req.file.filename}` });
+  });
+
 
   // Auth
   app.post("/api/auth/login", (req, res) => {
@@ -314,20 +335,26 @@ async function startServer() {
     res.json({ success: true, progress: userProgressData[id] });
   });
 
-  app.put("/api/auth/profile", (req, res) => {
-    const { id, name, email, role } = req.body;
+app.put("/api/auth/profile", (req, res) => {
+    const { id, name, email, role, password } = req.body;
     let found = false;
+    let newAvatar = undefined;
     if (role === 'siswa') {
       const idx = studentsData.findIndex(s => s.id === id);
-      if (idx !== -1) { studentsData[idx] = { ...studentsData[idx], name, email }; found = true; }
+      if (idx !== -1) { studentsData[idx] = { ...studentsData[idx], name, email }; newAvatar = studentsData[idx].avatar; found = true; }
     } else if (role === 'guru') {
       const idx = teachersData.findIndex(t => t.id === id);
-      if (idx !== -1) { teachersData[idx] = { ...teachersData[idx], name, email }; found = true; }
+      if (idx !== -1) { teachersData[idx] = { ...teachersData[idx], name, email }; newAvatar = teachersData[idx].avatar; found = true; }
     }
+    
     if (found) {
-      logActivity('system', role, `Pembaruan profil ${name}`);
+      if (password) {
+        logActivity('system', role, `Mereset password profil ${name}`);
+      } else {
+        logActivity('system', role, `Pembaruan profil ${name}`);
+      }
       saveDb();
-      res.json({ success: true, user: { id, name, email, role } });
+      res.json({ success: true, user: { id, name, email, role, avatar: newAvatar } });
     } else {
       res.status(404).json({ error: "User not found" });
     }

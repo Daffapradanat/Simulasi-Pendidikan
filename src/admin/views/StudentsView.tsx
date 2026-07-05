@@ -6,8 +6,11 @@ export default function StudentsView({
   setEditingStudent, setStudentForm,
   handleRestoreStudent, handleDeleteStudent, exportToExcel
 }: any) {
+  
   const [currentPage, setCurrentPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState('all');
+  const [viewingProfile, setViewingProfile] = useState<any>(null);
+
   const itemsPerPage = 8;
 
   const filteredStudents = students.filter(s => {
@@ -181,6 +184,124 @@ export default function StudentsView({
           )}
         </div>
       </div>
+
+      {viewingProfile && (
+        <div className="modal-overlay" style={{ zIndex: 1000 }}>
+          <div className="modal" style={{ maxWidth: '600px', width: '100%' }}>
+            <div className="modal-header">
+              <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <i className="ti ti-user-circle" style={{ color: 'var(--primary)', fontSize: '24px' }}></i> Profil Siswa
+              </h3>
+              <button className="btn btn-ghost" style={{ padding: '8px' }} onClick={() => setViewingProfile(null)}>
+                <i className="ti ti-x" style={{ fontSize: '20px' }}></i>
+              </button>
+            </div>
+            <div className="modal-body" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+              
+              <div style={{ display: 'flex', gap: '24px', alignItems: 'center' }}>
+                <div style={{ position: 'relative' }}>
+                  <div style={{ width: '100px', height: '100px', borderRadius: '50%', background: 'var(--surface-2)', border: '2px solid var(--border)', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    {viewingProfile.avatar ? (
+                      <img src={viewingProfile.avatar} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    ) : (
+                      <i className="ti ti-user" style={{ fontSize: '48px', color: 'var(--text-light)' }}></i>
+                    )}
+                  </div>
+                  <label htmlFor="upload-avatar" style={{ position: 'absolute', bottom: '0', right: '0', width: '32px', height: '32px', borderRadius: '50%', background: 'var(--primary)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,0,0,0.2)' }}>
+                    <i className="ti ti-camera" style={{ fontSize: '16px' }}></i>
+                  </label>
+                  <input type="file" id="upload-avatar" style={{ display: 'none' }} accept="image/*" onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+              if (file.size > 5 * 1024 * 1024) { alert('Maksimal ukuran gambar adalah 5MB.'); e.target.value = ''; return; }
+                    
+                    const formData = new FormData();
+                    formData.append('avatar', file);
+                    
+                    try {
+                      const res = await fetch('/api/upload-avatar', { method: 'POST', body: formData });
+                      if (res.ok) {
+                        const data = await res.json();
+                        if (data.url) {
+                           // Update the user avatar
+                           await fetch(`/api/students/${viewingProfile.id}`, {
+                             method: 'PUT',
+                             headers: { 'Content-Type': 'application/json' },
+                             body: JSON.stringify({ avatar: data.url })
+                           });
+                           setViewingProfile({...viewingProfile, avatar: data.url});
+                           // Also we might need to trigger a re-fetch of students list. 
+                           // For simplicity, we just mutate the current view.
+                           const sIdx = students.findIndex((s:any) => s.id === viewingProfile.id);
+                           if (sIdx !== -1) students[sIdx].avatar = data.url;
+                        }
+                      }
+                    } catch (error) {
+                      console.error("Failed to upload avatar", error);
+                    }
+                  }} />
+                </div>
+                
+                <div>
+                  <h2 style={{ margin: '0 0 4px 0', fontSize: '24px', fontWeight: 800 }}>{viewingProfile.name}</h2>
+                  <div style={{ fontSize: '14px', color: 'var(--text-muted)', display: 'flex', gap: '12px', marginBottom: '8px' }}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><i className="ti ti-id"></i> {viewingProfile.nisn || '-'}</span>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><i className="ti ti-building"></i> {viewingProfile.asalSekolah || '-'}</span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span className="badge badge-primary">Siswa</span>
+                    {viewingProfile.isDeleted && <span className="badge" style={{ background: 'var(--danger-light)', color: 'var(--danger)' }}>Nonaktif</span>}
+                  </div>
+                </div>
+              </div>
+              
+              <div style={{ background: 'var(--surface)', padding: '16px', borderRadius: '12px', border: '1px solid var(--border)' }}>
+                <h4 style={{ margin: '0 0 16px 0', fontSize: '14px', color: 'var(--text-muted)' }}>INFORMASI KONTAK</h4>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'var(--primary-light)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <i className="ti ti-mail"></i>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 600 }}>Email Address</div>
+                      <div style={{ fontSize: '14px', fontWeight: 500 }}>{viewingProfile.email}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ background: 'var(--surface)', padding: '16px', borderRadius: '12px', border: '1px solid var(--border)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                  <h4 style={{ margin: 0, fontSize: '14px', color: 'var(--text-muted)' }}>PROGRES BELAJAR</h4>
+                  <span style={{ fontSize: '20px', fontWeight: 800, color: 'var(--primary)' }}>{viewingProfile.progress}%</span>
+                </div>
+                
+                {viewingProfile.subjectProgress && Object.keys(viewingProfile.subjectProgress).length > 0 ? (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px' }}>
+                     {Object.entries(viewingProfile.subjectProgress).map(([subName, pct]) => (
+                       <div key={subName} style={{ background: 'var(--surface-2)', padding: '12px', borderRadius: '8px' }}>
+                         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', fontWeight: 600, marginBottom: '8px' }}>
+                           <span>{subName}</span>
+                           <span>{pct as number}%</span>
+                         </div>
+                         <div className="progress-bar" style={{ height: '6px', margin: 0 }}>
+                           <div className="progress-fill success" style={{ width: `${pct}%` }}></div>
+                         </div>
+                       </div>
+                     ))}
+                  </div>
+                ) : (
+                  <div style={{ textAlign: 'center', padding: '16px', color: 'var(--text-light)', fontSize: '14px' }}>
+                    Belum ada progres modul yang diselesaikan.
+                  </div>
+                )}
+              </div>
+              
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
+
 }

@@ -7,41 +7,41 @@ import { Subject } from '../../types';
 const getSubjectStyles = (name: string) => {
   const lowerName = name.toLowerCase();
   if (lowerName.includes('matematika') || lowerName.includes('math')) {
-    return { icon: 'ti-math-symbols', color: '#2563eb', bg: 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)', shadow: 'rgba(37, 99, 235, 0.15)' };
+    return { icon: 'ti-calculator', color: '#3b82f6', bg: '#eff6ff' }; // blue
   }
   if (lowerName.includes('fisika') || lowerName.includes('physics')) {
-    return { icon: 'ti-atom', color: '#7c3aed', bg: 'linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%)', shadow: 'rgba(124, 58, 237, 0.15)' };
+    return { icon: 'ti-atom', color: '#8b5cf6', bg: '#f5f3ff' }; // purple
   }
   if (lowerName.includes('kimia') || lowerName.includes('chemistry')) {
-    return { icon: 'ti-flask', color: '#059669', bg: 'linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%)', shadow: 'rgba(5, 150, 105, 0.15)' };
+    return { icon: 'ti-flask', color: '#10b981', bg: '#ecfdf5' }; // green
   }
   if (lowerName.includes('biologi') || lowerName.includes('biology')) {
-    return { icon: 'ti-dna', color: '#65a30d', bg: 'linear-gradient(135deg, #f7fee7 0%, #ecfccb 100%)', shadow: 'rgba(101, 163, 13, 0.15)' };
+    return { icon: 'ti-dna', color: '#84cc16', bg: '#f7fee7' }; // lime
   }
   if (lowerName.includes('sejarah') || lowerName.includes('history')) {
-    return { icon: 'ti-building-monument', color: '#d97706', bg: 'linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)', shadow: 'rgba(217, 119, 6, 0.15)' };
+    return { icon: 'ti-building-monument', color: '#f59e0b', bg: '#fffbeb' }; // amber
   }
   if (lowerName.includes('bahasa') || lowerName.includes('language')) {
-    return { icon: 'ti-language', color: '#db2777', bg: 'linear-gradient(135deg, #fdf2f8 0%, #fce7f3 100%)', shadow: 'rgba(219, 39, 119, 0.15)' };
+    return { icon: 'ti-language', color: '#ec4899', bg: '#fdf2f8' }; // pink
   }
   if (lowerName.includes('geografi') || lowerName.includes('geography') || lowerName.includes('bumi')) {
-    return { icon: 'ti-world', color: '#0891b2', bg: 'linear-gradient(135deg, #ecfeff 0%, #cffafe 100%)', shadow: 'rgba(8, 145, 178, 0.15)' };
+    return { icon: 'ti-world', color: '#06b6d4', bg: '#ecfeff' }; // cyan
   }
   if (lowerName.includes('seni') || lowerName.includes('art')) {
-    return { icon: 'ti-palette', color: '#e11d48', bg: 'linear-gradient(135deg, #fff1f2 0%, #ffe4e6 100%)', shadow: 'rgba(225, 29, 72, 0.15)' };
+    return { icon: 'ti-palette', color: '#f43f5e', bg: '#fff1f2' }; // rose
   }
   if (lowerName.includes('komputer') || lowerName.includes('tik') || lowerName.includes('informatika')) {
-    return { icon: 'ti-device-laptop', color: '#4f46e5', bg: 'linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%)', shadow: 'rgba(79, 70, 229, 0.15)' };
+    return { icon: 'ti-device-laptop', color: '#6366f1', bg: '#eef2ff' }; // indigo
   }
   if (lowerName.includes('agama') || lowerName.includes('religion')) {
-    return { icon: 'ti-moon-stars', color: '#0d9488', bg: 'linear-gradient(135deg, #f0fdfa 0%, #ccfbf1 100%)', shadow: 'rgba(13, 148, 136, 0.15)' };
+    return { icon: 'ti-pray', color: '#14b8a6', bg: '#f0fdfa' }; // teal
   }
   if (lowerName.includes('ekonomi') || lowerName.includes('akuntansi')) {
-    return { icon: 'ti-chart-bar', color: '#ca8a04', bg: 'linear-gradient(135deg, #fefce8 0%, #fef9c3 100%)', shadow: 'rgba(202, 138, 4, 0.15)' };
+    return { icon: 'ti-chart-bar', color: '#eab308', bg: '#fefce8' }; // yellow
   }
   
   // Default fallback
-  return { icon: 'ti-book', color: 'var(--primary)', bg: 'linear-gradient(135deg, var(--primary-light) 0%, rgba(13,71,161,0.1) 100%)', shadow: 'rgba(13, 71, 161, 0.15)' };
+  return { icon: 'ti-book', color: 'var(--primary)', bg: 'var(--primary-light)' };
 };
 
 
@@ -71,58 +71,38 @@ export function SubjectSelectionView({ subjects, onSelectSubject }: { subjects: 
                 flexDirection: 'column', 
                 alignItems: 'center', 
                 justifyContent: 'center',
-                transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                transition: 'all 0.3s ease',
                 borderTop: `4px solid ${style.color}`,
-                boxShadow: '0 4px 20px rgba(0,0,0,0.03)',
-                position: 'relative',
-                overflow: 'hidden'
+                boxShadow: '0 4px 12px rgba(0,0,0,0.05)'
               }} 
               onClick={() => onSelectSubject(subject.id)}
               onMouseEnter={(e) => {
-                e.currentTarget.style.transform = 'translateY(-6px)';
-                e.currentTarget.style.boxShadow = `0 16px 32px ${style.shadow}`;
-                const iconDiv = e.currentTarget.querySelector('.subject-icon-wrapper') as HTMLDivElement;
-                if (iconDiv) iconDiv.style.transform = 'scale(1.1)';
+                e.currentTarget.style.transform = 'translateY(-4px)';
+                e.currentTarget.style.boxShadow = '0 12px 24px rgba(0,0,0,0.1)';
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.transform = 'translateY(0)';
-                e.currentTarget.style.boxShadow = '0 4px 20px rgba(0,0,0,0.03)';
-                const iconDiv = e.currentTarget.querySelector('.subject-icon-wrapper') as HTMLDivElement;
-                if (iconDiv) iconDiv.style.transform = 'scale(1)';
+                e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.05)';
               }}
             >
-              <div 
-                className="subject-icon-wrapper"
-                style={{ 
-                width: '80px', 
-                height: '80px', 
-                borderRadius: '24px', 
+              <div style={{ 
+                width: '72px', 
+                height: '72px', 
+                borderRadius: '20px', 
                 background: style.bg, 
                 color: style.color, 
                 display: 'flex', 
                 alignItems: 'center', 
                 justifyContent: 'center', 
-                fontSize: '36px', 
-                marginBottom: '24px',
-                transition: 'transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
-                boxShadow: `inset 0 2px 4px rgba(255,255,255,0.5), 0 8px 16px ${style.shadow}`
+                fontSize: '32px', 
+                marginBottom: '20px',
+                transition: 'transform 0.3s ease'
               }}>
                 <i className={`ti ${style.icon}`}></i>
               </div>
-              <h3 style={{ fontSize: '22px', fontWeight: 800, color: 'var(--text)', marginBottom: '12px', letterSpacing: '-0.02em' }}>{subject.name}</h3>
-              <div style={{ 
-                fontSize: '13px', 
-                color: style.color, 
-                fontWeight: 600, 
-                padding: '6px 16px', 
-                background: style.bg, 
-                borderRadius: '100px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                opacity: 0.9
-              }}>
-                Eksplorasi Modul <i className="ti ti-arrow-right" style={{ fontSize: '14px' }}></i>
+              <h3 style={{ fontSize: '20px', fontWeight: 700, color: 'var(--text)', marginBottom: '8px' }}>{subject.name}</h3>
+              <div style={{ fontSize: '13px', color: 'var(--text-muted)', fontWeight: 500, padding: '4px 12px', background: '#f1f5f9', borderRadius: '12px' }}>
+                Buka Modul <i className="ti ti-arrow-right" style={{ marginLeft: '4px', fontSize: '12px' }}></i>
               </div>
             </div>
 

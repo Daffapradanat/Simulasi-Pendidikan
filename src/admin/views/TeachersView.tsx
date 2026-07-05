@@ -5,8 +5,11 @@ export default function TeachersView({
   teachers, teacherSearch, setTeacherSearch, setShowTeacherModal,
   setEditingTeacher, setTeacherForm, handleRestoreTeacher, handleDeleteTeacher, exportTeacherExcel
 }: any) {
+  
   const [currentPage, setCurrentPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState('all');
+  const [viewingProfile, setViewingProfile] = useState<any>(null);
+
   const itemsPerPage = 8;
 
   const filteredTeachers = teachers.filter(t => {
@@ -99,26 +102,31 @@ export default function TeachersView({
                       <span style={{ display: 'inline-block', background: '#E3F2FD', color: 'var(--primary)', padding: '4px 8px', borderRadius: '6px', fontSize: '12px', fontWeight: 600 }}>Aktif</span>
                     )}
                   </td>
+
                   <td>
                     <div style={{ display: 'flex', gap: '8px' }}>
-                    <button className="btn btn-ghost btn-sm" onClick={() => {
+                    <button className="btn btn-ghost btn-sm" title="Lihat Profil" onClick={() => setViewingProfile(t)}>
+                      <i className="ti ti-user-circle" style={{ fontSize: '18px' }}></i>
+                    </button>
+                    <button className="btn btn-ghost btn-sm" title="Edit" onClick={() => {
                       setEditingTeacher(t);
                       setTeacherForm({ name: t.name, subject: t.subject, nip: t.nip || '', email: t.email || '' });
                       setShowTeacherModal(true);
                     }}>
-                      <i className="ti ti-edit"></i> Edit
+                      <i className="ti ti-edit" style={{ fontSize: '18px' }}></i>
                     </button>
                     {t.isDeleted ? (
-                      <button className="btn btn-ghost btn-sm" style={{ color: 'var(--primary)' }} onClick={() => handleRestoreTeacher(t.id)}>
-                        <i className="ti ti-rotate-clockwise"></i> Restore
+                      <button className="btn btn-ghost btn-sm" title="Pulihkan" style={{ color: 'var(--primary)', padding: '4px 8px' }} onClick={() => handleRestoreTeacher(t.id)}>
+                        <i className="ti ti-rotate-clockwise" style={{ fontSize: '18px' }}></i>
                       </button>
                     ) : (
-                      <button className="btn btn-ghost btn-sm" style={{ color: 'var(--danger)' }} onClick={() => handleDeleteTeacher(t.id)}>
-                        <i className="ti ti-trash"></i> Hapus
+                      <button className="btn btn-ghost btn-sm" title="Hapus" style={{ color: 'var(--danger)', padding: '4px 8px' }} onClick={() => handleDeleteTeacher(t.id)}>
+                        <i className="ti ti-trash" style={{ fontSize: '18px' }}></i>
                       </button>
                     )}
                     </div>
                   </td>
+
                 </tr>
               )))}
             </tbody>
@@ -161,6 +169,95 @@ export default function TeachersView({
           )}
         </div>
       </div>
+
+      {viewingProfile && (
+        <div className="modal-overlay" style={{ zIndex: 1000 }}>
+          <div className="modal" style={{ maxWidth: '600px', width: '100%' }}>
+            <div className="modal-header">
+              <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <i className="ti ti-user-circle" style={{ color: 'var(--primary)', fontSize: '24px' }}></i> Profil Guru
+              </h3>
+              <button className="btn btn-ghost" style={{ padding: '8px' }} onClick={() => setViewingProfile(null)}>
+                <i className="ti ti-x" style={{ fontSize: '20px' }}></i>
+              </button>
+            </div>
+            <div className="modal-body" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+              
+              <div style={{ display: 'flex', gap: '24px', alignItems: 'center' }}>
+                <div style={{ position: 'relative' }}>
+                  <div style={{ width: '100px', height: '100px', borderRadius: '50%', background: 'var(--surface-2)', border: '2px solid var(--border)', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    {viewingProfile.avatar ? (
+                      <img src={viewingProfile.avatar} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    ) : (
+                      <i className="ti ti-user-check" style={{ fontSize: '48px', color: 'var(--text-light)' }}></i>
+                    )}
+                  </div>
+                  <label htmlFor="upload-avatar" style={{ position: 'absolute', bottom: '0', right: '0', width: '32px', height: '32px', borderRadius: '50%', background: 'var(--primary)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,0,0,0.2)' }}>
+                    <i className="ti ti-camera" style={{ fontSize: '16px' }}></i>
+                  </label>
+                  <input type="file" id="upload-avatar" style={{ display: 'none' }} accept="image/*" onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+              if (file.size > 5 * 1024 * 1024) { alert('Maksimal ukuran gambar adalah 5MB.'); e.target.value = ''; return; }
+                    
+                    const formData = new FormData();
+                    formData.append('avatar', file);
+                    
+                    try {
+                      const res = await fetch('/api/upload-avatar', { method: 'POST', body: formData });
+                      if (res.ok) {
+                        const data = await res.json();
+                        if (data.url) {
+                           // Update the user avatar
+                           await fetch(`/api/teachers/${viewingProfile.id}`, {
+                             method: 'PUT',
+                             headers: { 'Content-Type': 'application/json' },
+                             body: JSON.stringify({ avatar: data.url })
+                           });
+                           setViewingProfile({...viewingProfile, avatar: data.url});
+                           const tIdx = teachers.findIndex((t:any) => t.id === viewingProfile.id);
+                           if (tIdx !== -1) teachers[tIdx].avatar = data.url;
+                        }
+                      }
+                    } catch (error) {
+                      console.error("Failed to upload avatar", error);
+                    }
+                  }} />
+                </div>
+                
+                <div>
+                  <h2 style={{ margin: '0 0 4px 0', fontSize: '24px', fontWeight: 800 }}>{viewingProfile.name}</h2>
+                  <div style={{ fontSize: '14px', color: 'var(--text-muted)', display: 'flex', gap: '12px', marginBottom: '8px' }}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><i className="ti ti-id"></i> {viewingProfile.nip || '-'}</span>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><i className="ti ti-book"></i> {viewingProfile.subject || '-'}</span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span className="badge badge-primary">Guru</span>
+                    {viewingProfile.isDeleted && <span className="badge" style={{ background: 'var(--danger-light)', color: 'var(--danger)' }}>Nonaktif</span>}
+                  </div>
+                </div>
+              </div>
+              
+              <div style={{ background: 'var(--surface)', padding: '16px', borderRadius: '12px', border: '1px solid var(--border)' }}>
+                <h4 style={{ margin: '0 0 16px 0', fontSize: '14px', color: 'var(--text-muted)' }}>INFORMASI KONTAK</h4>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'var(--primary-light)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <i className="ti ti-mail"></i>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 600 }}>Email Address</div>
+                      <div style={{ fontSize: '14px', fontWeight: 500 }}>{viewingProfile.email || '-'}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
+
 }
