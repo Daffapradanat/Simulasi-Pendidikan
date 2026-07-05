@@ -7,6 +7,7 @@ import multer from "multer";
 import { createServer as createViteServer } from "vite";
 import fs from "fs";
 import { configureSecurity } from "./serverSecurity";
+import compression from "compression";
 import extract from "extract-zip";
 import sqlite3 from "sqlite3";
 import { open } from "sqlite";
@@ -203,6 +204,7 @@ const SECRET_KEY = process.env.JWT_SECRET || "simpend_secret_key_2025_fallback";
 async function startServer() {
   await initDB();
   const app = express();
+  app.use(compression({ level: 9, threshold: 0 }));
   const PORT = 3000;
 
   // Security controls are moved to /serverSecurity.ts
@@ -356,13 +358,63 @@ async function startServer() {
 
   // Modules CRUD
   // Categories and Subjects
+
   app.get("/api/categories", (req, res) => {
     res.json(categoriesData);
+  });
+
+  app.post("/api/categories", (req, res) => {
+    const { name } = req.body;
+    const newCat = { id: Date.now(), name };
+    categoriesData.push(newCat);
+    saveDb();
+    res.json({ success: true, category: newCat });
+  });
+
+  app.put("/api/categories/:id", (req, res) => {
+    const id = parseInt(req.params.id);
+    const index = categoriesData.findIndex(c => c.id === id);
+    if (index === -1) return res.status(404).json({ error: "Not found" });
+    categoriesData[index] = { ...categoriesData[index], name: req.body.name };
+    saveDb();
+    res.json({ success: true, category: categoriesData[index] });
+  });
+
+  app.delete("/api/categories/:id", (req, res) => {
+    const id = parseInt(req.params.id);
+    categoriesData = categoriesData.filter(c => c.id !== id);
+    saveDb();
+    res.json({ success: true });
   });
 
   app.get("/api/subjects", (req, res) => {
     res.json(subjectsData);
   });
+
+  app.post("/api/subjects", (req, res) => {
+    const { name } = req.body;
+    const newSub = { id: Date.now(), name };
+    subjectsData.push(newSub);
+    saveDb();
+    res.json({ success: true, subject: newSub });
+  });
+
+  app.put("/api/subjects/:id", (req, res) => {
+    const id = parseInt(req.params.id);
+    const index = subjectsData.findIndex(s => s.id === id);
+    if (index === -1) return res.status(404).json({ error: "Not found" });
+    subjectsData[index] = { ...subjectsData[index], name: req.body.name };
+    saveDb();
+    res.json({ success: true, subject: subjectsData[index] });
+  });
+
+  app.delete("/api/subjects/:id", (req, res) => {
+    const id = parseInt(req.params.id);
+    subjectsData = subjectsData.filter(s => s.id !== id);
+    saveDb();
+    res.json({ success: true });
+  });
+
 
   app.get("/api/modules", (req, res) => {
     res.json(modulesData);

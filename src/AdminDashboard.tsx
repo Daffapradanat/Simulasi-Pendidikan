@@ -5,6 +5,7 @@ import ModulesAddEditView from './admin/views/ModulesAddEditView';
 import ModulesView from './admin/views/ModulesView';
 import DashboardView from './admin/views/DashboardView';
 import AuditView from './admin/views/AuditView';
+import CategoriesSubjectsView from './admin/views/CategoriesSubjectsView';
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Module, Category, Subject } from './types';
@@ -15,7 +16,7 @@ import * as XLSX from 'xlsx';
 import { useNavigate } from 'react-router-dom';
 
 // Types for Admin
-type AdminViewMode = 'dashboard' | 'modules' | 'modules_add_edit' | 'students' | 'teachers' | 'profile' | 'audit';
+type AdminViewMode = 'dashboard' | 'modules' | 'modules_add_edit' | 'students' | 'teachers' | 'profile' | 'audit' | 'categories_subjects';
 
 export default function AdminDashboard({ user, onLogout, onNavigate, onUpdateUser }: { user: any, onLogout: () => void, onNavigate: (v: 'main' | 'profile') => void, onUpdateUser?: (u: any) => void }) {
   const navigate = useNavigate();
@@ -328,7 +329,42 @@ export default function AdminDashboard({ user, onLogout, onNavigate, onUpdateUse
           isSaving={isSavingModule}
           categories={categories} subjects={subjects}
         />;
+
+      case 'categories_subjects':
+        return <CategoriesSubjectsView 
+          categories={categories}
+          subjects={subjects}
+          onAddCategory={async (name) => {
+            const res = await fetch('/api/categories', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name }) });
+            const data = await res.json();
+            setCategories([...categories, data.category]);
+          }}
+          onEditCategory={async (id, name) => {
+            const res = await fetch(`/api/categories/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name }) });
+            const data = await res.json();
+            setCategories(categories.map(c => c.id === id ? data.category : c));
+          }}
+          onDeleteCategory={async (id) => {
+            await fetch(`/api/categories/${id}`, { method: 'DELETE' });
+            setCategories(categories.filter(c => c.id !== id));
+          }}
+          onAddSubject={async (name) => {
+            const res = await fetch('/api/subjects', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name }) });
+            const data = await res.json();
+            setSubjects([...subjects, data.subject]);
+          }}
+          onEditSubject={async (id, name) => {
+            const res = await fetch(`/api/subjects/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name }) });
+            const data = await res.json();
+            setSubjects(subjects.map(s => s.id === id ? data.subject : s));
+          }}
+          onDeleteSubject={async (id) => {
+            await fetch(`/api/subjects/${id}`, { method: 'DELETE' });
+            setSubjects(subjects.filter(s => s.id !== id));
+          }}
+        />;
       case 'audit':
+
         return <AuditView modules={modules} />;
       case 'students':
         return <StudentsView 
