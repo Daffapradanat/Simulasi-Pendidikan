@@ -404,7 +404,7 @@ export default function AdminDashboard({ user, onLogout, onNavigate, onUpdateUse
             <i className="ti ti-books"></i> Manajemen Modul
           </button>
           <button className={`btn ${view === 'categories_subjects' ? 'btn-primary' : 'btn-ghost'} btn-full`} style={{ justifyContent: 'flex-start', border: view === 'categories_subjects' ? undefined : 'none' }} onClick={() => setView('categories_subjects')}>
-            <i className="ti ti-tags"></i> Manajemen Mapel & Jenjang
+            <i className="ti ti-tags"></i> Kategori & Mapel
           </button>
           <button className={`btn ${view === 'audit' ? 'btn-primary' : 'btn-ghost'} btn-full`} style={{ justifyContent: 'flex-start', border: view === 'audit' ? undefined : 'none' }} onClick={() => setView('audit')}>
             <i className="ti ti-clipboard-check"></i> Audit Konten

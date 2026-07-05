@@ -58,8 +58,10 @@ export default function TeachersView({
           <table className="admin-table">
             <thead>
               <tr>
-                <th>ID / NIP</th>
-                <th>Nama Guru & Email</th>
+                <th>No.</th>
+                <th>NIP</th>
+                <th>Nama Guru</th>
+                <th>Email</th>
                 <th>Mata Pelajaran</th>
                 <th>Status</th>
                 <th>Aksi</th>
@@ -68,22 +70,24 @@ export default function TeachersView({
             <tbody>
               {displayedTeachers.length === 0 ? (
                 <tr>
-                  <td colSpan={5} style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)' }}>
+                  <td colSpan={7} style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)' }}>
                     <i className="ti ti-user-check" style={{ fontSize: '32px', display: 'block', margin: '0 auto 8px', color: 'var(--border)' }}></i>
                     Tidak ada guru yang sesuai
                   </td>
                 </tr>
               ) : (
-                displayedTeachers.map(t => (
+                displayedTeachers.map((t, index) => (
                 <tr key={t.id} style={{ ...(t.isDeleted ? { filter: 'grayscale(100%)', opacity: 0.5 } : {}) }}>
+                  <td>{index + 1}</td>
                   <td>
-                    <div style={{ fontWeight: 600 }}>{t.id}</div>
-                    <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{t.nip || '-'}</div>
+                    <div style={{ fontWeight: 600 }}>{t.nip || '-'}</div>
                     {t.isDeleted && <span className="badge" style={{ background: 'var(--border)', color: 'var(--text-muted)', marginTop: '6px', display: 'inline-block' }}>Dihapus</span>}
                   </td>
                   <td style={{ textDecoration: t.isDeleted ? 'line-through' : 'none' }}>
                     <div style={{ fontWeight: 600 }}>{t.name}</div>
-                    <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{t.email || '-'}</div>
+                  </td>
+                  <td style={{ textDecoration: t.isDeleted ? 'line-through' : 'none' }}>
+                    <div style={{ color: 'var(--text-muted)' }}>{t.email || '-'}</div>
                   </td>
                   <td style={{ textDecoration: t.isDeleted ? 'line-through' : 'none' }}>
                     <span className="badge badge-primary">{t.subject}</span>

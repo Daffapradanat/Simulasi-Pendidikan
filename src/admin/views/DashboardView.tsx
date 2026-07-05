@@ -21,30 +21,30 @@ export default function DashboardView({ modules, students, teachers, user }: { m
   };
 
   const chartData = React.useMemo(() => {
-
-    const data = {
-      SD: { name: 'SD', Selesai: 0, Aktif: 0, BelumMulai: 0 },
-      SMP: { name: 'SMP', Selesai: 0, Aktif: 0, BelumMulai: 0 },
-      SMA: { name: 'SMA', Selesai: 0, Aktif: 0, BelumMulai: 0 },
-      Umum: { name: 'Umum', Selesai: 0, Aktif: 0, BelumMulai: 0 }
-    };
-    
+    // Collect all unique subjects from all students
+    const subjectNames = new Set<string>();
     students.forEach(s => {
-      if (s.isDeleted) return;
+      if (s.isDeleted || !s.subjectProgress) return;
+      Object.keys(s.subjectProgress).forEach(sub => subjectNames.add(sub));
+    });
+
+    const data: Record<string, { name: string, Selesai: number, Aktif: number, BelumMulai: number }> = {};
+    subjectNames.forEach(sub => {
+      data[sub] = { name: sub, Selesai: 0, Aktif: 0, BelumMulai: 0 };
+    });
+
+    students.forEach(s => {
+      if (s.isDeleted || !s.subjectProgress) return;
       
-      let level = 'Umum';
-      const sekolah = (s.asalSekolah || '').toUpperCase();
-      if (sekolah.includes('SD ') || sekolah.startsWith('SDN') || sekolah.includes('SDN ')) level = 'SD';
-      else if (sekolah.includes('SMP')) level = 'SMP';
-      else if (sekolah.includes('SMA') || sekolah.includes('SMK') || sekolah.includes('SMU')) level = 'SMA';
-      
-      const p = s.progress || 0;
-      if (p === 100) data[level as keyof typeof data].Selesai++;
-      else if (p > 0) data[level as keyof typeof data].Aktif++;
-      else data[level as keyof typeof data].BelumMulai++;
+      Object.entries(s.subjectProgress).forEach(([subName, pct]) => {
+         const p = pct as number;
+         if (p === 100) data[subName].Selesai++;
+         else if (p > 0) data[subName].Aktif++;
+         else data[subName].BelumMulai++;
+      });
     });
     
-    return [data.SD, data.SMP, data.SMA, data.Umum];
+    return Object.values(data);
   }, [students]);
 
   const totalModul = modules.filter(m => !m.isDeleted).length;
@@ -121,9 +121,9 @@ export default function DashboardView({ modules, students, teachers, user }: { m
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px', marginBottom: '24px' }}>
             <div>
               <h3 style={{ fontSize: '18px', fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <i className="ti ti-chart-bar" style={{ color: 'var(--primary)' }}></i> Progres Siswa Berdasarkan Jenjang
+                <i className="ti ti-chart-bar" style={{ color: 'var(--primary)' }}></i> Progres Siswa Berdasarkan Mata Pelajaran
               </h3>
-              <p style={{ margin: '4px 0 0 0', fontSize: '13px', color: 'var(--text-muted)' }}>Distribusi penyelesaian modul siswa pada tiap tingkat pendidikan.</p>
+              <p style={{ margin: '4px 0 0 0', fontSize: '13px', color: 'var(--text-muted)' }}>Distribusi penyelesaian modul siswa pada setiap mata pelajaran.</p>
             </div>
             <div style={{ display: 'flex', gap: '16px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><span style={{ width: '12px', height: '12px', borderRadius: '50%', background: 'var(--success)' }}></span><span style={{ fontSize: '12px', fontWeight: 500, color: 'var(--text-muted)' }}>Selesai</span></div>

@@ -60,7 +60,8 @@ export default function StudentsView({
           <table className="admin-table">
             <thead>
               <tr>
-                <th>ID / NISN</th>
+                <th>No.</th>
+                <th>NISN</th>
                 <th>Nama Siswa</th>
                 <th>Asal Sekolah</th>
                 <th>Email</th>
@@ -72,30 +73,41 @@ export default function StudentsView({
             <tbody>
               {displayedStudents.length === 0 ? (
                 <tr>
-                  <td colSpan={7} style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)' }}>
+                  <td colSpan={8} style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)' }}>
                     <i className="ti ti-users" style={{ fontSize: '32px', display: 'block', margin: '0 auto 8px', color: 'var(--border)' }}></i>
                     Tidak ada siswa yang sesuai
                   </td>
                 </tr>
               ) : (
-                displayedStudents.map(s => (
+                displayedStudents.map((s, index) => (
                 <tr key={s.id} style={{ ...(s.isDeleted ? { filter: 'grayscale(100%)', opacity: 0.5 } : {}) }}>
+                  <td>{index + 1}</td>
                   <td>
-                    <div style={{ fontWeight: 600 }}>{s.id}</div>
-                    <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{s.nisn || '-'}</div>
+                    <div style={{ fontWeight: 600 }}>{s.nisn || '-'}</div>
                     {s.isDeleted && <span className="badge" style={{ background: 'var(--border)', color: 'var(--text-muted)', marginTop: '6px', display: 'inline-block' }}>Dihapus</span>}
                   </td>
                   <td style={{ textDecoration: s.isDeleted ? 'line-through' : 'none' }}>{s.name}</td>
                   <td style={{ textDecoration: s.isDeleted ? 'line-through' : 'none' }}>{s.asalSekolah || '-'}</td>
                   <td style={{ textDecoration: s.isDeleted ? 'line-through' : 'none' }}>{s.email}</td>
+
                   <td>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                       <div className="progress-bar" style={{ width: '80px', margin: 0, height: '8px' }}>
-                         <div className="progress-fill success" style={{ width: `${s.progress}%` }}></div>
-                       </div>
-                       <span style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text-muted)' }}>{s.progress}%</span>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                       {s.subjectProgress && Object.keys(s.subjectProgress).length > 0 ? (
+                         Object.entries(s.subjectProgress).map(([subName, pct]) => (
+                           <div key={subName} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px' }}>
+                             <div style={{ width: '80px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: 'var(--text-muted)' }}>{subName}</div>
+                             <div className="progress-bar" style={{ width: '60px', margin: 0, height: '6px' }}>
+                               <div className="progress-fill success" style={{ width: `${pct}%` }}></div>
+                             </div>
+                             <span style={{ fontWeight: 500 }}>{pct as number}%</span>
+                           </div>
+                         ))
+                       ) : (
+                         <span style={{ fontSize: '12px', color: 'var(--text-light)' }}>-</span>
+                       )}
                     </div>
                   </td>
+
                   <td>
                     {s.isDeleted ? (
                       <span style={{ display: 'inline-block', background: 'var(--surface-2)', color: 'var(--text-muted)', padding: '4px 8px', borderRadius: '6px', fontSize: '12px', fontWeight: 600 }}>Nonaktif</span>

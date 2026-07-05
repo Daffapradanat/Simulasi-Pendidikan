@@ -205,7 +205,7 @@ async function startServer() {
   await initDB();
   const app = express();
   app.use(compression({ level: 9, threshold: 0 }));
-  const PORT = 3000;
+  const PORT = process.env.PORT || 3000;
 
   // Security controls are moved to /serverSecurity.ts
   configureSecurity(app);
@@ -609,9 +609,29 @@ async function startServer() {
   });
 
   // Students
+
   app.get("/api/students", (req, res) => {
-    res.json(studentsData);
+    const augmentedStudents = studentsData.map((s: any) => {
+       const userProg = userProgressData[s.id] || { playedGames: [], completedModuleIds: [] };
+       const completedModuleIds = userProg.completedModuleIds || [];
+       
+       const activeMods = modulesData.filter((m: any) => !m.isDeleted);
+       const totalMods = activeMods.length;
+       const completed = completedModuleIds.length;
+       const progress = totalMods > 0 ? Math.round((completed / totalMods) * 100) : 0;
+       
+       const subjectProgress: Record<string, number> = {};
+       subjectsData.forEach((sub: any) => {
+          const subMods = activeMods.filter((m: any) => m.subject_id === sub.id);
+          const subCompleted = subMods.filter((m: any) => completedModuleIds.includes(m.id)).length;
+          subjectProgress[sub.name] = subMods.length > 0 ? Math.round((subCompleted / subMods.length) * 100) : 0;
+       });
+       
+       return { ...s, progress, subjectProgress, completedModuleIds };
+    });
+    res.json(augmentedStudents);
   });
+
   app.post("/api/students", (req, res) => {
     const newStudent = { id: Date.now(), progress: 0, ...req.body };
     studentsData.push(newStudent);

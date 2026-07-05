@@ -48,19 +48,35 @@ export default function App() {
     }, 3500);
   };
 
+
   const computedModules = useMemo(() => {
-    let prevCompleted = true;
-    return appModules.map(mod => {
-      let status = 'locked';
-      if (completedModuleIds.has(mod.id)) {
-        status = 'completed';
-      } else if (prevCompleted) {
-        status = 'unlocked';
+    // Find all unique subjects
+    const subjectIds = Array.from(new Set(appModules.map(m => m.subject_id || 0)));
+    
+    // Compute status per subject
+    const subjectStatuses = new Map<number, string>();
+    
+    for (const subId of subjectIds) {
+      const subjectMods = appModules.filter(m => (m.subject_id || 0) === subId);
+      let prevCompleted = true;
+      for (const mod of subjectMods) {
+         let status = 'locked';
+         if (completedModuleIds.has(mod.id)) {
+            status = 'completed';
+         } else if (prevCompleted) {
+            status = 'unlocked';
+         }
+         prevCompleted = (status === 'completed');
+         subjectStatuses.set(mod.id, status);
       }
-      prevCompleted = (status === 'completed');
-      return { ...mod, status };
-    });
+    }
+    
+    return appModules.map(mod => ({
+      ...mod,
+      status: subjectStatuses.get(mod.id) || 'locked'
+    }));
   }, [completedModuleIds, appModules]);
+
 
   useEffect(() => {
     if (showAllDoneModal || showLogoutConfirm || completedModulePopup) {
@@ -398,7 +414,7 @@ export default function App() {
 
                 {viewMode === 'profile' && (
                   <motion.div key="profile" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}>
-                     <ProfileView user={currentUser} completedModuleIds={completedModuleIds} modules={appModules} />
+                     <ProfileView user={currentUser} completedModuleIds={completedModuleIds} modules={appModules} subjects={appSubjects} />
                   </motion.div>
                 )}
               </AnimatePresence>

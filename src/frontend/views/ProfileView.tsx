@@ -1,10 +1,19 @@
+
 import React from 'react';
-import { Module, User } from '../../types';
+import { Module, User, Subject } from '../../types';
 
 // --- PROFILE VIEW ---
-export function ProfileView({ user, completedModuleIds, modules }: { user: User, completedModuleIds: Set<number>, modules: Module[] }) {
+export function ProfileView({ user, completedModuleIds, modules, subjects = [] }: { user: User, completedModuleIds: Set<number>, modules: Module[], subjects?: Subject[] }) {
   const completedCount = completedModuleIds.size;
-  const pct = Math.round((completedCount / modules.length) * 100);
+  const pct = modules.length ? Math.round((completedCount / modules.length) * 100) : 0;
+  
+  // Group by subjects
+  const subjectProgress = subjects.map(sub => {
+    const subModules = modules.filter(m => m.subject_id === sub.id);
+    const subCompleted = subModules.filter(m => completedModuleIds.has(m.id)).length;
+    const subPct = subModules.length ? Math.round((subCompleted / subModules.length) * 100) : 0;
+    return { ...sub, total: subModules.length, completed: subCompleted, pct: subPct };
+  }).filter(sp => sp.total > 0);
 
   return (
     <div className="page active">
@@ -26,7 +35,7 @@ export function ProfileView({ user, completedModuleIds, modules }: { user: User,
         </div>
 
         <div className="section-card">
-          <div className="section-card-title"><i className="ti ti-chart-bar"></i> Statistik Belajar</div>
+          <div className="section-card-title"><i className="ti ti-chart-bar"></i> Statistik Belajar Keseluruhan</div>
           <div className="stats-row" style={{ gridTemplateColumns: 'repeat(2, 1fr)', marginBottom: '24px' }}>
              <div className="stat-card">
                <div className="stat-icon"><i className="ti ti-books" aria-hidden="true"></i></div>
@@ -39,14 +48,35 @@ export function ProfileView({ user, completedModuleIds, modules }: { user: User,
                <div className="stat-label">Modul Selesai</div>
              </div>
           </div>
-
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
             <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '15px' }}>Progres Keseluruhan</span>
             <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>{pct}%</span>
           </div>
-          <div className="progress-bar">
+          <div className="progress-bar" style={{ marginBottom: '32px' }}>
             <div className="progress-fill success" style={{ width: `${pct}%` }}></div>
           </div>
+          
+          {subjectProgress.length > 0 && (
+            <>
+              <div className="section-card-title" style={{ marginTop: '32px' }}><i className="ti ti-tags"></i> Progres Per Mata Pelajaran</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                {subjectProgress.map(sp => (
+                  <div key={sp.id} style={{ padding: '16px', background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                      <span style={{ fontWeight: 600, fontSize: '15px', color: 'var(--text)' }}>{sp.name}</span>
+                      <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>{sp.completed} / {sp.total} Selesai</span>
+                    </div>
+                    <div className="progress-bar" style={{ height: '8px', marginBottom: '6px' }}>
+                      <div className="progress-fill" style={{ width: `${sp.pct}%`, background: 'var(--primary)' }}></div>
+                    </div>
+                    <div style={{ textAlign: 'right', fontSize: '12px', color: 'var(--text-muted)', fontWeight: 500 }}>
+                      {sp.pct}%
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>
