@@ -7,7 +7,7 @@ import DashboardView from './admin/views/DashboardView';
 import AuditView from './admin/views/AuditView';
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Module } from './types';
+import { Module, Category, Subject } from './types';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
@@ -26,6 +26,8 @@ export default function AdminDashboard({ user, onLogout, onNavigate, onUpdateUse
   const [modules, setModules] = useState<Module[]>([]);
   const [students, setStudents] = useState<any[]>([]);
   const [teachers, setTeachers] = useState<any[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [subjects, setSubjects] = useState<Subject[]>([]);
   
   // States for CRUD
   const [loading, setLoading] = useState(true);
@@ -35,6 +37,7 @@ export default function AdminDashboard({ user, onLogout, onNavigate, onUpdateUse
   // Form states
   const [moduleForm, setModuleForm] = useState({ 
     title: '', desc: '', level: 'SD', duration: '', 
+    category_id: 1, subject_id: 1,
     objectives: '', theory: '', keyTerms: [] as {term: string, def: string}[] 
   });
   const [studentForm, setStudentForm] = useState({ name: '', email: '', nisn: '', asalSekolah: '' });
@@ -68,14 +71,18 @@ export default function AdminDashboard({ user, onLogout, onNavigate, onUpdateUse
     const fetchData = async () => {
       setLoading(true);
       try {
-        const [modRes, stuRes, teachRes] = await Promise.all([
+        const [modRes, stuRes, teachRes, catRes, subRes] = await Promise.all([
           fetch('/api/modules').then(r => r.json()),
           fetch('/api/students').then(r => r.json()),
-          fetch('/api/teachers').then(r => r.json())
+          fetch('/api/teachers').then(r => r.json()),
+          fetch('/api/categories').then(r => r.json()),
+          fetch('/api/subjects').then(r => r.json())
         ]);
         setModules(modRes);
         setStudents(stuRes);
         setTeachers(teachRes);
+        setCategories(catRes);
+        setSubjects(subRes);
       } catch (err) {
         console.error("Failed to fetch data", err);
       }
@@ -104,6 +111,8 @@ export default function AdminDashboard({ user, onLogout, onNavigate, onUpdateUse
       formData.append('title', moduleForm.title);
       formData.append('desc', moduleForm.desc);
       formData.append('level', moduleForm.level);
+      formData.append('category_id', moduleForm.category_id.toString());
+      formData.append('subject_id', moduleForm.subject_id.toString());
       formData.append('duration', moduleForm.duration);
       formData.append('material', JSON.stringify(material));
       
@@ -313,10 +322,11 @@ export default function AdminDashboard({ user, onLogout, onNavigate, onUpdateUse
         />;
       case 'modules_add_edit':
         return <ModulesAddEditView 
-          editingModule={editingModule} moduleForm={moduleForm} setModuleForm={setModuleForm} 
-          setView={setView} handleSaveModule={handleSaveModule} 
+          editingModule={editingModule} moduleForm={moduleForm} setModuleForm={setModuleForm}
+          setView={setView} handleSaveModule={handleSaveModule}
           moduleGameFiles={moduleGameFiles} setModuleGameFiles={setModuleGameFiles}
           isSaving={isSavingModule}
+          categories={categories} subjects={subjects}
         />;
       case 'audit':
         return <AuditView modules={modules} />;

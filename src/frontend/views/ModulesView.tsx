@@ -45,7 +45,7 @@ const renderLevelBadge = (level: string) => {
 }
 
 // --- MODULES VIEW ---
-export function ModulesView({ modules, onOpenModule, lastModuleId }: { modules: Module[], onOpenModule: (id: number) => void, lastModuleId: number | null }) {
+export function ModulesView({ modules, onOpenModule, lastModuleId, onBack }: { modules: Module[], onOpenModule: (id: number) => void, lastModuleId: number | null, onBack?: () => void }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(() => {
     const saved = sessionStorage.getItem('simpend_module_page');
@@ -79,6 +79,13 @@ export function ModulesView({ modules, onOpenModule, lastModuleId }: { modules: 
   return (
     <div className="page active">
       <div className="main-wrapper">
+        {onBack && (
+          <div style={{ marginBottom: '24px' }}>
+            <button className="btn btn-ghost" onClick={onBack} style={{ padding: '8px 16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <i className="ti ti-arrow-left"></i> Kembali ke Pilihan Mata Pelajaran
+            </button>
+          </div>
+        )}
         <div className="stats-row">
           <div className="stat-card">
             <div className="stat-icon"><i className="ti ti-books" aria-hidden="true"></i></div>

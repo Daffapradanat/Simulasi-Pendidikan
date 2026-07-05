@@ -85,7 +85,7 @@ export default function ModulesView({
               className="btn btn-primary btn-sm" 
               onClick={() => {
                 setEditingModule(null);
-                setModuleForm({ title: '', desc: '', level: 'SD', duration: '', objectives: '', theory: '', keyTerms: [] });
+                setModuleForm({ title: '', desc: '', level: 'SD', duration: '', category_id: 1, subject_id: 1, objectives: '', theory: '', keyTerms: [] });
                 setModuleGameFiles([]);
                 setView('modules_add_edit');
               }}
@@ -153,6 +153,8 @@ export default function ModulesView({
                           title: mod.title, 
                           desc: mod.desc, 
                           level: mod.level, 
+                          category_id: mod.category_id || 1,
+                          subject_id: mod.subject_id || 1,
                           duration: mod.duration || '', 
                           objectives: mod.material?.objectives?.join('\n') || '',
                           theory: mod.material?.theory || '',

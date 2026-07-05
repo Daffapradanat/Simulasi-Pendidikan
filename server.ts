@@ -10,6 +10,7 @@ import { configureSecurity } from "./serverSecurity";
 import extract from "extract-zip";
 import sqlite3 from "sqlite3";
 import { open } from "sqlite";
+import { seedCategories, seedSubjects, seedStudents, seedTeachers } from "./seedData";
 
 const PUBLIC_GAMES_DIR = path.join(process.cwd(), "public", "games");
 if (!fs.existsSync(PUBLIC_GAMES_DIR)) {
@@ -26,7 +27,10 @@ const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, UPLOADS_DIR),
   filename: (req, file, cb) => cb(null, Date.now() + "-" + Math.round(Math.random() * 1e9) + "-" + file.originalname)
 });
-const upload = multer({ storage });
+const upload = multer({ 
+  storage,
+  limits: { fileSize: 50 * 1024 * 1024 } // 50MB limit
+});
 
 // Database Persistence
 const DB_FILE = path.join(process.cwd(), "database.sqlite");
@@ -37,6 +41,8 @@ let teachersData: any[] = [];
 let studentsData: any[] = [];
 let activitiesData: any[] = [];
 let userProgressData: Record<number, any> = {};
+let categoriesData: any[] = [];
+let subjectsData: any[] = [];
 
 async function initDB() {
   db = await open({
@@ -50,6 +56,8 @@ async function initDB() {
     CREATE TABLE IF NOT EXISTS students (id INTEGER PRIMARY KEY, name TEXT, email TEXT, data TEXT);
     CREATE TABLE IF NOT EXISTS activities (id INTEGER PRIMARY KEY, time TEXT, data TEXT);
     CREATE TABLE IF NOT EXISTS user_progress (id INTEGER PRIMARY KEY, data TEXT);
+    CREATE TABLE IF NOT EXISTS categories (id INTEGER PRIMARY KEY, name TEXT, data TEXT);
+    CREATE TABLE IF NOT EXISTS subjects (id INTEGER PRIMARY KEY, name TEXT, data TEXT);
   `);
 
   // Migrate old app_state if necessary
@@ -84,6 +92,20 @@ async function initDB() {
     progs.forEach((r: any) => {
       userProgressData[r.id] = JSON.parse(r.data);
     });
+
+    const cats = await db.all("SELECT data FROM categories");
+    categoriesData = cats.map((r: any) => JSON.parse(r.data));
+
+    const subs = await db.all("SELECT data FROM subjects");
+    subjectsData = subs.map((r: any) => JSON.parse(r.data));
+  }
+
+  // Prepopulate Categories and Subjects if empty
+  if (categoriesData.length === 0) {
+    categoriesData = [...seedCategories];
+  }
+  if (subjectsData.length === 0) {
+    subjectsData = [...seedSubjects];
   }
 
   // Migrate from database.json if completely empty
@@ -99,12 +121,17 @@ async function initDB() {
   }
 
   // Add example users if missing
-  if (!studentsData.find((s: any) => s.id === 1)) {
-    studentsData.push({ id: 1, name: "Siswa Siswi", email: "siswa@murid.sekolah.sch.id", nisn: "1234567890", asalSekolah: "SMP Negeri 1", progress: 0 });
-  }
-  if (!teachersData.find((t: any) => t.id === 2)) {
-    teachersData.push({ id: 2, name: "Guru Pengajar", email: "guru@sekolah.sch.id", nip: "198001012005011001", subject: "Ilmu Pengetahuan Alam" });
-  }
+  seedStudents.forEach(seedUser => {
+    if (!studentsData.find((s: any) => s.email === seedUser.email)) {
+      studentsData.push({ ...seedUser });
+    }
+  });
+
+  seedTeachers.forEach(seedUser => {
+    if (!teachersData.find((t: any) => t.email === seedUser.email)) {
+      teachersData.push({ ...seedUser });
+    }
+  });
   await saveDb();
 }
 
@@ -137,6 +164,15 @@ async function doSaveDb() {
       await db.run("INSERT INTO user_progress (id, data) VALUES (?, ?)", [id, JSON.stringify(data)]);
     }
 
+    await db.run("DELETE FROM categories");
+    for (const c of categoriesData) {
+      await db.run("INSERT INTO categories (id, name, data) VALUES (?, ?, ?)", [c.id, c.name, JSON.stringify(c)]);
+    }
+    await db.run("DELETE FROM subjects");
+    for (const sub of subjectsData) {
+      await db.run("INSERT INTO subjects (id, name, data) VALUES (?, ?, ?)", [sub.id, sub.name, JSON.stringify(sub)]);
+    }
+
     await db.exec("COMMIT");
   } catch (error) {
     await db.exec("ROLLBACK");
@@ -162,7 +198,7 @@ function logActivity(action: string, user: string, desc: string) {
   saveDb();
 }
 
-const SECRET_KEY = "simpend_secret_key_2025";
+const SECRET_KEY = process.env.JWT_SECRET || "simpend_secret_key_2025_fallback";
 
 async function startServer() {
   await initDB();
@@ -319,6 +355,15 @@ async function startServer() {
   });
 
   // Modules CRUD
+  // Categories and Subjects
+  app.get("/api/categories", (req, res) => {
+    res.json(categoriesData);
+  });
+
+  app.get("/api/subjects", (req, res) => {
+    res.json(subjectsData);
+  });
+
   app.get("/api/modules", (req, res) => {
     res.json(modulesData);
   });
@@ -341,7 +386,7 @@ async function startServer() {
 
   app.post("/api/modules", upload.array('gameFiles'), async (req, res) => {
     try {
-      let { title, desc, level, duration, material, gamesMeta } = req.body;
+      let { title, desc, level, category_id, subject_id, duration, material, gamesMeta } = req.body;
       try { material = JSON.parse(material || '[]'); } catch(e) {}
       try { gamesMeta = JSON.parse(gamesMeta || '[]'); } catch(e) {}
 
@@ -371,9 +416,12 @@ async function startServer() {
 
       const newModule = { 
         id: Date.now(), 
-        title, desc, level, duration, material, 
-        games: gamesMeta, gameCount: gamesMeta?.length || 0, 
-        status: 'locked' 
+        title, desc, level, 
+        category_id: parseInt(category_id) || null,
+        subject_id: parseInt(subject_id) || null,
+        duration, material, 
+        games: gamesMeta, gameCount: gamesMeta?.length || 0,
+        status: 'locked'
       };
       modulesData.push(newModule);
       logActivity('module', 'Admin', `Menambahkan modul baru "${title}"`);
@@ -391,7 +439,7 @@ async function startServer() {
       const index = modulesData.findIndex(m => m.id === id);
       if (index === -1) return res.status(404).json({ error: "Not found" });
 
-      let { title, desc, level, duration, material, gamesMeta } = req.body;
+      let { title, desc, level, category_id, subject_id, duration, material, gamesMeta } = req.body;
       try { material = JSON.parse(material || '[]'); } catch(e) {}
       try { gamesMeta = JSON.parse(gamesMeta || '[]'); } catch(e) {}
 
@@ -420,7 +468,10 @@ async function startServer() {
 
       modulesData[index] = { 
         ...modulesData[index], 
-        title, desc, level, duration, material, games: gamesMeta, gameCount: gamesMeta?.length || 0
+        title, desc, level, 
+        category_id: parseInt(category_id) || null,
+        subject_id: parseInt(subject_id) || null,
+        duration, material, games: gamesMeta, gameCount: gamesMeta?.length || 0
       };
       logActivity('module', 'Admin', `Mengubah modul "${title}"`);
       saveDb();
@@ -548,7 +599,10 @@ async function startServer() {
 
   // Serve extracted games explicitly
   app.use('/games', express.static(PUBLIC_GAMES_DIR, {
+    maxAge: '1y', // Cache for 1 year
     setHeaders: (res, filePath) => {
+      // Add standard Cache-Control for aggressively caching static assets
+      res.set('Cache-Control', 'public, max-age=31536000, immutable');
       if (filePath.endsWith('.gz')) {
         res.set('Content-Encoding', 'gzip');
         if (filePath.includes('.wasm')) res.set('Content-Type', 'application/wasm');

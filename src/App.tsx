@@ -9,6 +9,7 @@ import { LoginView } from './frontend/views/LoginView';
 import { ModulesView } from './frontend/views/ModulesView';
 import { DetailView } from './frontend/views/DetailView';
 import { ProfileView } from './frontend/views/ProfileView';
+import { SubjectSelectionView } from './frontend/views/SubjectSelectionView';
 
 // --- MAIN APP COMPONENT ---
 export default function App() {
@@ -23,6 +24,8 @@ export default function App() {
     return null;
   });
   const [appModules, setAppModules] = useState<Module[]>([]);
+  const [appSubjects, setAppSubjects] = useState<any[]>([]);
+  const [selectedSubjectId, setSelectedSubjectId] = useState<number | null>(null);
   const [lastModuleId, setLastModuleId] = useState<number | null>(null);
   const [currentModuleId, setCurrentModuleId] = useState<number | null>(null);
   const [activeGameId, setActiveGameId] = useState<number | null>(null);
@@ -139,6 +142,15 @@ export default function App() {
       .then(data => {
         if (Array.isArray(data)) {
           setAppModules(data.filter(m => !m.isDeleted));
+        }
+      })
+      .catch(() => {});
+      
+    fetch('/api/subjects')
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) {
+          setAppSubjects(data);
         }
       })
       .catch(() => {});
@@ -348,12 +360,21 @@ export default function App() {
               />
 
               <AnimatePresence mode="wait">
-                {viewMode === 'main' && !currentModuleId && (
+                {viewMode === 'main' && !currentModuleId && !selectedSubjectId && (
+                  <motion.div key="subjects" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}>
+                    <SubjectSelectionView 
+                      subjects={appSubjects} 
+                      onSelectSubject={(id) => setSelectedSubjectId(id)} 
+                    />
+                  </motion.div>
+                )}
+                {viewMode === 'main' && !currentModuleId && selectedSubjectId && (
                   <motion.div key="modules" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}>
                     <ModulesView 
-                      modules={computedModules} 
+                      modules={computedModules.filter(m => m.subject_id === selectedSubjectId)} 
                       onOpenModule={handleOpenModule} 
                       lastModuleId={lastModuleId}
+                      onBack={() => setSelectedSubjectId(null)}
                     />
                   </motion.div>
                 )}

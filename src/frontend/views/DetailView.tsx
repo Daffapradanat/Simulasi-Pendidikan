@@ -133,8 +133,8 @@ export function DetailView({
                         title={activeGame.title}
                         onLoad={(e) => {
                           try {
-                            const win = (e.target as HTMLIFrameElement).contentWindow;
-                            if (win) {
+                            const win = (e.target as HTMLIFrameElement).contentWindow as any;
+                            if (win && win.console) {
                               const noop = () => {};
                               win.console.log = noop;
                               win.console.info = noop;

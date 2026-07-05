@@ -3,7 +3,7 @@ import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
 
 export default function ModulesAddEditView({ 
-  editingModule, moduleForm, setModuleForm, setView, handleSaveModule, moduleGameFiles, setModuleGameFiles, isSaving
+  editingModule, moduleForm, setModuleForm, setView, handleSaveModule, moduleGameFiles, setModuleGameFiles, isSaving, categories, subjects
 }: any) {
   return (
           <div className="admin-content" style={{ maxWidth: '800px', margin: '0 auto' }}>
@@ -19,14 +19,24 @@ export default function ModulesAddEditView({
                   <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: 500 }}>Judul Modul</label>
                   <input type="text" className="form-input" required value={moduleForm.title} onChange={e => setModuleForm({...moduleForm, title: e.target.value})} placeholder="Contoh: Modul 3: Evaluasi" />
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px', marginBottom: '16px' }}>
                   <div>
-                    <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: 500 }}>Jenjang</label>
-                    <select className="form-input" required value={moduleForm.level} onChange={e => setModuleForm({...moduleForm, level: e.target.value})}>
-                      <option value="SD">SD</option>
-                      <option value="SMP">SMP</option>
-                      <option value="SMA">SMA</option>
-                      <option value="Umum">Umum</option>
+                    <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: 500 }}>Kategori (Jenjang)</label>
+                    <select className="form-input" required value={moduleForm.category_id} onChange={e => {
+                        const cat = categories.find((c: any) => c.id === parseInt(e.target.value));
+                        setModuleForm({...moduleForm, category_id: parseInt(e.target.value), level: cat ? cat.name : moduleForm.level});
+                      }}>
+                      {categories.map((c: any) => (
+                        <option key={c.id} value={c.id}>{c.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: 500 }}>Mata Pelajaran</label>
+                    <select className="form-input" required value={moduleForm.subject_id} onChange={e => setModuleForm({...moduleForm, subject_id: parseInt(e.target.value)})}>
+                      {subjects.map((s: any) => (
+                        <option key={s.id} value={s.id}>{s.name}</option>
+                      ))}
                     </select>
                   </div>
                   <div>

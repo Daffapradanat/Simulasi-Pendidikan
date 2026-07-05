@@ -1,9 +1,21 @@
+export type Category = {
+  id: number;
+  name: string;
+};
+
+export type Subject = {
+  id: number;
+  name: string;
+};
+
 export type Module = {
   id: number;
   title: string;
   desc: string;
   status: string; // 'locked' | 'unlocked' | 'completed'
   isDeleted?: boolean;
+  category_id?: number;
+  subject_id?: number;
   material: {
     objectives: string[];
     theory: string;
