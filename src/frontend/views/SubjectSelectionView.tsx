@@ -3,52 +3,49 @@ import React from 'react';
 import { Subject } from '../../types';
 
 
-// Helper function to determine icon and color based on subject name
+// Helper function to dynamically determine icon and color based on subject name
 const getSubjectStyles = (name: string) => {
   const lowerName = name.toLowerCase();
   
-  // Clean, professional styling
-  const style = {
-    color: '#334155', // slate-700
-    bg: '#f8fafc'     // slate-50
-  };
+  // Clean, professional styling presets
+  const presets = [
+    { icon: 'ti-calculator', color: '#3b82f6', bg: '#eff6ff' }, // blue
+    { icon: 'ti-atom', color: '#8b5cf6', bg: '#f5f3ff' }, // purple
+    { icon: 'ti-flask', color: '#10b981', bg: '#ecfdf5' }, // green
+    { icon: 'ti-microscope', color: '#84cc16', bg: '#f7fee7' }, // lime
+    { icon: 'ti-building-monument', color: '#f59e0b', bg: '#fffbeb' }, // amber
+    { icon: 'ti-language', color: '#ec4899', bg: '#fdf2f8' }, // pink
+    { icon: 'ti-world', color: '#06b6d4', bg: '#ecfeff' }, // cyan
+    { icon: 'ti-palette', color: '#f43f5e', bg: '#fff1f2' }, // rose
+    { icon: 'ti-device-laptop', color: '#6366f1', bg: '#eef2ff' }, // indigo
+    { icon: 'ti-book-2', color: '#14b8a6', bg: '#f0fdfa' }, // teal
+    { icon: 'ti-chart-bar', color: '#eab308', bg: '#fefce8' }, // yellow
+    { icon: 'ti-leaf', color: '#22c55e', bg: '#f0fdf4' }, // green variant
+    { icon: 'ti-music', color: '#d946ef', bg: '#fdf4ff' }, // fuchsia
+    { icon: 'ti-brain', color: '#f97316', bg: '#fff7ed' }, // orange
+    { icon: 'ti-ball-basketball', color: '#ea580c', bg: '#fff7ed' } // dark orange
+  ];
 
-  if (lowerName.includes('matematika') || lowerName.includes('math')) {
-    return { icon: 'ti-calculator', ...style };
-  }
-  if (lowerName.includes('fisika') || lowerName.includes('physics')) {
-    return { icon: 'ti-atom', ...style };
-  }
-  if (lowerName.includes('kimia') || lowerName.includes('chemistry')) {
-    return { icon: 'ti-flask', ...style };
-  }
-  if (lowerName.includes('biologi') || lowerName.includes('biology')) {
-    return { icon: 'ti-microscope', ...style };
-  }
-  if (lowerName.includes('sejarah') || lowerName.includes('history')) {
-    return { icon: 'ti-building-monument', ...style };
-  }
-  if (lowerName.includes('bahasa') || lowerName.includes('language')) {
-    return { icon: 'ti-language', ...style };
-  }
-  if (lowerName.includes('geografi') || lowerName.includes('geography') || lowerName.includes('bumi')) {
-    return { icon: 'ti-world', ...style };
-  }
-  if (lowerName.includes('seni') || lowerName.includes('art')) {
-    return { icon: 'ti-palette', ...style };
-  }
-  if (lowerName.includes('komputer') || lowerName.includes('tik') || lowerName.includes('informatika')) {
-    return { icon: 'ti-device-laptop', ...style };
-  }
-  if (lowerName.includes('agama') || lowerName.includes('religion')) {
-    return { icon: 'ti-book-2', ...style };
-  }
-  if (lowerName.includes('ekonomi') || lowerName.includes('akuntansi')) {
-    return { icon: 'ti-chart-bar', ...style };
-  }
+  // Specific overrides for known subjects
+  if (lowerName.includes('matematika') || lowerName.includes('math')) return presets[0];
+  if (lowerName.includes('fisika') || lowerName.includes('physics')) return presets[1];
+  if (lowerName.includes('kimia') || lowerName.includes('chemistry')) return presets[2];
+  if (lowerName.includes('biologi') || lowerName.includes('biology') || lowerName.includes('ipa')) return presets[3];
+  if (lowerName.includes('sejarah') || lowerName.includes('history')) return presets[4];
+  if (lowerName.includes('bahasa') || lowerName.includes('language')) return presets[5];
+  if (lowerName.includes('geografi') || lowerName.includes('geography') || lowerName.includes('bumi')) return presets[6];
+  if (lowerName.includes('seni') || lowerName.includes('art')) return presets[7];
+  if (lowerName.includes('komputer') || lowerName.includes('tik') || lowerName.includes('informatika')) return presets[8];
+  if (lowerName.includes('agama') || lowerName.includes('religion')) return presets[9];
+  if (lowerName.includes('ekonomi') || lowerName.includes('akuntansi') || lowerName.includes('ips')) return presets[10];
   
-  // Default fallback
-  return { icon: 'ti-book', ...style };
+  // Consistent hash for unknown subjects
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const index = Math.abs(hash) % presets.length;
+  return presets[index];
 };
 
 

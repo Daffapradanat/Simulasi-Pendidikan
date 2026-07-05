@@ -189,7 +189,7 @@ export default function TeachersView({
                     {viewingProfile.avatar ? (
                       <img src={viewingProfile.avatar} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                     ) : (
-                      <i className="ti ti-user-check" style={{ fontSize: '48px', color: 'var(--text-light)' }}></i>
+                      <img src={`https://ui-avatars.com/api/?name=${encodeURIComponent(viewingProfile.name)}&background=random&color=fff&size=100`} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                     )}
                   </div>
                   <label htmlFor="upload-avatar" style={{ position: 'absolute', bottom: '0', right: '0', width: '32px', height: '32px', borderRadius: '50%', background: 'var(--primary)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,0,0,0.2)' }}>

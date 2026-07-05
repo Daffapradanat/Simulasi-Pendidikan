@@ -122,26 +122,31 @@ export default function StudentsView({
                       <span style={{ display: 'inline-block', background: '#F3F4F6', color: '#6B7280', padding: '4px 8px', borderRadius: '6px', fontSize: '12px', fontWeight: 600 }}>Belum Mulai</span>
                     )}
                   </td>
+
                   <td>
                     <div style={{ display: 'flex', gap: '8px' }}>
-                    <button className="btn btn-ghost btn-sm" onClick={() => {
+                    <button className="btn btn-ghost btn-sm" title="Lihat Profil" onClick={() => setViewingProfile(s)}>
+                      <i className="ti ti-user-circle" style={{ fontSize: '18px' }}></i>
+                    </button>
+                    <button className="btn btn-ghost btn-sm" title="Edit" onClick={() => {
                       setEditingStudent(s);
                       setStudentForm({ name: s.name, email: s.email, nisn: s.nisn || '', asalSekolah: s.asalSekolah || '' });
                       setShowStudentModal(true);
                     }}>
-                      <i className="ti ti-edit"></i> Edit
+                      <i className="ti ti-edit" style={{ fontSize: '18px' }}></i>
                     </button>
                     {s.isDeleted ? (
-                      <button className="btn btn-ghost btn-sm" style={{ color: 'var(--primary)', padding: '4px 8px' }} onClick={() => handleRestoreStudent(s.id)}>
-                        <i className="ti ti-rotate-clockwise"></i> Restore
+                      <button className="btn btn-ghost btn-sm" title="Pulihkan" style={{ color: 'var(--primary)', padding: '4px 8px' }} onClick={() => handleRestoreStudent(s.id)}>
+                        <i className="ti ti-rotate-clockwise" style={{ fontSize: '18px' }}></i>
                       </button>
                     ) : (
-                      <button className="btn btn-ghost btn-sm" style={{ color: 'var(--danger)', padding: '4px 8px' }} onClick={() => handleDeleteStudent(s.id)}>
-                        <i className="ti ti-trash"></i> Hapus
+                      <button className="btn btn-ghost btn-sm" title="Hapus" style={{ color: 'var(--danger)', padding: '4px 8px' }} onClick={() => handleDeleteStudent(s.id)}>
+                        <i className="ti ti-trash" style={{ fontSize: '18px' }}></i>
                       </button>
                     )}
                     </div>
                   </td>
+
                 </tr>
               )))}
             </tbody>
@@ -204,7 +209,7 @@ export default function StudentsView({
                     {viewingProfile.avatar ? (
                       <img src={viewingProfile.avatar} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                     ) : (
-                      <i className="ti ti-user" style={{ fontSize: '48px', color: 'var(--text-light)' }}></i>
+                      <img src={`https://ui-avatars.com/api/?name=${encodeURIComponent(viewingProfile.name)}&background=random&color=fff&size=100`} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                     )}
                   </div>
                   <label htmlFor="upload-avatar" style={{ position: 'absolute', bottom: '0', right: '0', width: '32px', height: '32px', borderRadius: '50%', background: 'var(--primary)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,0,0,0.2)' }}>

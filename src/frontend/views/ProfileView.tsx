@@ -8,7 +8,8 @@ export function ProfileView({ user, completedModuleIds, modules, subjects = [], 
   const pct = modules.length ? Math.round((completedCount / modules.length) * 100) : 0;
   
   const [isEditing, setIsEditing] = useState(false);
-  const [editForm, setEditForm] = useState({ name: user.name, email: user.email, password: '' });
+  const [editForm, setEditForm] = useState({ name: user.name, email: user.email, password: '', confirmPassword: '' });
+  const [errorMsg, setErrorMsg] = useState('');
   const [showPassword, setShowPassword] = useState(false);
 
   // Group by subjects
@@ -33,7 +34,7 @@ export function ProfileView({ user, completedModuleIds, modules, subjects = [], 
               {(user as any).avatar ? (
                 <img src={(user as any).avatar} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               ) : (
-                <i className="ti ti-user" style={{ fontSize: '40px' }}></i>
+                <img src={`https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=random&color=fff&size=100`} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               )}
             </div>
             <label htmlFor="upload-my-avatar" style={{ position: 'absolute', bottom: '0', right: '0', width: '32px', height: '32px', borderRadius: '50%', background: 'var(--primary)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,0,0,0.2)' }}>
@@ -142,6 +143,7 @@ export function ProfileView({ user, completedModuleIds, modules, subjects = [], 
                   <input type="email" className="input" value={editForm.email} onChange={e => setEditForm({...editForm, email: e.target.value})} />
                 </div>
               </div>
+
               <div className="form-group">
                 <label className="form-label">Password Baru (Opsional)</label>
                 <div className="input-group">
@@ -153,11 +155,33 @@ export function ProfileView({ user, completedModuleIds, modules, subjects = [], 
                 </div>
                 <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>Jika diisi, ini akan mereset password Anda.</div>
               </div>
+              
+              {editForm.password && (
+                <div className="form-group">
+                  <label className="form-label">Konfirmasi Password Baru</label>
+                  <div className="input-group">
+                    <div className="input-icon"><i className="ti ti-lock-check"></i></div>
+                    <input type={showPassword ? "text" : "password"} className="input" placeholder="Ulangi password baru" value={editForm.confirmPassword} onChange={e => setEditForm({...editForm, confirmPassword: e.target.value})} />
+                  </div>
+                </div>
+              )}
+              
+              {errorMsg && <div style={{ color: 'var(--danger)', fontSize: '14px' }}>{errorMsg}</div>}
             </div>
             <div className="modal-footer" style={{ padding: '16px 24px', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
-              <button className="btn btn-ghost" onClick={() => setIsEditing(false)}>Batal</button>
+              <button className="btn btn-ghost" onClick={() => {
+                setIsEditing(false);
+                setErrorMsg('');
+                setEditForm({ name: user.name, email: user.email, password: '', confirmPassword: '' });
+              }}>Batal</button>
               <button className="btn btn-primary" onClick={async () => {
+                 if (editForm.password && editForm.password !== editForm.confirmPassword) {
+                   setErrorMsg('Password dan konfirmasi password tidak cocok.');
+                   return;
+                 }
+                 setErrorMsg('');
                  try {
+
                    const res = await fetch('/api/auth/profile', {
                      method: 'PUT',
                      headers: { 'Content-Type': 'application/json' },
