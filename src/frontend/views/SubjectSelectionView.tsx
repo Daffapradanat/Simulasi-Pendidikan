@@ -6,42 +6,49 @@ import { Subject } from '../../types';
 // Helper function to determine icon and color based on subject name
 const getSubjectStyles = (name: string) => {
   const lowerName = name.toLowerCase();
+  
+  // Clean, professional styling
+  const style = {
+    color: '#334155', // slate-700
+    bg: '#f8fafc'     // slate-50
+  };
+
   if (lowerName.includes('matematika') || lowerName.includes('math')) {
-    return { icon: 'ti-calculator', color: '#3b82f6', bg: '#eff6ff' }; // blue
+    return { icon: 'ti-calculator', ...style };
   }
   if (lowerName.includes('fisika') || lowerName.includes('physics')) {
-    return { icon: 'ti-atom', color: '#8b5cf6', bg: '#f5f3ff' }; // purple
+    return { icon: 'ti-atom', ...style };
   }
   if (lowerName.includes('kimia') || lowerName.includes('chemistry')) {
-    return { icon: 'ti-flask', color: '#10b981', bg: '#ecfdf5' }; // green
+    return { icon: 'ti-flask', ...style };
   }
   if (lowerName.includes('biologi') || lowerName.includes('biology')) {
-    return { icon: 'ti-dna', color: '#84cc16', bg: '#f7fee7' }; // lime
+    return { icon: 'ti-microscope', ...style };
   }
   if (lowerName.includes('sejarah') || lowerName.includes('history')) {
-    return { icon: 'ti-building-monument', color: '#f59e0b', bg: '#fffbeb' }; // amber
+    return { icon: 'ti-building-monument', ...style };
   }
   if (lowerName.includes('bahasa') || lowerName.includes('language')) {
-    return { icon: 'ti-language', color: '#ec4899', bg: '#fdf2f8' }; // pink
+    return { icon: 'ti-language', ...style };
   }
   if (lowerName.includes('geografi') || lowerName.includes('geography') || lowerName.includes('bumi')) {
-    return { icon: 'ti-world', color: '#06b6d4', bg: '#ecfeff' }; // cyan
+    return { icon: 'ti-world', ...style };
   }
   if (lowerName.includes('seni') || lowerName.includes('art')) {
-    return { icon: 'ti-palette', color: '#f43f5e', bg: '#fff1f2' }; // rose
+    return { icon: 'ti-palette', ...style };
   }
   if (lowerName.includes('komputer') || lowerName.includes('tik') || lowerName.includes('informatika')) {
-    return { icon: 'ti-device-laptop', color: '#6366f1', bg: '#eef2ff' }; // indigo
+    return { icon: 'ti-device-laptop', ...style };
   }
   if (lowerName.includes('agama') || lowerName.includes('religion')) {
-    return { icon: 'ti-pray', color: '#14b8a6', bg: '#f0fdfa' }; // teal
+    return { icon: 'ti-book-2', ...style };
   }
   if (lowerName.includes('ekonomi') || lowerName.includes('akuntansi')) {
-    return { icon: 'ti-chart-bar', color: '#eab308', bg: '#fefce8' }; // yellow
+    return { icon: 'ti-chart-bar', ...style };
   }
   
   // Default fallback
-  return { icon: 'ti-book', color: 'var(--primary)', bg: 'var(--primary-light)' };
+  return { icon: 'ti-book', ...style };
 };
 
 

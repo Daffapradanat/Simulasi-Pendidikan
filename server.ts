@@ -18,12 +18,17 @@ if (!fs.existsSync(PUBLIC_GAMES_DIR)) {
   fs.mkdirSync(PUBLIC_GAMES_DIR, { recursive: true });
 }
 
+
 const UPLOADS_DIR = path.join(process.cwd(), "uploads");
 if (!fs.existsSync(UPLOADS_DIR)) {
   fs.mkdirSync(UPLOADS_DIR, { recursive: true });
 }
 
-// Multer Config
+const AVATAR_DIR = path.join(process.cwd(), "uploads", "avatars");
+if (!fs.existsSync(AVATAR_DIR)) {
+  fs.mkdirSync(AVATAR_DIR, { recursive: true });
+}
+
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, UPLOADS_DIR),
   filename: (req, file, cb) => cb(null, Date.now() + "-" + Math.round(Math.random() * 1e9) + "-" + file.originalname)
@@ -31,6 +36,24 @@ const storage = multer.diskStorage({
 const upload = multer({ 
   storage,
   limits: { fileSize: 100 * 1024 * 1024 } // 100MB limit
+});
+
+const avatarStorage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, AVATAR_DIR),
+  filename: (req, file, cb) => {
+     // Secure filename
+     const ext = require('path').extname(file.originalname).toLowerCase();
+     const safeName = Date.now() + "-" + Math.round(Math.random() * 1e9) + (ext.match(/^\.[a-z0-9]+$/i) ? ext : '.png');
+     cb(null, safeName);
+  }
+});
+const uploadAvatar = multer({ 
+  storage: avatarStorage,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith('image/')) cb(null, true);
+    else cb(new Error('Not an image'));
+  }
 });
 
 // Database Persistence
