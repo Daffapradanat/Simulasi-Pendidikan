@@ -94,20 +94,11 @@ export default function StudentsView({
                   <td style={{ textDecoration: s.isDeleted ? 'line-through' : 'none' }}>{s.email}</td>
 
                   <td>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                       {s.subjectProgress && Object.keys(s.subjectProgress).length > 0 ? (
-                         Object.entries(s.subjectProgress).map(([subName, pct]) => (
-                           <div key={subName} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px' }}>
-                             <div style={{ width: '80px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: 'var(--text-muted)' }}>{subName}</div>
-                             <div className="progress-bar" style={{ width: '60px', margin: 0, height: '6px' }}>
-                               <div className="progress-fill success" style={{ width: `${pct}%` }}></div>
-                             </div>
-                             <span style={{ fontWeight: 500 }}>{pct as number}%</span>
-                           </div>
-                         ))
-                       ) : (
-                         <span style={{ fontSize: '12px', color: 'var(--text-light)' }}>-</span>
-                       )}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <div className="progress-bar" style={{ width: '80px', margin: 0, height: '8px' }}>
+                        <div className="progress-fill success" style={{ width: `${s.progress || 0}%` }}></div>
+                      </div>
+                      <span style={{ fontWeight: 600, fontSize: '13px' }}>{s.progress || 0}%</span>
                     </div>
                   </td>
 

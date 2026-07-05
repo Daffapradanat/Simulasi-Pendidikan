@@ -13,6 +13,7 @@ export default function AuditView({ modules }: { modules: Module[] }) {
         <table className="admin-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr style={{ background: 'var(--surface-2)', borderBottom: '2px solid var(--border)' }}>
+              <th style={{ width: '60px', padding: '16px', textAlign: 'center', fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>No.</th>
               <th style={{ padding: '16px', textAlign: 'left', fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Modul</th>
               <th style={{ padding: '16px', textAlign: 'center', fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Tujuan Pembelajaran</th>
               <th style={{ padding: '16px', textAlign: 'center', fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Penjelasan Materi</th>
@@ -22,18 +23,20 @@ export default function AuditView({ modules }: { modules: Module[] }) {
             </tr>
           </thead>
           <tbody>
-            {modules.map(mod => {
+            {modules.map((mod, index) => {
               const hasObjectives = mod.material?.objectives && mod.material.objectives.length > 0;
               const hasTheory = mod.material?.theory && mod.material.theory.trim() !== '' && mod.material.theory !== '<p><br></p>';
               const hasKeyTerms = mod.material?.keyTerms && mod.material.keyTerms.length > 0;
               const hasGames = mod.games && mod.games.length > 0;
+              
               const isComplete = hasObjectives && hasTheory && hasKeyTerms && hasGames;
-
+              
               const CheckIcon = () => <i className="ti ti-check" style={{ color: 'var(--success)', fontSize: '18px', fontWeight: 800 }}></i>;
               const CrossIcon = () => <i className="ti ti-x" style={{ color: 'var(--danger)', fontSize: '18px', fontWeight: 800 }}></i>;
 
               return (
                 <tr key={mod.id} style={{ borderBottom: '1px solid var(--border)' }}>
+                  <td style={{ padding: '16px', textAlign: 'center', fontWeight: 500, color: 'var(--text-muted)' }}>{index + 1}</td>
                   <td style={{ padding: '16px' }}>
                     <div style={{ fontWeight: 700, color: 'var(--text)' }}>{mod.title}</div>
                     <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{mod.level}</div>
@@ -55,7 +58,7 @@ export default function AuditView({ modules }: { modules: Module[] }) {
             
             {modules.length === 0 && (
               <tr>
-                <td colSpan={6} style={{ padding: '32px', textAlign: 'center', color: 'var(--text-muted)' }}>
+                <td colSpan={7} style={{ padding: '32px', textAlign: 'center', color: 'var(--text-muted)' }}>
                   Tidak ada data modul.
                 </td>
               </tr>

@@ -364,10 +364,20 @@ app.put("/api/auth/profile", (req, res) => {
     let newAvatar = undefined;
     if (role === 'siswa') {
       const idx = studentsData.findIndex(s => s.id === id);
-      if (idx !== -1) { studentsData[idx] = { ...studentsData[idx], name, email }; newAvatar = studentsData[idx].avatar; found = true; }
+      if (idx !== -1) { 
+        studentsData[idx] = { ...studentsData[idx], name, email }; 
+        if (password) studentsData[idx].password = password;
+        newAvatar = studentsData[idx].avatar; 
+        found = true; 
+      }
     } else if (role === 'guru') {
       const idx = teachersData.findIndex(t => t.id === id);
-      if (idx !== -1) { teachersData[idx] = { ...teachersData[idx], name, email }; newAvatar = teachersData[idx].avatar; found = true; }
+      if (idx !== -1) { 
+        teachersData[idx] = { ...teachersData[idx], name, email }; 
+        if (password) teachersData[idx].password = password;
+        newAvatar = teachersData[idx].avatar; 
+        found = true; 
+      }
     }
     
     if (found) {
