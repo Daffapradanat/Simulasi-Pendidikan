@@ -20,6 +20,7 @@ export function configureSecurity(app: Application) {
         connectSrc: ["'self'", "ws:", "wss:", "http:", "https:"],
         workerSrc: ["'self'", "blob:"],
         childSrc: ["'self'", "blob:"],
+        upgradeInsecureRequests: null,
       },
     },
     crossOriginEmbedderPolicy: false, // Prevents issues with external resources
