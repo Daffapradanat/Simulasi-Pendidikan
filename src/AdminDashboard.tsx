@@ -385,14 +385,14 @@ const navigate = useNavigate();
           students={students} studentSearch={studentSearch} setStudentSearch={setStudentSearch}
           setShowStudentModal={setShowStudentModal} setEditingStudent={setEditingStudent} setStudentForm={setStudentForm}
           handleRestoreStudent={handleRestoreStudent} handleDeleteStudent={handleDeleteStudent} exportToExcel={exportToExcel}
-        />;
+         readOnly={user?.role === 'guru'} />;
       case 'teachers':
         return <TeachersView 
           teachers={teachers} teacherSearch={teacherSearch} setTeacherSearch={setTeacherSearch}
           setShowTeacherModal={setShowTeacherModal} setEditingTeacher={setEditingTeacher}
           setTeacherForm={setTeacherForm} handleRestoreTeacher={handleRestoreTeacher}
           handleDeleteTeacher={handleDeleteTeacher} exportTeacherExcel={exportTeacherExcel}
-        />;
+         readOnly={user?.role === 'guru'} />;
       case 'profile':
         return <ProfileView 
           user={user} isEditingProfile={isEditingProfile} setIsEditingProfile={setIsEditingProfile}
@@ -417,22 +417,20 @@ const navigate = useNavigate();
           <button className={`btn ${view === 'modules' || view === 'modules_add_edit' ? 'btn-primary' : 'btn-ghost'} btn-full`} style={{ justifyContent: 'flex-start', border: (view === 'modules' || view === 'modules_add_edit') ? undefined : 'none' }} onClick={() => setView('modules')}>
             <i className="ti ti-books"></i> Manajemen Modul
           </button>
+          {user?.role === 'admin' && (
           <button className={`btn ${view === 'categories_subjects' ? 'btn-primary' : 'btn-ghost'} btn-full`} style={{ justifyContent: 'flex-start', border: view === 'categories_subjects' ? undefined : 'none' }} onClick={() => setView('categories_subjects')}>
             <i className="ti ti-tags"></i> Kategori & Mapel
           </button>
+          )}
           <button className={`btn ${view === 'audit' ? 'btn-primary' : 'btn-ghost'} btn-full`} style={{ justifyContent: 'flex-start', border: view === 'audit' ? undefined : 'none' }} onClick={() => setView('audit')}>
             <i className="ti ti-clipboard-check"></i> Audit Konten
           </button>
-          {user?.role === 'admin' && (
-            <>
               <button className={`btn ${view === 'students' ? 'btn-primary' : 'btn-ghost'} btn-full`} style={{ justifyContent: 'flex-start', border: view === 'students' ? undefined : 'none' }} onClick={() => setView('students')}>
                 <i className="ti ti-users"></i> Manajemen Siswa
               </button>
               <button className={`btn ${view === 'teachers' ? 'btn-primary' : 'btn-ghost'} btn-full`} style={{ justifyContent: 'flex-start', border: view === 'teachers' ? undefined : 'none' }} onClick={() => setView('teachers')}>
                 <i className="ti ti-user-check"></i> Manajemen Guru
               </button>
-            </>
-          )}
           <button className={`btn ${view === 'profile' ? 'btn-primary' : 'btn-ghost'} btn-full`} style={{ justifyContent: 'flex-start', border: view === 'profile' ? undefined : 'none' }} onClick={() => setView('profile')}>
             <i className="ti ti-user"></i> Profil
           </button>

@@ -15,7 +15,8 @@ const fetchAuth = (url: string | URL | Request, options: any = {}) => {
 export default function StudentsView({
   students, studentSearch, setStudentSearch, setShowStudentModal,
   setEditingStudent, setStudentForm,
-  handleRestoreStudent, handleDeleteStudent, exportToExcel
+  handleRestoreStudent, handleDeleteStudent, exportToExcel,
+  readOnly
 }: any) {
   
   const [currentPage, setCurrentPage] = useState(1);
@@ -61,13 +62,13 @@ export default function StudentsView({
             <button className="btn btn-ghost btn-sm" onClick={exportToExcel}>
               <i className="ti ti-download"></i> Export Excel
             </button>
-            <button className="btn btn-primary btn-sm" onClick={() => {
+            {!readOnly && (<button className="btn btn-primary btn-sm" onClick={() => {
               setEditingStudent(null);
               setStudentForm({ name: '', email: '', nisn: '', asalSekolah: '' });
               setShowStudentModal(true);
             }}>
               <i className="ti ti-plus"></i> Tambah Siswa
-            </button>
+            </button>)}
           </div>
         </div>
         <div style={{ overflowX: 'auto', background: 'white', borderRadius: '8px', border: '1px solid var(--border)' }}>
@@ -130,6 +131,8 @@ export default function StudentsView({
                     <button className="btn btn-ghost btn-sm" title="Lihat Profil" onClick={() => setViewingProfile(s)}>
                       <i className="ti ti-user-circle" style={{ fontSize: '18px' }}></i>
                     </button>
+                    {!readOnly && (
+                    <>
                     <button className="btn btn-ghost btn-sm" title="Edit" onClick={() => {
                       setEditingStudent(s);
                       setStudentForm({ name: s.name, email: s.email, nisn: s.nisn || '', asalSekolah: s.asalSekolah || '' });
@@ -146,6 +149,8 @@ export default function StudentsView({
                         <i className="ti ti-trash" style={{ fontSize: '18px' }}></i>
                       </button>
                     )}
+                    </>
+                  )}
                     </div>
                   </td>
 

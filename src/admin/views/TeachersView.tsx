@@ -14,7 +14,8 @@ const fetchAuth = (url: string | URL | Request, options: any = {}) => {
 
 export default function TeachersView({
   teachers, teacherSearch, setTeacherSearch, setShowTeacherModal,
-  setEditingTeacher, setTeacherForm, handleRestoreTeacher, handleDeleteTeacher, exportTeacherExcel
+  setEditingTeacher, setTeacherForm, handleRestoreTeacher, handleDeleteTeacher, exportTeacherExcel,
+  readOnly
 }: any) {
   
   const [currentPage, setCurrentPage] = useState(1);
@@ -59,13 +60,13 @@ export default function TeachersView({
             <button className="btn btn-ghost btn-sm" onClick={exportTeacherExcel}>
               <i className="ti ti-download"></i> Export Excel
             </button>
-            <button className="btn btn-primary btn-sm" onClick={() => {
+            {!readOnly && (<button className="btn btn-primary btn-sm" onClick={() => {
               setEditingTeacher(null);
               setTeacherForm({ name: '', subject: '', nip: '', email: '' });
               setShowTeacherModal(true);
             }}>
               <i className="ti ti-plus"></i> Tambah Guru
-            </button>
+            </button>)}
           </div>
         </div>
         <div style={{ overflowX: 'auto', background: 'white', borderRadius: '8px', border: '1px solid var(--border)' }}>
@@ -119,6 +120,8 @@ export default function TeachersView({
                     <button className="btn btn-ghost btn-sm" title="Lihat Profil" onClick={() => setViewingProfile(t)}>
                       <i className="ti ti-user-circle" style={{ fontSize: '18px' }}></i>
                     </button>
+                    {!readOnly && (
+                    <>
                     <button className="btn btn-ghost btn-sm" title="Edit" onClick={() => {
                       setEditingTeacher(t);
                       setTeacherForm({ name: t.name, subject: t.subject, nip: t.nip || '', email: t.email || '' });
@@ -135,6 +138,8 @@ export default function TeachersView({
                         <i className="ti ti-trash" style={{ fontSize: '18px' }}></i>
                       </button>
                     )}
+                    </>
+                  )}
                     </div>
                   </td>
 

@@ -25,13 +25,51 @@ export default function ProfileView({
         <div className="section-card" style={{ flex: 1, padding: 0, overflow: 'hidden' }}>
           <div style={{ height: '120px', background: 'linear-gradient(135deg, var(--primary), var(--primary-dark))' }}></div>
           <div style={{ padding: '0 32px 32px', position: 'relative' }}>
-            <div style={{ 
-              width: '100px', height: '100px', borderRadius: '50%', background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)', 
-              display: 'flex', alignItems: 'center', justifyContent: 'center', 
-              marginTop: '-50px', border: '5px solid white', boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
-              color: 'white', marginBottom: '20px'
-            }}>
-              <i className="ti ti-user" style={{ fontSize: '48px' }}></i>
+            <div style={{ position: 'relative', width: '100px', height: '100px', marginTop: '-50px', marginBottom: '20px' }}>
+              <div style={{ 
+                 width: '100px', height: '100px', borderRadius: '50%', background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)', 
+                 display: 'flex', alignItems: 'center', justifyContent: 'center', 
+                 border: '5px solid white', boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+                color: 'white', overflow: 'hidden'
+              }}>
+                {(user as any).avatar ? (
+                  <img src={(user as any).avatar} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                ) : (
+                  <img src={`https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=random&color=fff&size=100`} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                )}
+              </div>
+              <label htmlFor="upload-my-avatar-admin" style={{ position: 'absolute', bottom: '0', right: '0', width: '32px', height: '32px', borderRadius: '50%', background: 'var(--primary)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,0,0,0.2)' }}>
+                <i className="ti ti-camera" style={{ fontSize: '16px' }}></i>
+              </label>
+              <input type="file" id="upload-my-avatar-admin" style={{ display: 'none' }} accept="image/*" onChange={async (e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                if (file.size > 5 * 1024 * 1024) { alert('Maksimal ukuran gambar adalah 5MB.'); e.target.value = ''; return; }
+                const formData = new FormData();
+                formData.append('avatar', file);
+                
+                try {
+                  const res = await fetchAuth('/api/upload-avatar', { method: 'POST', body: formData });
+                  if (res.ok) {
+                    const data = await res.json();
+                    if (data.url) {
+                       // Update the user avatar in backend
+                       await fetchAuth(`/api/users/${user.id}/avatar`, {
+                         method: 'PUT',
+                         headers: { 'Content-Type': 'application/json' },
+                         body: JSON.stringify({ avatar: data.url, role: user.role })
+                       });
+                       if (onUpdateUser) {
+                         onUpdateUser({...user, avatar: data.url});
+                       } else {
+                         user.avatar = data.url;
+                       }
+                    }
+                  }
+                } catch (error) {
+                  console.error("Failed to upload avatar", error);
+                }
+              }} />
             </div>
             
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>

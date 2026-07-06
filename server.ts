@@ -253,6 +253,13 @@ app.use(cookieParser());
     }
   };
 
+    const isStrictAdmin = (req: any, res: any, next: any) => {
+    if (!req.user || req.user.role !== 'admin') {
+      return res.status(403).json({ error: "Forbidden: Admin access required" });
+    }
+    next();
+  };
+
   const isAdmin = (req: any, res: any, next: any) => {
     if (!req.user || req.user.role !== 'admin' && req.user.role !== 'guru') {
       return res.status(403).json({ error: "Forbidden: Admin/Guru access required" });
@@ -427,7 +434,7 @@ app.put("/api/auth/profile", authenticateToken, (req, res) => {
     res.json(categoriesData);
   });
 
-  app.post("/api/categories", authenticateToken, isAdmin, (req, res) => {
+  app.post("/api/categories", authenticateToken, isStrictAdmin, (req, res) => {
     const { name } = req.body;
     const newCat = { id: Date.now(), name };
     categoriesData.push(newCat);
@@ -435,7 +442,7 @@ app.put("/api/auth/profile", authenticateToken, (req, res) => {
     res.json({ success: true, category: newCat });
   });
 
-  app.put("/api/categories/:id", authenticateToken, isAdmin, (req, res) => {
+  app.put("/api/categories/:id", authenticateToken, isStrictAdmin, (req, res) => {
     const id = parseInt(req.params.id);
     const index = categoriesData.findIndex(c => c.id === id);
     if (index === -1) return res.status(404).json({ error: "Not found" });
@@ -444,7 +451,7 @@ app.put("/api/auth/profile", authenticateToken, (req, res) => {
     res.json({ success: true, category: categoriesData[index] });
   });
 
-  app.delete("/api/categories/:id", authenticateToken, isAdmin, (req, res) => {
+  app.delete("/api/categories/:id", authenticateToken, isStrictAdmin, (req, res) => {
     const id = parseInt(req.params.id);
     categoriesData = categoriesData.filter(c => c.id !== id);
     saveDb();
@@ -455,7 +462,7 @@ app.put("/api/auth/profile", authenticateToken, (req, res) => {
     res.json(subjectsData);
   });
 
-  app.post("/api/subjects", authenticateToken, isAdmin, (req, res) => {
+  app.post("/api/subjects", authenticateToken, isStrictAdmin, (req, res) => {
     const { name } = req.body;
     const newSub = { id: Date.now(), name };
     subjectsData.push(newSub);
@@ -463,7 +470,7 @@ app.put("/api/auth/profile", authenticateToken, (req, res) => {
     res.json({ success: true, subject: newSub });
   });
 
-  app.put("/api/subjects/:id", authenticateToken, isAdmin, (req, res) => {
+  app.put("/api/subjects/:id", authenticateToken, isStrictAdmin, (req, res) => {
     const id = parseInt(req.params.id);
     const index = subjectsData.findIndex(s => s.id === id);
     if (index === -1) return res.status(404).json({ error: "Not found" });
@@ -472,7 +479,7 @@ app.put("/api/auth/profile", authenticateToken, (req, res) => {
     res.json({ success: true, subject: subjectsData[index] });
   });
 
-  app.delete("/api/subjects/:id", authenticateToken, isAdmin, (req, res) => {
+  app.delete("/api/subjects/:id", authenticateToken, isStrictAdmin, (req, res) => {
     const id = parseInt(req.params.id);
     subjectsData = subjectsData.filter(s => s.id !== id);
     saveDb();
@@ -629,14 +636,14 @@ app.put("/api/auth/profile", authenticateToken, (req, res) => {
   app.get("/api/teachers", authenticateToken, isAdmin, (req, res) => {
     res.json(teachersData);
   });
-  app.post("/api/teachers", authenticateToken, isAdmin, (req, res) => {
+  app.post("/api/teachers", authenticateToken, isStrictAdmin, (req, res) => {
     const newTeacher = { id: Date.now(), ...req.body };
     teachersData.push(newTeacher);
     logActivity('teacher', 'Admin', `Mendaftarkan guru "${newTeacher.name}"`);
     saveDb();
     res.json({ success: true, teacher: newTeacher });
   });
-  app.put("/api/teachers/:id", authenticateToken, isAdmin, (req, res) => {
+  app.put("/api/teachers/:id", authenticateToken, isStrictAdmin, (req, res) => {
     const id = parseInt(req.params.id);
     const index = teachersData.findIndex(t => t.id === id);
     if (index === -1) return res.status(404).json({ error: "Not found" });
@@ -645,7 +652,7 @@ app.put("/api/auth/profile", authenticateToken, (req, res) => {
     saveDb();
     res.json({ success: true, teacher: teachersData[index] });
   });
-  app.delete("/api/teachers/:id", authenticateToken, isAdmin, (req, res) => {
+  app.delete("/api/teachers/:id", authenticateToken, isStrictAdmin, (req, res) => {
     const id = parseInt(req.params.id);
     const index = teachersData.findIndex(t => t.id === id);
     if (index !== -1) {
@@ -656,7 +663,7 @@ app.put("/api/auth/profile", authenticateToken, (req, res) => {
     res.json({ success: true, id });
   });
 
-  app.put("/api/teachers/:id/restore", authenticateToken, isAdmin, (req, res) => {
+  app.put("/api/teachers/:id/restore", authenticateToken, isStrictAdmin, (req, res) => {
     const id = parseInt(req.params.id);
     const index = teachersData.findIndex(t => t.id === id);
     if (index !== -1) {
@@ -695,14 +702,14 @@ app.put("/api/auth/profile", authenticateToken, (req, res) => {
     res.json(augmentedStudents);
   });
 
-  app.post("/api/students", authenticateToken, isAdmin, (req, res) => {
+  app.post("/api/students", authenticateToken, isStrictAdmin, (req, res) => {
     const newStudent = { id: Date.now(), progress: 0, ...req.body };
     studentsData.push(newStudent);
     logActivity('student', 'Admin', `Mendaftarkan siswa "${newStudent.name}"`);
     saveDb();
     res.json({ success: true, student: newStudent });
   });
-  app.put("/api/students/:id", authenticateToken, isAdmin, (req, res) => {
+  app.put("/api/students/:id", authenticateToken, isStrictAdmin, (req, res) => {
     const id = parseInt(req.params.id);
     const index = studentsData.findIndex(s => s.id === id);
     if (index === -1) return res.status(404).json({ error: "Not found" });
@@ -711,7 +718,7 @@ app.put("/api/auth/profile", authenticateToken, (req, res) => {
     saveDb();
     res.json({ success: true, student: studentsData[index] });
   });
-  app.delete("/api/students/:id", authenticateToken, isAdmin, (req, res) => {
+  app.delete("/api/students/:id", authenticateToken, isStrictAdmin, (req, res) => {
     const id = parseInt(req.params.id);
     const index = studentsData.findIndex(s => s.id === id);
     if (index !== -1) {
@@ -722,7 +729,7 @@ app.put("/api/auth/profile", authenticateToken, (req, res) => {
     res.json({ success: true, id });
   });
 
-  app.put("/api/students/:id/restore", authenticateToken, isAdmin, (req, res) => {
+  app.put("/api/students/:id/restore", authenticateToken, isStrictAdmin, (req, res) => {
     const id = parseInt(req.params.id);
     const index = studentsData.findIndex(s => s.id === id);
     if (index !== -1) {
