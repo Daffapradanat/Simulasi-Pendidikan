@@ -280,6 +280,34 @@ app.use(cookieParser());
     res.sendFile(filepath);
   });
 
+  
+  app.put("/api/users/:id/avatar", authenticateToken, (req, res) => {
+    const { avatar, role } = req.body;
+    const id = parseInt(req.params.id);
+    if (req.user.id !== id && req.user.role !== 'admin') {
+      return res.status(403).json({ error: "Forbidden" });
+    }
+    
+    let found = false;
+    if (role === 'admin') {
+      const idx = adminData.findIndex(a => a.id === id);
+      if (idx !== -1) { adminData[idx].avatar = avatar; found = true; }
+    } else if (role === 'siswa') {
+      const idx = studentsData.findIndex(s => s.id === id);
+      if (idx !== -1) { studentsData[idx].avatar = avatar; found = true; }
+    } else if (role === 'guru') {
+      const idx = teachersData.findIndex(t => t.id === id);
+      if (idx !== -1) { teachersData[idx].avatar = avatar; found = true; }
+    }
+    
+    if (found) {
+      saveDb();
+      res.json({ success: true, avatar });
+    } else {
+      res.status(404).json({ error: "User not found" });
+    }
+  });
+
   app.post("/api/upload-avatar", uploadAvatar.single('avatar'), (req, res) => {
     if (!req.file) return res.status(400).json({ error: "No file uploaded or invalid format" });
     res.json({ success: true, url: `/api/avatars/${req.file.filename}` });
