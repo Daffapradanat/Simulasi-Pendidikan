@@ -65,20 +65,42 @@ export default function CategoriesSubjectsView({
             )}
           </form>
           
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            {categories.map(cat => (
-              <div key={cat.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-                <span style={{ fontWeight: 500 }}>{cat.name}</span>
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <button className="btn btn-ghost btn-sm" onClick={() => { setEditingCategory(cat); setCategoryName(cat.name); }}>
-                    <i className="ti ti-edit"></i>
-                  </button>
-                  <button className="btn btn-ghost btn-sm" style={{ color: 'var(--danger)' }} onClick={() => onDeleteCategory(cat.id)}>
-                    <i className="ti ti-trash"></i>
-                  </button>
-                </div>
-              </div>
-            ))}
+          <div style={{ overflowX: 'auto', background: 'white', borderRadius: '8px', border: '1px solid var(--border)' }}>
+            <table className="admin-table">
+              <thead>
+                <tr>
+                  <th style={{ width: '60px' }}>No.</th>
+                  <th>Nama Jenjang</th>
+                  <th style={{ width: '120px' }}>Aksi</th>
+                </tr>
+              </thead>
+              <tbody>
+                {categories.length === 0 ? (
+                  <tr>
+                    <td colSpan={3} style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)' }}>
+                      Tidak ada jenjang.
+                    </td>
+                  </tr>
+                ) : (
+                  categories.map((cat, index) => (
+                    <tr key={cat.id}>
+                      <td style={{ textAlign: 'center' }}>{index + 1}</td>
+                      <td style={{ fontWeight: 500 }}>{cat.name}</td>
+                      <td>
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                          <button className="btn btn-ghost btn-sm" onClick={() => { setEditingCategory(cat); setCategoryName(cat.name); }}>
+                            <i className="ti ti-edit"></i>
+                          </button>
+                          <button className="btn btn-ghost btn-sm" style={{ color: 'var(--danger)' }} onClick={() => onDeleteCategory(cat.id)}>
+                            <i className="ti ti-trash"></i>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
           </div>
         </div>
 
@@ -118,20 +140,42 @@ export default function CategoriesSubjectsView({
             )}
           </form>
           
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            {subjects.map(sub => (
-              <div key={sub.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-                <span style={{ fontWeight: 500 }}>{sub.name}</span>
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <button className="btn btn-ghost btn-sm" onClick={() => { setEditingSubject(sub); setSubjectName(sub.name); }}>
-                    <i className="ti ti-edit"></i>
-                  </button>
-                  <button className="btn btn-ghost btn-sm" style={{ color: 'var(--danger)' }} onClick={() => onDeleteSubject(sub.id)}>
-                    <i className="ti ti-trash"></i>
-                  </button>
-                </div>
-              </div>
-            ))}
+          <div style={{ overflowX: 'auto', background: 'white', borderRadius: '8px', border: '1px solid var(--border)' }}>
+            <table className="admin-table">
+              <thead>
+                <tr>
+                  <th style={{ width: '60px' }}>No.</th>
+                  <th>Nama Mata Pelajaran</th>
+                  <th style={{ width: '120px' }}>Aksi</th>
+                </tr>
+              </thead>
+              <tbody>
+                {subjects.length === 0 ? (
+                  <tr>
+                    <td colSpan={3} style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)' }}>
+                      Tidak ada mata pelajaran.
+                    </td>
+                  </tr>
+                ) : (
+                  subjects.map((sub, index) => (
+                    <tr key={sub.id}>
+                      <td style={{ textAlign: 'center' }}>{index + 1}</td>
+                      <td style={{ fontWeight: 500 }}>{sub.name}</td>
+                      <td>
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                          <button className="btn btn-ghost btn-sm" onClick={() => { setEditingSubject(sub); setSubjectName(sub.name); }}>
+                            <i className="ti ti-edit"></i>
+                          </button>
+                          <button className="btn btn-ghost btn-sm" style={{ color: 'var(--danger)' }} onClick={() => onDeleteSubject(sub.id)}>
+                            <i className="ti ti-trash"></i>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
           </div>
         </div>
 

@@ -63,7 +63,7 @@ export default function StudentsView({
           <table className="admin-table">
             <thead>
               <tr>
-                <th>No.</th>
+                <th style={{ width: '60px' }}>No.</th>
                 <th>NISN</th>
                 <th>Nama Siswa</th>
                 <th>Asal Sekolah</th>

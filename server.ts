@@ -18,7 +18,6 @@ if (!fs.existsSync(PUBLIC_GAMES_DIR)) {
   fs.mkdirSync(PUBLIC_GAMES_DIR, { recursive: true });
 }
 
-
 const UPLOADS_DIR = path.join(process.cwd(), "uploads");
 if (!fs.existsSync(UPLOADS_DIR)) {
   fs.mkdirSync(UPLOADS_DIR, { recursive: true });
@@ -35,13 +34,13 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ 
   storage,
-  limits: { fileSize: 100 * 1024 * 1024 } // 100MB limit
+  limits: { fileSize: 100 * 1024 * 1024 } 
 });
 
 const avatarStorage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, AVATAR_DIR),
   filename: (req, file, cb) => {
-     // Secure filename
+
      const ext = require('path').extname(file.originalname).toLowerCase();
      const safeName = Date.now() + "-" + Math.round(Math.random() * 1e9) + (ext.match(/^\.[a-z0-9]+$/i) ? ext : '.png');
      cb(null, safeName);
@@ -49,14 +48,13 @@ const avatarStorage = multer.diskStorage({
 });
 const uploadAvatar = multer({ 
   storage: avatarStorage,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+  limits: { fileSize: 5 * 1024 * 1024 }, 
   fileFilter: (req, file, cb) => {
     if (file.mimetype.startsWith('image/')) cb(null, true);
     else cb(new Error('Not an image'));
   }
 });
 
-// Database Persistence
 const DB_FILE = path.join(process.cwd(), "database.sqlite");
 let db: any;
 
@@ -84,7 +82,6 @@ async function initDB() {
     CREATE TABLE IF NOT EXISTS subjects (id INTEGER PRIMARY KEY, name TEXT, data TEXT);
   `);
 
-  // Migrate old app_state if necessary
   const tableCheck = await db.get("SELECT name FROM sqlite_master WHERE type='table' AND name='app_state'");
   if (tableCheck) {
     const row = await db.get('SELECT data FROM app_state WHERE id = 1');
@@ -94,21 +91,20 @@ async function initDB() {
       teachersData = fileData.teachers || [];
       studentsData = fileData.students || [];
       activitiesData = fileData.activities || [];
-      
-      // Drop old
+
       await db.exec("DROP TABLE app_state");
     }
   } else {
-    // Load from new tables
+
     const mods = await db.all("SELECT data FROM modules");
     modulesData = mods.map((r: any) => JSON.parse(r.data));
-    
+
     const teas = await db.all("SELECT data FROM teachers");
     teachersData = teas.map((r: any) => JSON.parse(r.data));
-    
+
     const stus = await db.all("SELECT data FROM students");
     studentsData = stus.map((r: any) => JSON.parse(r.data));
-    
+
     const acts = await db.all("SELECT data FROM activities ORDER BY id DESC LIMIT 100");
     activitiesData = acts.map((r: any) => JSON.parse(r.data));
 
@@ -124,7 +120,6 @@ async function initDB() {
     subjectsData = subs.map((r: any) => JSON.parse(r.data));
   }
 
-  // Prepopulate Categories and Subjects if empty
   if (categoriesData.length === 0) {
     categoriesData = [...seedCategories];
   }
@@ -144,7 +139,6 @@ async function initDB() {
     }
   }
 
-  // Add example users if missing
   seedStudents.forEach(seedUser => {
     if (!studentsData.find((s: any) => s.email === seedUser.email)) {
       studentsData.push({ ...seedUser });
@@ -204,8 +198,12 @@ async function doSaveDb() {
   }
 }
 
+let saveDbTimeout: NodeJS.Timeout | null = null;
 function saveDb() {
-  doSaveDb().catch(console.error);
+  if (saveDbTimeout) clearTimeout(saveDbTimeout);
+  saveDbTimeout = setTimeout(() => {
+    doSaveDb().catch(console.error);
+  }, 1000);
 }
 
 function logActivity(action: string, user: string, desc: string) {
@@ -217,7 +215,7 @@ function logActivity(action: string, user: string, desc: string) {
     desc
   };
   activitiesData.unshift(newActivity);
-  // Keep only the last 100 activities
+
   if (activitiesData.length > 100) activitiesData.pop();
   saveDb();
 }
@@ -237,15 +235,31 @@ async function startServer() {
     origin: true,
     credentials: true
   }));
-  
+
   app.use(express.json({ limit: "100mb" }));
   app.use(express.urlencoded({ extended: true, limit: "100mb" }));
-  app.use(cookieParser());
+app.use(cookieParser());
 
-  
-  // --- API ROUTES ---
-  
-  // Safe avatar serve route (Prevents directory traversal)
+  // --- Auth Middlewares ---
+  const authenticateToken = (req: any, res: any, next: any) => {
+    const token = req.cookies.token || req.headers.authorization?.split(' ')[1];
+    if (!token) return res.status(401).json({ error: "Unauthorized" });
+    try {
+      const decoded = jwt.verify(token, SECRET_KEY) as any;
+      req.user = decoded;
+      next();
+    } catch {
+      return res.status(401).json({ error: "Invalid token" });
+    }
+  };
+
+  const isAdmin = (req: any, res: any, next: any) => {
+    if (!req.user || req.user.role !== 'admin') {
+      return res.status(403).json({ error: "Forbidden: Admin access required" });
+    }
+    next();
+  };
+
   app.get("/api/avatars/:filename", (req, res) => {
     const filename = req.params.filename;
     if (filename.includes('/') || filename.includes('..') || filename.includes('\\')) {
@@ -255,28 +269,24 @@ async function startServer() {
     if (!fs.existsSync(filepath)) {
       return res.status(404).json({ error: "Not found" });
     }
+    res.set('Cache-Control', 'public, max-age=31536000, immutable');
     res.sendFile(filepath);
   });
 
-  // Avatar upload route
   app.post("/api/upload-avatar", uploadAvatar.single('avatar'), (req, res) => {
     if (!req.file) return res.status(400).json({ error: "No file uploaded or invalid format" });
     res.json({ success: true, url: `/api/avatars/${req.file.filename}` });
   });
 
-
-  // Auth
   app.post("/api/auth/login", (req, res) => {
     const { email, password } = req.body;
-    
+
     let foundUser = null;
-    
-    // Check Admin
+
     if ((email === 'admin' || email === 'admin@sch.id') && password === 'admin123') {
       foundUser = { id: 3, name: "Administrator", email: "admin@sch.id", role: "admin" };
     }
-    
-    // Check Students
+
     if (!foundUser) {
       const student = studentsData.find(s => !s.isDeleted && s.email === email);
       if ((email === 'siswa' || email === 'siswa@murid.sekolah.sch.id') && password === 'siswa') {
@@ -287,8 +297,7 @@ async function startServer() {
         foundUser = { ...student, role: "siswa" };
       }
     }
-    
-    // Check Teachers
+
     if (!foundUser) {
       const teacher = teachersData.find(t => !t.isDeleted && t.email === email);
       if ((email === 'guru' || email === 'guru@sekolah.sch.id') && password === 'guru') {
@@ -310,7 +319,7 @@ async function startServer() {
     res.cookie('token', token, { 
       httpOnly: true, 
       secure: true,
-      sameSite: 'none' // Allow iframe cross-origin
+      sameSite: 'none' 
     });
     res.json({ success: true, user, token });
   });
@@ -331,13 +340,12 @@ async function startServer() {
     }
   });
 
-  // User Progress
-  app.get("/api/users/:id/progress", (req, res) => {
+  app.get("/api/users/:id/progress", authenticateToken, (req, res) => {
     const id = parseInt(req.params.id);
     res.json(userProgressData[id] || { playedGames: [], completedModuleIds: [] });
   });
 
-  app.post("/api/users/:id/progress", (req, res) => {
+  app.post("/api/users/:id/progress", authenticateToken, (req, res) => {
     const id = parseInt(req.params.id);
     const { playedGames, completedModuleIds } = req.body;
     userProgressData[id] = { playedGames: playedGames || [], completedModuleIds: completedModuleIds || [] };
@@ -345,7 +353,7 @@ async function startServer() {
     res.json({ success: true });
   });
 
-  app.post("/api/admin/complete_all/:id", (req, res) => {
+  app.post("/api/admin/complete_all/:id", authenticateToken, isAdmin, (req, res) => {
     const id = parseInt(req.params.id);
     const completedModuleIds = modulesData.filter(m => !m.isDeleted).map(m => m.id);
     let playedGames: number[] = [];
@@ -358,7 +366,7 @@ async function startServer() {
     res.json({ success: true, progress: userProgressData[id] });
   });
 
-app.put("/api/auth/profile", (req, res) => {
+app.put("/api/auth/profile", authenticateToken, (req, res) => {
     const { id, name, email, role, password } = req.body;
     let found = false;
     let newAvatar = undefined;
@@ -379,7 +387,7 @@ app.put("/api/auth/profile", (req, res) => {
         found = true; 
       }
     }
-    
+
     if (found) {
       if (password) {
         logActivity('system', role, `Mereset password profil ${name}`);
@@ -393,38 +401,33 @@ app.put("/api/auth/profile", (req, res) => {
     }
   });
 
-  app.get("/api/activities", (req, res) => {
+  app.get("/api/activities", authenticateToken, isAdmin, (req, res) => {
     res.json(activitiesData);
   });
 
-  app.post("/api/admin/clear_all", (req, res) => {
-    // Clear modulesData
+  app.post("/api/admin/clear_all", authenticateToken, isAdmin, (req, res) => {
+
     modulesData = [];
-    
-    // Clear uploads directory
+
     try {
       const uFiles = fs.readdirSync(UPLOADS_DIR);
       for (const file of uFiles) fs.unlinkSync(path.join(UPLOADS_DIR, file));
     } catch(e) {}
-    
-    // Clear public/games directory
+
     try {
       const gFiles = fs.readdirSync(PUBLIC_GAMES_DIR);
       for (const file of gFiles) fs.rmSync(path.join(PUBLIC_GAMES_DIR, file), { recursive: true, force: true });
     } catch(e) {}
-    
+
     saveDb();
     res.json({ success: true });
   });
 
-  // Modules CRUD
-  // Categories and Subjects
-
-  app.get("/api/categories", (req, res) => {
+  app.get("/api/categories", authenticateToken, (req, res) => {
     res.json(categoriesData);
   });
 
-  app.post("/api/categories", (req, res) => {
+  app.post("/api/categories", authenticateToken, isAdmin, (req, res) => {
     const { name } = req.body;
     const newCat = { id: Date.now(), name };
     categoriesData.push(newCat);
@@ -432,7 +435,7 @@ app.put("/api/auth/profile", (req, res) => {
     res.json({ success: true, category: newCat });
   });
 
-  app.put("/api/categories/:id", (req, res) => {
+  app.put("/api/categories/:id", authenticateToken, isAdmin, (req, res) => {
     const id = parseInt(req.params.id);
     const index = categoriesData.findIndex(c => c.id === id);
     if (index === -1) return res.status(404).json({ error: "Not found" });
@@ -441,18 +444,18 @@ app.put("/api/auth/profile", (req, res) => {
     res.json({ success: true, category: categoriesData[index] });
   });
 
-  app.delete("/api/categories/:id", (req, res) => {
+  app.delete("/api/categories/:id", authenticateToken, isAdmin, (req, res) => {
     const id = parseInt(req.params.id);
     categoriesData = categoriesData.filter(c => c.id !== id);
     saveDb();
     res.json({ success: true });
   });
 
-  app.get("/api/subjects", (req, res) => {
+  app.get("/api/subjects", authenticateToken, (req, res) => {
     res.json(subjectsData);
   });
 
-  app.post("/api/subjects", (req, res) => {
+  app.post("/api/subjects", authenticateToken, isAdmin, (req, res) => {
     const { name } = req.body;
     const newSub = { id: Date.now(), name };
     subjectsData.push(newSub);
@@ -460,7 +463,7 @@ app.put("/api/auth/profile", (req, res) => {
     res.json({ success: true, subject: newSub });
   });
 
-  app.put("/api/subjects/:id", (req, res) => {
+  app.put("/api/subjects/:id", authenticateToken, isAdmin, (req, res) => {
     const id = parseInt(req.params.id);
     const index = subjectsData.findIndex(s => s.id === id);
     if (index === -1) return res.status(404).json({ error: "Not found" });
@@ -469,24 +472,22 @@ app.put("/api/auth/profile", (req, res) => {
     res.json({ success: true, subject: subjectsData[index] });
   });
 
-  app.delete("/api/subjects/:id", (req, res) => {
+  app.delete("/api/subjects/:id", authenticateToken, isAdmin, (req, res) => {
     const id = parseInt(req.params.id);
     subjectsData = subjectsData.filter(s => s.id !== id);
     saveDb();
     res.json({ success: true });
   });
 
-
-  app.get("/api/modules", (req, res) => {
+  app.get("/api/modules", authenticateToken, (req, res) => {
     res.json(modulesData);
   });
-  
+
   function findIndexPath(dir: string): string | null {
     if (!fs.existsSync(dir)) return null;
     const items = fs.readdirSync(dir);
     if (items.includes('index.html')) return 'index.html';
-    
-    // Check in subfolders
+
     for (const item of items) {
       const fullPath = path.join(dir, item);
       if (fs.statSync(fullPath).isDirectory()) {
@@ -497,13 +498,12 @@ app.put("/api/auth/profile", (req, res) => {
     return null;
   }
 
-  app.post("/api/modules", upload.array('gameFiles'), async (req, res) => {
+  app.post("/api/modules", authenticateToken, isAdmin, upload.array('gameFiles'), async (req, res) => {
     try {
       let { title, desc, level, category_id, subject_id, duration, material, gamesMeta } = req.body;
       try { material = JSON.parse(material || '[]'); } catch(e) {}
       try { gamesMeta = JSON.parse(gamesMeta || '[]'); } catch(e) {}
 
-      // Process uploaded zip files if any
       const files = req.files as Express.Multer.File[];
       let fileIndex = 0;
       if (files && files.length > 0) {
@@ -546,7 +546,7 @@ app.put("/api/auth/profile", (req, res) => {
     }
   });
 
-  app.put("/api/modules/:id", upload.array('gameFiles'), async (req, res) => {
+  app.put("/api/modules/:id", authenticateToken, isAdmin, upload.array('gameFiles'), async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const index = modulesData.findIndex(m => m.id === id);
@@ -595,7 +595,7 @@ app.put("/api/auth/profile", (req, res) => {
     }
   });
 
-  app.delete("/api/modules/:id", (req, res) => {
+  app.delete("/api/modules/:id", authenticateToken, isAdmin, (req, res) => {
     const id = parseInt(req.params.id);
     const index = modulesData.findIndex(m => m.id === id);
     if (index !== -1) {
@@ -615,7 +615,7 @@ app.put("/api/auth/profile", (req, res) => {
     res.json({ success: true, id });
   });
 
-  app.put("/api/modules/:id/restore", (req, res) => {
+  app.put("/api/modules/:id/restore", authenticateToken, isAdmin, (req, res) => {
     const id = parseInt(req.params.id);
     const index = modulesData.findIndex(m => m.id === id);
     if (index !== -1) {
@@ -626,18 +626,17 @@ app.put("/api/auth/profile", (req, res) => {
     res.json({ success: true, id });
   });
 
-  // Teachers
-  app.get("/api/teachers", (req, res) => {
+  app.get("/api/teachers", authenticateToken, isAdmin, (req, res) => {
     res.json(teachersData);
   });
-  app.post("/api/teachers", (req, res) => {
+  app.post("/api/teachers", authenticateToken, isAdmin, (req, res) => {
     const newTeacher = { id: Date.now(), ...req.body };
     teachersData.push(newTeacher);
     logActivity('teacher', 'Admin', `Mendaftarkan guru "${newTeacher.name}"`);
     saveDb();
     res.json({ success: true, teacher: newTeacher });
   });
-  app.put("/api/teachers/:id", (req, res) => {
+  app.put("/api/teachers/:id", authenticateToken, isAdmin, (req, res) => {
     const id = parseInt(req.params.id);
     const index = teachersData.findIndex(t => t.id === id);
     if (index === -1) return res.status(404).json({ error: "Not found" });
@@ -646,7 +645,7 @@ app.put("/api/auth/profile", (req, res) => {
     saveDb();
     res.json({ success: true, teacher: teachersData[index] });
   });
-  app.delete("/api/teachers/:id", (req, res) => {
+  app.delete("/api/teachers/:id", authenticateToken, isAdmin, (req, res) => {
     const id = parseInt(req.params.id);
     const index = teachersData.findIndex(t => t.id === id);
     if (index !== -1) {
@@ -657,7 +656,7 @@ app.put("/api/auth/profile", (req, res) => {
     res.json({ success: true, id });
   });
 
-  app.put("/api/teachers/:id/restore", (req, res) => {
+  app.put("/api/teachers/:id/restore", authenticateToken, isAdmin, (req, res) => {
     const id = parseInt(req.params.id);
     const index = teachersData.findIndex(t => t.id === id);
     if (index !== -1) {
@@ -668,21 +667,25 @@ app.put("/api/auth/profile", (req, res) => {
     res.json({ success: true, id });
   });
 
-  // Students
+  app.get("/api/students", authenticateToken, isAdmin, (req, res) => {
+    const activeMods = modulesData.filter((m: any) => !m.isDeleted);
+    const totalMods = activeMods.length;
+    
+    // Pre-calculate mods per subject to avoid O(N*M) loop
+    const modsPerSubject: Record<number, any[]> = {};
+    subjectsData.forEach((sub: any) => {
+       modsPerSubject[sub.id] = activeMods.filter((m: any) => m.subject_id === sub.id);
+    });
 
-  app.get("/api/students", (req, res) => {
     const augmentedStudents = studentsData.map((s: any) => {
        const userProg = userProgressData[s.id] || { playedGames: [], completedModuleIds: [] };
        const completedModuleIds = userProg.completedModuleIds || [];
-       
-       const activeMods = modulesData.filter((m: any) => !m.isDeleted);
-       const totalMods = activeMods.length;
        const completed = completedModuleIds.length;
        const progress = totalMods > 0 ? Math.round((completed / totalMods) * 100) : 0;
        
        const subjectProgress: Record<string, number> = {};
        subjectsData.forEach((sub: any) => {
-          const subMods = activeMods.filter((m: any) => m.subject_id === sub.id);
+          const subMods = modsPerSubject[sub.id] || [];
           const subCompleted = subMods.filter((m: any) => completedModuleIds.includes(m.id)).length;
           subjectProgress[sub.name] = subMods.length > 0 ? Math.round((subCompleted / subMods.length) * 100) : 0;
        });
@@ -692,14 +695,14 @@ app.put("/api/auth/profile", (req, res) => {
     res.json(augmentedStudents);
   });
 
-  app.post("/api/students", (req, res) => {
+  app.post("/api/students", authenticateToken, isAdmin, (req, res) => {
     const newStudent = { id: Date.now(), progress: 0, ...req.body };
     studentsData.push(newStudent);
     logActivity('student', 'Admin', `Mendaftarkan siswa "${newStudent.name}"`);
     saveDb();
     res.json({ success: true, student: newStudent });
   });
-  app.put("/api/students/:id", (req, res) => {
+  app.put("/api/students/:id", authenticateToken, isAdmin, (req, res) => {
     const id = parseInt(req.params.id);
     const index = studentsData.findIndex(s => s.id === id);
     if (index === -1) return res.status(404).json({ error: "Not found" });
@@ -708,7 +711,7 @@ app.put("/api/auth/profile", (req, res) => {
     saveDb();
     res.json({ success: true, student: studentsData[index] });
   });
-  app.delete("/api/students/:id", (req, res) => {
+  app.delete("/api/students/:id", authenticateToken, isAdmin, (req, res) => {
     const id = parseInt(req.params.id);
     const index = studentsData.findIndex(s => s.id === id);
     if (index !== -1) {
@@ -719,7 +722,7 @@ app.put("/api/auth/profile", (req, res) => {
     res.json({ success: true, id });
   });
 
-  app.put("/api/students/:id/restore", (req, res) => {
+  app.put("/api/students/:id/restore", authenticateToken, isAdmin, (req, res) => {
     const id = parseInt(req.params.id);
     const index = studentsData.findIndex(s => s.id === id);
     if (index !== -1) {
@@ -732,9 +735,9 @@ app.put("/api/auth/profile", (req, res) => {
 
   // Serve extracted games explicitly
   app.use('/games', express.static(PUBLIC_GAMES_DIR, {
-    maxAge: '1y', // Cache for 1 year
+    maxAge: '1y', 
     setHeaders: (res, filePath) => {
-      // Add standard Cache-Control for aggressively caching static assets
+
       res.set('Cache-Control', 'public, max-age=31536000, immutable');
       if (filePath.endsWith('.gz')) {
         res.set('Content-Encoding', 'gzip');
@@ -752,7 +755,6 @@ app.put("/api/auth/profile", (req, res) => {
     }
   }));
 
-  // If a file under /games is not found, return 404 instead of falling through to the React App
   app.use('/games', (req, res) => {
     res.status(404).send('Game file not found.');
   });

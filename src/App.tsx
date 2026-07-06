@@ -1,15 +1,15 @@
-import React, { useState, useEffect, useMemo } from 'react';
 import { User, Toast, Module } from './types';
 import { motion, AnimatePresence } from 'motion/react';
 import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 
-import AdminDashboard from './AdminDashboard';
+import React, { useState, useEffect, useMemo, Suspense, lazy } from 'react';
+const AdminDashboard = lazy(() => import('./AdminDashboard'));
 import { Navbar } from './frontend/components/Navbar';
-import { LoginView } from './frontend/views/LoginView';
-import { ModulesView } from './frontend/views/ModulesView';
-import { DetailView } from './frontend/views/DetailView';
-import { ProfileView } from './frontend/views/ProfileView';
-import { SubjectSelectionView } from './frontend/views/SubjectSelectionView';
+const LoginView = lazy(() => import('./frontend/views/LoginView').then(m => ({ default: m.LoginView })));
+const ModulesView = lazy(() => import('./frontend/views/ModulesView').then(m => ({ default: m.ModulesView })));
+const DetailView = lazy(() => import('./frontend/views/DetailView').then(m => ({ default: m.DetailView })));
+const ProfileView = lazy(() => import('./frontend/views/ProfileView').then(m => ({ default: m.ProfileView })));
+const SubjectSelectionView = lazy(() => import('./frontend/views/SubjectSelectionView').then(m => ({ default: m.SubjectSelectionView })));
 
 // --- MAIN APP COMPONENT ---
 export default function App() {
@@ -330,6 +330,7 @@ export default function App() {
 
   return (
     <>
+      <Suspense fallback={<div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}><div className="loading-spinner"></div></div>}>
       <Routes>
         <Route path="/login" element={
           currentUser ? <Navigate to="/" replace /> :
@@ -421,6 +422,7 @@ export default function App() {
             </>
         } />
       </Routes>
+      </Suspense>
 
       <AnimatePresence>
         {completedModulePopup && (

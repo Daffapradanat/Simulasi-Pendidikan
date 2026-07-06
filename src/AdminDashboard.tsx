@@ -1,18 +1,14 @@
-import ProfileView from './admin/views/ProfileView';
-import TeachersView from './admin/views/TeachersView';
-import StudentsView from './admin/views/StudentsView';
-import ModulesAddEditView from './admin/views/ModulesAddEditView';
-import ModulesView from './admin/views/ModulesView';
-import DashboardView from './admin/views/DashboardView';
-import AuditView from './admin/views/AuditView';
-import CategoriesSubjectsView from './admin/views/CategoriesSubjectsView';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense, lazy } from 'react';
+const ProfileView = lazy(() => import('./admin/views/ProfileView'));
+const TeachersView = lazy(() => import('./admin/views/TeachersView'));
+const StudentsView = lazy(() => import('./admin/views/StudentsView'));
+const ModulesAddEditView = lazy(() => import('./admin/views/ModulesAddEditView'));
+const ModulesView = lazy(() => import('./admin/views/ModulesView'));
+const DashboardView = lazy(() => import('./admin/views/DashboardView'));
+const AuditView = lazy(() => import('./admin/views/AuditView'));
+const CategoriesSubjectsView = lazy(() => import('./admin/views/CategoriesSubjectsView'));
 import { motion, AnimatePresence } from 'motion/react';
 import { Module, Category, Subject } from './types';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import ReactQuill from 'react-quill-new';
-import 'react-quill-new/dist/quill.snow.css';
-import * as XLSX from 'xlsx';
 import { useNavigate } from 'react-router-dom';
 
 // Types for Admin
@@ -289,10 +285,12 @@ export default function AdminDashboard({ user, onLogout, onNavigate, onUpdateUse
       'Progres Belajar (%)': s.progress,
       'Status': s.isDeleted ? 'Nonaktif' : (s.progress === 100 ? 'Lulus' : s.progress > 0 ? 'Aktif' : 'Belum Mulai')
     }));
-    const worksheet = XLSX.utils.json_to_sheet(data);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Siswa");
-    XLSX.writeFile(workbook, "laporan_progres_siswa.xlsx");
+    import('xlsx').then(XLSX => {
+      const worksheet = XLSX.utils.json_to_sheet(data);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Siswa");
+      XLSX.writeFile(workbook, "laporan_progres_siswa.xlsx");
+    });
   };
 
   const exportTeacherExcel = () => {
@@ -303,10 +301,12 @@ export default function AdminDashboard({ user, onLogout, onNavigate, onUpdateUse
       'Mata Pelajaran': t.subject,
       'Status': t.isDeleted ? 'Nonaktif' : 'Aktif'
     }));
-    const worksheet = XLSX.utils.json_to_sheet(data);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Guru");
-    XLSX.writeFile(workbook, "laporan_guru.xlsx");
+    import('xlsx').then(XLSX => {
+      const worksheet = XLSX.utils.json_to_sheet(data);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Guru");
+      XLSX.writeFile(workbook, "laporan_guru.xlsx");
+    });
   };
 
   const renderContent = () => {

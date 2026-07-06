@@ -61,7 +61,7 @@ export default function TeachersView({
           <table className="admin-table">
             <thead>
               <tr>
-                <th>No.</th>
+                <th style={{ width: '60px' }}>No.</th>
                 <th>NIP</th>
                 <th>Nama Guru</th>
                 <th>Email</th>

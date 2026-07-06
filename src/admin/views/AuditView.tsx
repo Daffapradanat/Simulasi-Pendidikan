@@ -9,17 +9,17 @@ export default function AuditView({ modules }: { modules: Module[] }) {
         <p style={{ color: 'var(--text-muted)' }}>Pantau kelengkapan struktur materi dari setiap modul untuk memastikan sinkronisasi data yang sempurna.</p>
       </div>
 
-      <div style={{ background: 'var(--surface)', borderRadius: '16px', overflow: 'hidden', border: '1px solid var(--border)', boxShadow: '0 4px 12px rgba(0,0,0,0.02)' }}>
-        <table className="admin-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
+      <div style={{ overflowX: 'auto', background: 'white', borderRadius: '8px', border: '1px solid var(--border)' }}>
+        <table className="admin-table">
           <thead>
-            <tr style={{ background: 'var(--surface-2)', borderBottom: '2px solid var(--border)' }}>
-              <th style={{ width: '60px', padding: '16px', textAlign: 'center', fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>No.</th>
-              <th style={{ padding: '16px', textAlign: 'left', fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Modul</th>
-              <th style={{ padding: '16px', textAlign: 'center', fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Tujuan Pembelajaran</th>
-              <th style={{ padding: '16px', textAlign: 'center', fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Penjelasan Materi</th>
-              <th style={{ padding: '16px', textAlign: 'center', fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Istilah Kunci</th>
-              <th style={{ padding: '16px', textAlign: 'center', fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Games Simulasi</th>
-              <th style={{ padding: '16px', textAlign: 'center', fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Status Audit</th>
+            <tr>
+              <th style={{ width: '60px' }}>No.</th>
+              <th>Modul</th>
+              <th>Tujuan Pembelajaran</th>
+              <th>Penjelasan Materi</th>
+              <th>Istilah Kunci</th>
+              <th>Games Simulasi</th>
+              <th>Status Audit</th>
             </tr>
           </thead>
           <tbody>
@@ -35,17 +35,17 @@ export default function AuditView({ modules }: { modules: Module[] }) {
               const CrossIcon = () => <i className="ti ti-x" style={{ color: 'var(--danger)', fontSize: '18px', fontWeight: 800 }}></i>;
 
               return (
-                <tr key={mod.id} style={{ borderBottom: '1px solid var(--border)' }}>
-                  <td style={{ padding: '16px', textAlign: 'center', fontWeight: 500, color: 'var(--text-muted)' }}>{index + 1}</td>
-                  <td style={{ padding: '16px' }}>
+                <tr key={mod.id}>
+                  <td>{index + 1}</td>
+                  <td>
                     <div style={{ fontWeight: 700, color: 'var(--text)' }}>{mod.title}</div>
                     <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{mod.level}</div>
                   </td>
-                  <td style={{ padding: '16px', textAlign: 'center' }}>{hasObjectives ? <CheckIcon/> : <CrossIcon/>}</td>
-                  <td style={{ padding: '16px', textAlign: 'center' }}>{hasTheory ? <CheckIcon/> : <CrossIcon/>}</td>
-                  <td style={{ padding: '16px', textAlign: 'center' }}>{hasKeyTerms ? <CheckIcon/> : <CrossIcon/>}</td>
-                  <td style={{ padding: '16px', textAlign: 'center' }}>{hasGames ? <CheckIcon/> : <CrossIcon/>}</td>
-                  <td style={{ padding: '16px', textAlign: 'center' }}>
+                  <td>{hasObjectives ? <CheckIcon/> : <CrossIcon/>}</td>
+                  <td>{hasTheory ? <CheckIcon/> : <CrossIcon/>}</td>
+                  <td>{hasKeyTerms ? <CheckIcon/> : <CrossIcon/>}</td>
+                  <td>{hasGames ? <CheckIcon/> : <CrossIcon/>}</td>
+                  <td>
                     {isComplete ? (
                       <span className="badge badge-success">Lengkap</span>
                     ) : (
@@ -58,7 +58,8 @@ export default function AuditView({ modules }: { modules: Module[] }) {
             
             {modules.length === 0 && (
               <tr>
-                <td colSpan={7} style={{ padding: '32px', textAlign: 'center', color: 'var(--text-muted)' }}>
+                <td colSpan={7} style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)' }}>
+                  <i className="ti ti-clipboard-list" style={{ fontSize: '32px', display: 'block', margin: '0 auto 8px', color: 'var(--border)' }}></i>
                   Tidak ada data modul.
                 </td>
               </tr>

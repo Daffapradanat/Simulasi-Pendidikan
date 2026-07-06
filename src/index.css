@@ -1703,7 +1703,7 @@ select.form-input {
   right: 0;
   bottom: 0;
   background: rgba(15, 23, 42, 0.4);
-  backdrop-filter: blur(4px);
+  
   z-index: 1000;
   display: flex;
   align-items: center;
@@ -1745,4 +1745,18 @@ select.form-input {
   justify-content: flex-end;
   gap: 12px;
   background: var(--surface-2);
+}
+
+/* Loading Spinner */
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid var(--border);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spinner 0.8s linear infinite;
+}
+
+@keyframes spinner {
+  to { transform: rotate(360deg); }
 }
