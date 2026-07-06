@@ -426,7 +426,7 @@ const navigate = useNavigate();
           <button className={`btn ${view === 'dashboard' ? 'btn-primary' : 'btn-ghost'} btn-full`} style={{ justifyContent: 'flex-start', border: view === 'dashboard' ? undefined : 'none' }} onClick={() => setView('dashboard')}>
             <i className="ti ti-dashboard"></i> Dashboard
           </button>
-          {user?.role === 'admin' && (
+          {(user?.role === 'admin' || user?.role === 'guru') && (
           <button className={`btn ${view === 'modules' || view === 'modules_add_edit' ? 'btn-primary' : 'btn-ghost'} btn-full`} style={{ justifyContent: 'flex-start', border: (view === 'modules' || view === 'modules_add_edit') ? undefined : 'none' }} onClick={() => setView('modules')}>
             <i className="ti ti-books"></i> Manajemen Modul
           </button>
@@ -492,7 +492,7 @@ const navigate = useNavigate();
             >
               <div style={{ fontSize: '48px', color: 'var(--accent)', marginBottom: '16px', lineHeight: 1 }}><i className="ti ti-alert-triangle"></i></div>
               <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '20px', color: 'var(--text)', marginBottom: '12px' }}>Konfirmasi Logout</h2>
-              <p style={{ color: 'var(--text-muted)', marginBottom: '24px', lineHeight: 1.5 }}>Apakah Anda yakin ingin keluar dari panel admin? Sesi Anda akan berakhir dan Anda harus masuk kembali.</p>
+              <p style={{ color: 'var(--text-muted)', marginBottom: '24px', lineHeight: 1.5 }}>Apakah Anda yakin ingin keluar dari panel ini? Sesi Anda akan berakhir dan Anda harus masuk kembali.</p>
               
               <div style={{ display: 'flex', gap: '12px' }}>
                 <button className="btn btn-ghost btn-full" onClick={() => setShowLogoutConfirm(false)}>Batal</button>

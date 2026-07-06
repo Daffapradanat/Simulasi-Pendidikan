@@ -232,14 +232,21 @@ export default function App() {
       if (data.token) { localStorage.setItem('simpend_token', data.token); } // if returned differently
       if (!user) user = data; // fallback
       
-      if (user) {
-        // If an admin/guru attempts to login through "siswa" page, they will just be redirected to their dashboard.
-        // It's more convenient this way.
-      }
-
       setLoginAttempts(0);
       setLoginBlockTime(null);
       setCurrentUser(user);
+      
+      if (user) {
+        setTimeout(() => {
+          if (user.role === 'guru') {
+            navigate('/guru', { replace: true });
+          } else if (user.role === 'admin') {
+            navigate('/admin', { replace: true });
+          } else {
+            navigate('/', { replace: true });
+          }
+        }, 0);
+      }
       if (remember) {
         localStorage.setItem('simpend_auto_login', JSON.stringify(user));
       } else {
@@ -273,23 +280,23 @@ export default function App() {
     localStorage.removeItem('simpend_auto_login');
     localStorage.removeItem('simpend_current_user');
     
-    if (role === 'guru') {
-      navigate('/guru/login', { replace: true });
-    } else if (role === 'admin') {
-      navigate('/admin/login', { replace: true });
-    } else {
-      navigate('/login', { replace: true });
-    }
-    
+    setCurrentUser(null);
+    setCurrentModuleId(null);
+    setActiveGameId(null);
+    setPlayedGames(new Set());
+    setCompletedModuleIds(new Set());
+    setViewMode('main');
+    showToast('Berhasil keluar.', 'info');
+
     setTimeout(() => {
-      setCurrentUser(null);
-      setCurrentModuleId(null);
-      setActiveGameId(null);
-      setPlayedGames(new Set());
-      setCompletedModuleIds(new Set());
-      setViewMode('main');
-      showToast('Berhasil keluar.', 'info');
-    }, 10);
+      if (role === 'guru') {
+        navigate('/guru/login', { replace: true });
+      } else if (role === 'admin') {
+        navigate('/admin/login', { replace: true });
+      } else {
+        navigate('/login', { replace: true });
+      }
+    }, 0);
   };
 
   const currentModule = currentModuleId ? computedModules.find(m => m.id === currentModuleId) : null;
@@ -357,21 +364,21 @@ export default function App() {
       <Suspense fallback={<div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}><div className="loading-spinner"></div></div>}>
       <Routes>
         <Route path="/login" element={
-          currentUser ? <Navigate to="/" replace /> :
+          currentUser ? <Navigate to={currentUser.role === 'admin' ? "/admin" : currentUser.role === 'guru' ? "/guru" : "/"} replace /> :
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}>
             <LoginView onLogin={(e, p, r) => handleLogin(e, p, r, 'siswa')} defaultMode="siswa" />
           </motion.div>
         } />
         
         <Route path="/admin/login" element={
-          currentUser ? <Navigate to="/admin" replace /> :
+          currentUser ? <Navigate to={currentUser.role === 'admin' ? "/admin" : currentUser.role === 'guru' ? "/guru" : "/"} replace /> :
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}>
             <LoginView onLogin={(e, p, r) => handleLogin(e, p, r, 'admin')} defaultMode="admin" />
           </motion.div>
         } />
 
         <Route path="/guru/login" element={
-          currentUser ? <Navigate to="/admin" replace /> :
+          currentUser ? <Navigate to={currentUser.role === 'admin' ? "/admin" : currentUser.role === 'guru' ? "/guru" : "/"} replace /> :
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}>
             <LoginView onLogin={(e, p, r) => handleLogin(e, p, r, 'guru')} defaultMode="guru" />
           </motion.div>
@@ -379,14 +386,27 @@ export default function App() {
 
         <Route path="/admin" element={
           !currentUser ? <Navigate to="/" replace /> :
-          ((currentUser.role === 'admin' || currentUser.role === 'guru') ? 
+          (currentUser.role === 'admin' ? 
             <AdminDashboard 
               user={currentUser} 
               onLogout={handleLogout} 
               onNavigate={setViewMode} 
               onUpdateUser={setCurrentUser}
             /> : 
-            <Navigate to="/" replace />
+            <Navigate to={currentUser.role === 'guru' ? "/guru" : "/"} replace />
+          )
+        } />
+        
+        <Route path="/guru" element={
+          !currentUser ? <Navigate to="/" replace /> :
+          (currentUser.role === 'guru' ? 
+            <AdminDashboard 
+              user={currentUser} 
+              onLogout={handleLogout} 
+              onNavigate={setViewMode} 
+              onUpdateUser={setCurrentUser}
+            /> : 
+            <Navigate to={currentUser.role === 'admin' ? "/admin" : "/"} replace />
           )
         } />
 
