@@ -1,6 +1,17 @@
 import React from 'react';
 import { motion } from 'motion/react';
 
+const fetchAuth = (url: string | URL | Request, options: any = {}) => {
+  const token = localStorage.getItem('simpend_token');
+  if (token) {
+    options.headers = {
+      ...options.headers,
+      'Authorization': `Bearer ${token}`
+    };
+  }
+  return fetchAuth(url, options);
+};
+
 export default function ProfileView({
   user, isEditingProfile, setIsEditingProfile, profileForm, setProfileForm, onUpdateUser
 }: any) {
@@ -54,7 +65,7 @@ export default function ProfileView({
              <button className="btn" style={{ background: 'var(--success-light)', color: 'var(--success)', border: '1px solid var(--success-light)', width: '100%', justifyContent: 'center' }} onClick={async () => {
                 if (!confirm("Selesaikan semua modul untuk akun ini sekarang?")) return;
                 try {
-                  const res = await fetch(`/api/admin/complete_all/${user.id}`, { method: 'POST' });
+                  const res = await fetchAuth(`/api/admin/complete_all/${user.id}`, { method: 'POST' });
                   if (res.ok) alert("Berhasil! Semua modul dan game sekarang tercatat telah diselesaikan. Silakan kembali ke Beranda (jika anda meluncurkan modul dari admin dashboard) atau refresh.");
                 } catch(e) {}
              }}>
@@ -69,7 +80,7 @@ export default function ProfileView({
             <form onSubmit={async e => {
               e.preventDefault();
               try {
-                const res = await fetch('/api/auth/profile', {
+                const res = await fetchAuth('/api/auth/profile', {
                   method: 'PUT',
                   headers: { 'Content-Type': 'application/json' },
                   body: JSON.stringify({ ...user, ...profileForm })

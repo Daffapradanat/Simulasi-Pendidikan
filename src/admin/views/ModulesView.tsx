@@ -2,6 +2,17 @@ import React, { useState } from 'react';
 import { Module } from '../../types';
 import * as XLSX from 'xlsx';
 
+const fetchAuth = (url: string | URL | Request, options: any = {}) => {
+  const token = localStorage.getItem('simpend_token');
+  if (token) {
+    options.headers = {
+      ...options.headers,
+      'Authorization': `Bearer ${token}`
+    };
+  }
+  return fetchAuth(url, options);
+};
+
 export default function ModulesView({ 
   modules, setView, setEditingModule, setModuleForm, 
   moduleSearch, setModuleSearch, handleRestoreModule, setModuleGameFiles, handleDeleteModule 
@@ -30,7 +41,7 @@ export default function ModulesView({
   const confirmClearAll = async () => {
     if (window.confirm("PERINGATAN: Apakah Anda yakin ingin menghapus SEMUA modul beserta file games dan uploads? Tindakan ini tidak dapat dibatalkan!")) {
       try {
-        const res = await fetch("/api/admin/clear_all", { method: "POST" });
+        const res = await fetchAuth("/api/admin/clear_all", { method: "POST" });
         if (res.ok) {
           alert("Semua modul dan file berhasil dikosongkan!");
           window.location.reload();

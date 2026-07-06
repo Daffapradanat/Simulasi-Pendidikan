@@ -5,6 +5,17 @@ import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-
 import React, { useState, useEffect, useMemo, Suspense, lazy } from 'react';
 const AdminDashboard = lazy(() => import('./AdminDashboard'));
 import { Navbar } from './frontend/components/Navbar';
+
+const fetchAuth = (url: string | URL | Request, options: any = {}) => {
+  const token = localStorage.getItem('simpend_token');
+  if (token) {
+    options.headers = {
+      ...options.headers,
+      'Authorization': `Bearer ${token}`
+    };
+  }
+  return fetchAuth(url, options);
+};
 const LoginView = lazy(() => import('./frontend/views/LoginView').then(m => ({ default: m.LoginView })));
 const ModulesView = lazy(() => import('./frontend/views/ModulesView').then(m => ({ default: m.ModulesView })));
 const DetailView = lazy(() => import('./frontend/views/DetailView').then(m => ({ default: m.DetailView })));
@@ -136,7 +147,7 @@ export default function App() {
 
   const refreshUserData = async (user: User) => {
     try {
-      const res = await fetch(`/api/users/${user.id}/progress`);
+      const res = await fetchAuth(`/api/users/${user.id}/progress`);
       if (res.ok) {
          const data = await res.json();
          if (data.playedGames && data.playedGames.length > 0) setPlayedGames(new Set(data.playedGames));
@@ -153,7 +164,7 @@ export default function App() {
   };
 
   const fetchModules = () => {
-    fetch('/api/modules')
+    fetchAuth('/api/modules')
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data)) {
@@ -162,7 +173,7 @@ export default function App() {
       })
       .catch(() => {});
       
-    fetch('/api/subjects')
+    fetchAuth('/api/subjects')
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data)) {
@@ -181,9 +192,9 @@ export default function App() {
       localStorage.setItem(`simpend_completed_${currentUser.id}`, JSON.stringify(cArr));
       
       // Sync with server
-      fetch(`/api/users/${currentUser.id}/progress`, {
+      fetchAuth(`/api/users/${currentUser.id}/progress`, {
          method: 'POST',
-         headers: { 'Content-Type': 'application/json' },
+         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('simpend_token')}` },
          body: JSON.stringify({ playedGames: pArr, completedModuleIds: cArr })
       }).catch(console.error);
 
@@ -205,7 +216,7 @@ export default function App() {
     }
 
     try {
-      const res = await fetch('/api/auth/login', {
+      const res = await fetchAuth('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password: pass })
@@ -217,7 +228,8 @@ export default function App() {
         throw new Error(data.error || 'Login gagal.');
       }
       
-      let user = data.user || data.foundUser; // if returned differently
+      let user = data.user || data.foundUser;
+      if (data.token) { localStorage.setItem('simpend_token', data.token); } // if returned differently
       if (!user) user = data; // fallback
       
       if (user) {
@@ -256,6 +268,7 @@ export default function App() {
   };
 
   const handleLogout = async () => {
+    localStorage.removeItem('simpend_token');
     localStorage.removeItem('simpend_auto_login');
     localStorage.removeItem('simpend_current_user');
     setCurrentUser(null);

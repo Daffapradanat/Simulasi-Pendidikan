@@ -15,7 +15,17 @@ import { useNavigate } from 'react-router-dom';
 type AdminViewMode = 'dashboard' | 'modules' | 'modules_add_edit' | 'students' | 'teachers' | 'profile' | 'audit' | 'categories_subjects';
 
 export default function AdminDashboard({ user, onLogout, onNavigate, onUpdateUser }: { user: any, onLogout: () => void, onNavigate: (v: 'main' | 'profile') => void, onUpdateUser?: (u: any) => void }) {
-  const navigate = useNavigate();
+  const fetchAuth = (url: string, options: any = {}) => {
+    const token = localStorage.getItem('simpend_token');
+    if (token) {
+      options.headers = {
+        ...options.headers,
+        'Authorization': `Bearer ${token}`
+      };
+    }
+    return fetch(url, options);
+  };
+const navigate = useNavigate();
   const [view, setView] = useState<AdminViewMode>('dashboard');
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
@@ -69,11 +79,11 @@ export default function AdminDashboard({ user, onLogout, onNavigate, onUpdateUse
       setLoading(true);
       try {
         const [modRes, stuRes, teachRes, catRes, subRes] = await Promise.all([
-          fetch('/api/modules').then(r => { if (r.status === 401) throw new Error('401'); return r.json(); }),
-          fetch('/api/students').then(r => { if (r.status === 401) throw new Error('401'); return r.json(); }),
-          fetch('/api/teachers').then(r => { if (r.status === 401) throw new Error('401'); return r.json(); }),
-          fetch('/api/categories').then(r => { if (r.status === 401) throw new Error('401'); return r.json(); }),
-          fetch('/api/subjects').then(r => { if (r.status === 401) throw new Error('401'); return r.json(); })
+          fetchAuth('/api/modules').then(r => { if (r.status === 401) throw new Error('401'); return r.json(); }),
+          fetchAuth('/api/students').then(r => { if (r.status === 401) throw new Error('401'); return r.json(); }),
+          fetchAuth('/api/teachers').then(r => { if (r.status === 401) throw new Error('401'); return r.json(); }),
+          fetchAuth('/api/categories').then(r => { if (r.status === 401) throw new Error('401'); return r.json(); }),
+          fetchAuth('/api/subjects').then(r => { if (r.status === 401) throw new Error('401'); return r.json(); })
         ]);
         
         if (Array.isArray(modRes)) setModules(modRes);
@@ -130,7 +140,7 @@ export default function AdminDashboard({ user, onLogout, onNavigate, onUpdateUse
       });
       
       if (editingModule) {
-        const res = await fetch(`/api/modules/${editingModule.id}`, {
+        const res = await fetchAuth(`/api/modules/${editingModule.id}`, {
           method: 'PUT',
           body: formData
         });
@@ -138,7 +148,7 @@ export default function AdminDashboard({ user, onLogout, onNavigate, onUpdateUse
         const data = await res.json();
         setModules(modules.map(m => m.id === editingModule.id ? data.module : m));
       } else {
-        const res = await fetch('/api/modules', {
+        const res = await fetchAuth('/api/modules', {
           method: 'POST',
           body: formData
         });
@@ -166,7 +176,7 @@ export default function AdminDashboard({ user, onLogout, onNavigate, onUpdateUse
     e.preventDefault();
     try {
       if (editingStudent) {
-        const res = await fetch(`/api/students/${editingStudent.id}`, {
+        const res = await fetchAuth(`/api/students/${editingStudent.id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(studentForm)
@@ -175,7 +185,7 @@ export default function AdminDashboard({ user, onLogout, onNavigate, onUpdateUse
         const data = await res.json();
         setStudents(students.map(s => s.id === editingStudent.id ? data.student : s));
       } else {
-        const res = await fetch('/api/students', {
+        const res = await fetchAuth('/api/students', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(studentForm)
@@ -201,7 +211,7 @@ export default function AdminDashboard({ user, onLogout, onNavigate, onUpdateUse
     e.preventDefault();
     try {
       if (editingTeacher) {
-        const res = await fetch(`/api/teachers/${editingTeacher.id}`, {
+        const res = await fetchAuth(`/api/teachers/${editingTeacher.id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(teacherForm)
@@ -209,7 +219,7 @@ export default function AdminDashboard({ user, onLogout, onNavigate, onUpdateUse
         const data = await res.json();
         setTeachers(teachers.map(t => t.id === editingTeacher.id ? data.teacher : t));
       } else {
-        const res = await fetch('/api/teachers', {
+        const res = await fetchAuth('/api/teachers', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(teacherForm)
@@ -234,7 +244,7 @@ export default function AdminDashboard({ user, onLogout, onNavigate, onUpdateUse
 
   const handleRestoreModule = async (id: number) => {
     try {
-      await fetch(`/api/modules/${id}/restore`, { method: 'PUT' });
+      await fetchAuth(`/api/modules/${id}/restore`, { method: 'PUT' });
       setModules(modules.map(m => m.id === id ? { ...m, isDeleted: false } : m));
     } catch (err) {
       console.error(err);
@@ -243,7 +253,7 @@ export default function AdminDashboard({ user, onLogout, onNavigate, onUpdateUse
 
   const handleRestoreStudent = async (id: number) => {
     try {
-      await fetch(`/api/students/${id}/restore`, { method: 'PUT' });
+      await fetchAuth(`/api/students/${id}/restore`, { method: 'PUT' });
       setStudents(students.map(s => s.id === id ? { ...s, isDeleted: false } : s));
     } catch (err) {
       console.error(err);
@@ -252,7 +262,7 @@ export default function AdminDashboard({ user, onLogout, onNavigate, onUpdateUse
 
   const handleRestoreTeacher = async (id: number) => {
     try {
-      await fetch(`/api/teachers/${id}/restore`, { method: 'PUT' });
+      await fetchAuth(`/api/teachers/${id}/restore`, { method: 'PUT' });
       setTeachers(teachers.map(t => t.id === id ? { ...t, isDeleted: false } : t));
     } catch (err) {
       console.error(err);
@@ -264,13 +274,13 @@ export default function AdminDashboard({ user, onLogout, onNavigate, onUpdateUse
     const { type, id } = confirmDelete;
     try {
       if (type === 'module') {
-        await fetch(`/api/modules/${id}`, { method: 'DELETE' });
+        await fetchAuth(`/api/modules/${id}`, { method: 'DELETE' });
         setModules(modules.filter(m => m.id !== id));
       } else if (type === 'student') {
-        await fetch(`/api/students/${id}`, { method: 'DELETE' });
+        await fetchAuth(`/api/students/${id}`, { method: 'DELETE' });
         setStudents(students.map(s => s.id === id ? { ...s, isDeleted: true } : s));
       } else if (type === 'teacher') {
-        await fetch(`/api/teachers/${id}`, { method: 'DELETE' });
+        await fetchAuth(`/api/teachers/${id}`, { method: 'DELETE' });
         setTeachers(teachers.map(t => t.id === id ? { ...t, isDeleted: true } : t));
       }
       setConfirmDelete(null);
@@ -339,31 +349,31 @@ export default function AdminDashboard({ user, onLogout, onNavigate, onUpdateUse
           categories={categories}
           subjects={subjects}
           onAddCategory={async (name) => {
-            const res = await fetch('/api/categories', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name }) });
+            const res = await fetchAuth('/api/categories', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name }) });
             const data = await res.json();
             setCategories([...categories, data.category]);
           }}
           onEditCategory={async (id, name) => {
-            const res = await fetch(`/api/categories/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name }) });
+            const res = await fetchAuth(`/api/categories/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name }) });
             const data = await res.json();
             setCategories(categories.map(c => c.id === id ? data.category : c));
           }}
           onDeleteCategory={async (id) => {
-            await fetch(`/api/categories/${id}`, { method: 'DELETE' });
+            await fetchAuth(`/api/categories/${id}`, { method: 'DELETE' });
             setCategories(categories.filter(c => c.id !== id));
           }}
           onAddSubject={async (name) => {
-            const res = await fetch('/api/subjects', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name }) });
+            const res = await fetchAuth('/api/subjects', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name }) });
             const data = await res.json();
             setSubjects([...subjects, data.subject]);
           }}
           onEditSubject={async (id, name) => {
-            const res = await fetch(`/api/subjects/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name }) });
+            const res = await fetchAuth(`/api/subjects/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name }) });
             const data = await res.json();
             setSubjects(subjects.map(s => s.id === id ? data.subject : s));
           }}
           onDeleteSubject={async (id) => {
-            await fetch(`/api/subjects/${id}`, { method: 'DELETE' });
+            await fetchAuth(`/api/subjects/${id}`, { method: 'DELETE' });
             setSubjects(subjects.filter(s => s.id !== id));
           }}
         />;

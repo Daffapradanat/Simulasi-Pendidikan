@@ -2,6 +2,17 @@
 import React, { useState } from 'react';
 import { Module, User, Subject } from '../../types';
 
+const fetchAuth = (url: string | URL | Request, options: any = {}) => {
+  const token = localStorage.getItem('simpend_token');
+  if (token) {
+    options.headers = {
+      ...options.headers,
+      'Authorization': `Bearer ${token}`
+    };
+  }
+  return fetchAuth(url, options);
+};
+
 // --- PROFILE VIEW ---
 export function ProfileView({ user, completedModuleIds, modules, subjects = [], setUser }: { user: User, completedModuleIds: Set<number>, modules: Module[], subjects?: Subject[], setUser: (u: User) => void }) {
   const completedCount = completedModuleIds.size;
@@ -48,12 +59,12 @@ export function ProfileView({ user, completedModuleIds, modules, subjects = [], 
               formData.append('avatar', file);
               
               try {
-                const res = await fetch('/api/upload-avatar', { method: 'POST', body: formData });
+                const res = await fetchAuth('/api/upload-avatar', { method: 'POST', body: formData });
                 if (res.ok) {
                   const data = await res.json();
                   if (data.url) {
                      // Update the user avatar in backend
-                     await fetch(`/api/users/${user.id}/avatar`, {
+                     await fetchAuth(`/api/users/${user.id}/avatar`, {
                        method: 'PUT',
                        headers: { 'Content-Type': 'application/json' },
                        body: JSON.stringify({ avatar: data.url, role: user.role })
@@ -182,7 +193,7 @@ export function ProfileView({ user, completedModuleIds, modules, subjects = [], 
                  setErrorMsg('');
                  try {
 
-                   const res = await fetch('/api/auth/profile', {
+                   const res = await fetchAuth('/api/auth/profile', {
                      method: 'PUT',
                      headers: { 'Content-Type': 'application/json' },
                      body: JSON.stringify({ id: user.id, name: editForm.name, email: editForm.email, role: user.role, password: editForm.password })

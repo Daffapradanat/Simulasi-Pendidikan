@@ -6,7 +6,7 @@ export default function DashboardView({ modules, students, teachers, user }: { m
   const [showAllActivities, setShowAllActivities] = useState(false);
 
   useEffect(() => {
-    fetch('/api/activities')
+    fetch('/api/activities', { headers: { 'Authorization': `Bearer ${localStorage.getItem('simpend_token')}` } })
       .then(res => res.json())
       .then(data => setActivities(data || []))
       .catch(e => console.error(e));

@@ -254,8 +254,8 @@ app.use(cookieParser());
   };
 
   const isAdmin = (req: any, res: any, next: any) => {
-    if (!req.user || req.user.role !== 'admin') {
-      return res.status(403).json({ error: "Forbidden: Admin access required" });
+    if (!req.user || req.user.role !== 'admin' && req.user.role !== 'guru') {
+      return res.status(403).json({ error: "Forbidden: Admin/Guru access required" });
     }
     next();
   };
