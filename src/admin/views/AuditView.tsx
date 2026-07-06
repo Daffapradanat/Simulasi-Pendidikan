@@ -1,7 +1,13 @@
 import React from 'react';
 import { Module } from '../../types';
 
+import { useState } from 'react';
 export default function AuditView({ modules }: { modules: Module[] }) {
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+  const totalPages = Math.ceil(modules.length / itemsPerPage);
+  const displayedModules = modules.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
   return (
     <div style={{ padding: '32px' }}>
       <div style={{ marginBottom: '32px' }}>
@@ -23,7 +29,7 @@ export default function AuditView({ modules }: { modules: Module[] }) {
             </tr>
           </thead>
           <tbody>
-            {modules.map((mod, index) => {
+            {displayedModules.map((mod, index) => {
               const hasObjectives = mod.material?.objectives && mod.material.objectives.length > 0;
               const hasTheory = mod.material?.theory && mod.material.theory.trim() !== '' && mod.material.theory !== '<p><br></p>';
               const hasKeyTerms = mod.material?.keyTerms && mod.material.keyTerms.length > 0;
@@ -36,7 +42,7 @@ export default function AuditView({ modules }: { modules: Module[] }) {
 
               return (
                 <tr key={mod.id}>
-                  <td>{index + 1}</td>
+                  <td>{(currentPage - 1) * itemsPerPage + index + 1}</td>
                   <td>
                     <div style={{ fontWeight: 700, color: 'var(--text)' }}>{mod.title}</div>
                     <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{mod.level}</div>
@@ -65,7 +71,29 @@ export default function AuditView({ modules }: { modules: Module[] }) {
               </tr>
             )}
           </tbody>
+        
         </table>
+        {totalPages > 1 && (
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px', borderTop: '1px solid var(--border)' }}>
+            <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
+              Menampilkan {(currentPage - 1) * itemsPerPage + 1} - {Math.min(currentPage * itemsPerPage, modules.length)} dari {modules.length} modul
+            </span>
+            <div style={{ display: 'flex', gap: '4px' }}>
+              <button className="btn btn-ghost btn-sm" disabled={currentPage === 1} onClick={() => setCurrentPage(p => p - 1)} style={{ padding: '4px 8px' }}>
+                <i className="ti ti-chevron-left"></i>
+              </button>
+              {Array.from({ length: totalPages }).map((_, i) => (
+                <button key={i} className={`btn btn-sm ${currentPage === i + 1 ? 'btn-primary' : 'btn-ghost'}`} onClick={() => setCurrentPage(i + 1)} style={{ width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}>
+                  {i + 1}
+                </button>
+              ))}
+              <button className="btn btn-ghost btn-sm" disabled={currentPage === totalPages} onClick={() => setCurrentPage(p => p + 1)} style={{ padding: '4px 8px' }}>
+                <i className="ti ti-chevron-right"></i>
+              </button>
+            </div>
+          </div>
+        )}
+
       </div>
     </div>
   );

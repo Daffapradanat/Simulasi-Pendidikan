@@ -92,7 +92,7 @@ export default function TeachersView({
               ) : (
                 displayedTeachers.map((t, index) => (
                 <tr key={t.id} style={{ ...(t.isDeleted ? { filter: 'grayscale(100%)', opacity: 0.5 } : {}) }}>
-                  <td>{index + 1}</td>
+                  <td>{(currentPage - 1) * itemsPerPage + index + 1}</td>
                   <td>
                     <div style={{ fontWeight: 600 }}>{t.nip || '-'}</div>
                     {t.isDeleted && <span className="badge" style={{ background: 'var(--border)', color: 'var(--text-muted)', marginTop: '6px', display: 'inline-block' }}>Dihapus</span>}

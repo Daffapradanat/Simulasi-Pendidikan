@@ -24,6 +24,16 @@ export default function CategoriesSubjectsView({
   const [editingSubject, setEditingSubject] = useState<Subject | null>(null);
   const [categoryName, setCategoryName] = useState('');
   const [subjectName, setSubjectName] = useState('');
+  const [currentPageCat, setCurrentPageCat] = useState(1);
+  const [currentPageSub, setCurrentPageSub] = useState(1);
+  const itemsPerPage = 10;
+  
+  const totalPagesCat = Math.ceil(categories.length / itemsPerPage);
+  const displayedCategories = categories.slice((currentPageCat - 1) * itemsPerPage, currentPageCat * itemsPerPage);
+  
+  const totalPagesSub = Math.ceil(subjects.length / itemsPerPage);
+  const displayedSubjects = subjects.slice((currentPageSub - 1) * itemsPerPage, currentPageSub * itemsPerPage);
+
 
   return (
     <div className="admin-content">
@@ -82,9 +92,9 @@ export default function CategoriesSubjectsView({
                     </td>
                   </tr>
                 ) : (
-                  categories.map((cat, index) => (
+                  displayedCategories.map((cat, index) => (
                     <tr key={cat.id}>
-                      <td style={{ textAlign: 'center' }}>{index + 1}</td>
+                      <td style={{ textAlign: 'center' }}>{(currentPageCat - 1) * itemsPerPage + index + 1}</td>
                       <td style={{ fontWeight: 500 }}>{cat.name}</td>
                       <td>
                         <div style={{ display: 'flex', gap: '8px' }}>
@@ -100,7 +110,38 @@ export default function CategoriesSubjectsView({
                   ))
                 )}
               </tbody>
+
             </table>
+            {totalPagesSub > 1 && (
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px', borderTop: '1px solid var(--border)' }}>
+                <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
+                  Menampilkan {(currentPageSub - 1) * itemsPerPage + 1} - {Math.min(currentPageSub * itemsPerPage, subjects.length)} dari {subjects.length}
+                </span>
+                <div style={{ display: 'flex', gap: '4px' }}>
+                  <button className="btn btn-ghost btn-sm" disabled={currentPageSub === 1} onClick={() => setCurrentPageSub(p => p - 1)} style={{ padding: '4px 8px' }}><i className="ti ti-chevron-left"></i></button>
+                  {Array.from({ length: totalPagesSub }).map((_, i) => (
+                    <button key={i} className={`btn btn-sm ${currentPageSub === i + 1 ? 'btn-primary' : 'btn-ghost'}`} onClick={() => setCurrentPageSub(i + 1)} style={{ width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}>{i + 1}</button>
+                  ))}
+                  <button className="btn btn-ghost btn-sm" disabled={currentPageSub === totalPagesSub} onClick={() => setCurrentPageSub(p => p + 1)} style={{ padding: '4px 8px' }}><i className="ti ti-chevron-right"></i></button>
+                </div>
+              </div>
+            )}
+
+            {totalPagesCat > 1 && (
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px', borderTop: '1px solid var(--border)' }}>
+                <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
+                  Menampilkan {(currentPageCat - 1) * itemsPerPage + 1} - {Math.min(currentPageCat * itemsPerPage, categories.length)} dari {categories.length}
+                </span>
+                <div style={{ display: 'flex', gap: '4px' }}>
+                  <button className="btn btn-ghost btn-sm" disabled={currentPageCat === 1} onClick={() => setCurrentPageCat(p => p - 1)} style={{ padding: '4px 8px' }}><i className="ti ti-chevron-left"></i></button>
+                  {Array.from({ length: totalPagesCat }).map((_, i) => (
+                    <button key={i} className={`btn btn-sm ${currentPageCat === i + 1 ? 'btn-primary' : 'btn-ghost'}`} onClick={() => setCurrentPageCat(i + 1)} style={{ width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}>{i + 1}</button>
+                  ))}
+                  <button className="btn btn-ghost btn-sm" disabled={currentPageCat === totalPagesCat} onClick={() => setCurrentPageCat(p => p + 1)} style={{ padding: '4px 8px' }}><i className="ti ti-chevron-right"></i></button>
+                </div>
+              </div>
+            )}
+
           </div>
         </div>
 
@@ -157,9 +198,9 @@ export default function CategoriesSubjectsView({
                     </td>
                   </tr>
                 ) : (
-                  subjects.map((sub, index) => (
+                  displayedSubjects.map((sub, index) => (
                     <tr key={sub.id}>
-                      <td style={{ textAlign: 'center' }}>{index + 1}</td>
+                      <td style={{ textAlign: 'center' }}>{(currentPageSub - 1) * itemsPerPage + index + 1}</td>
                       <td style={{ fontWeight: 500 }}>{sub.name}</td>
                       <td>
                         <div style={{ display: 'flex', gap: '8px' }}>

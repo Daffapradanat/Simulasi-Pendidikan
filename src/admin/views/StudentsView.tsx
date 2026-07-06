@@ -95,7 +95,7 @@ export default function StudentsView({
               ) : (
                 displayedStudents.map((s, index) => (
                 <tr key={s.id} style={{ ...(s.isDeleted ? { filter: 'grayscale(100%)', opacity: 0.5 } : {}) }}>
-                  <td>{index + 1}</td>
+                  <td>{(currentPage - 1) * itemsPerPage + index + 1}</td>
                   <td>
                     <div style={{ fontWeight: 600 }}>{s.nisn || '-'}</div>
                     {s.isDeleted && <span className="badge" style={{ background: 'var(--border)', color: 'var(--text-muted)', marginTop: '6px', display: 'inline-block' }}>Dihapus</span>}

@@ -3,8 +3,8 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 
 import React, { useState, useEffect, useMemo, Suspense, lazy } from 'react';
-const AdminDashboard = lazy(() => import('./AdminDashboard'));
 import { Navbar } from './frontend/components/Navbar';
+const AdminDashboard = lazy(() => import('./AdminDashboard'));
 
 const fetchAuth = (url: string | URL | Request, options: any = {}) => {
   const token = localStorage.getItem('simpend_token');

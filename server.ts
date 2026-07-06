@@ -226,7 +226,7 @@ async function startServer() {
   await initDB();
   const app = express();
   app.use(compression({ level: 9, threshold: 0 }));
-  const PORT = process.env.PORT || 3000;
+  const PORT = Number(process.env.PORT || 3000);
 
   // Security controls are moved to /serverSecurity.ts
   configureSecurity(app);
