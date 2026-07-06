@@ -268,17 +268,28 @@ export default function App() {
   };
 
   const handleLogout = async () => {
+    const role = currentUser?.role;
     localStorage.removeItem('simpend_token');
     localStorage.removeItem('simpend_auto_login');
     localStorage.removeItem('simpend_current_user');
-    setCurrentUser(null);
-    setCurrentModuleId(null);
-    setActiveGameId(null);
-    setPlayedGames(new Set());
-    setCompletedModuleIds(new Set());
-    setViewMode('main');
-    showToast('Berhasil keluar.', 'info');
-    navigate('/login');
+    
+    if (role === 'guru') {
+      navigate('/guru/login', { replace: true });
+    } else if (role === 'admin') {
+      navigate('/admin/login', { replace: true });
+    } else {
+      navigate('/login', { replace: true });
+    }
+    
+    setTimeout(() => {
+      setCurrentUser(null);
+      setCurrentModuleId(null);
+      setActiveGameId(null);
+      setPlayedGames(new Set());
+      setCompletedModuleIds(new Set());
+      setViewMode('main');
+      showToast('Berhasil keluar.', 'info');
+    }, 10);
   };
 
   const currentModule = currentModuleId ? computedModules.find(m => m.id === currentModuleId) : null;
@@ -367,7 +378,7 @@ export default function App() {
         } />
 
         <Route path="/admin" element={
-          !currentUser ? <Navigate to="/admin/login" replace /> :
+          !currentUser ? <Navigate to="/" replace /> :
           ((currentUser.role === 'admin' || currentUser.role === 'guru') ? 
             <AdminDashboard 
               user={currentUser} 
