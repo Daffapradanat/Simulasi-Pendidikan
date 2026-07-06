@@ -388,7 +388,7 @@ app.use(cookieParser());
     res.json({ success: true });
   });
 
-  app.post("/api/admin/complete_all/:id", authenticateToken, isAdmin, (req, res) => {
+  app.post("/api/admin/complete_all/:id", authenticateToken, isStrictAdmin, (req, res) => {
     const id = parseInt(req.params.id);
     const completedModuleIds = modulesData.filter(m => !m.isDeleted).map(m => m.id);
     let playedGames: number[] = [];
@@ -440,7 +440,7 @@ app.put("/api/auth/profile", authenticateToken, (req, res) => {
     res.json(activitiesData);
   });
 
-  app.post("/api/admin/clear_all", authenticateToken, isAdmin, (req, res) => {
+  app.post("/api/admin/clear_all", authenticateToken, isStrictAdmin, (req, res) => {
 
     modulesData = [];
 
@@ -533,7 +533,7 @@ app.put("/api/auth/profile", authenticateToken, (req, res) => {
     return null;
   }
 
-  app.post("/api/modules", authenticateToken, isAdmin, upload.array('gameFiles'), async (req, res) => {
+  app.post("/api/modules", authenticateToken, isStrictAdmin, upload.array('gameFiles'), async (req, res) => {
     try {
       let { title, desc, level, category_id, subject_id, duration, material, gamesMeta } = req.body;
       try { material = JSON.parse(material || '[]'); } catch(e) {}
@@ -581,7 +581,7 @@ app.put("/api/auth/profile", authenticateToken, (req, res) => {
     }
   });
 
-  app.put("/api/modules/:id", authenticateToken, isAdmin, upload.array('gameFiles'), async (req, res) => {
+  app.put("/api/modules/:id", authenticateToken, isStrictAdmin, upload.array('gameFiles'), async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const index = modulesData.findIndex(m => m.id === id);
@@ -630,7 +630,7 @@ app.put("/api/auth/profile", authenticateToken, (req, res) => {
     }
   });
 
-  app.delete("/api/modules/:id", authenticateToken, isAdmin, (req, res) => {
+  app.delete("/api/modules/:id", authenticateToken, isStrictAdmin, (req, res) => {
     const id = parseInt(req.params.id);
     const index = modulesData.findIndex(m => m.id === id);
     if (index !== -1) {
@@ -650,7 +650,7 @@ app.put("/api/auth/profile", authenticateToken, (req, res) => {
     res.json({ success: true, id });
   });
 
-  app.put("/api/modules/:id/restore", authenticateToken, isAdmin, (req, res) => {
+  app.put("/api/modules/:id/restore", authenticateToken, isStrictAdmin, (req, res) => {
     const id = parseInt(req.params.id);
     const index = modulesData.findIndex(m => m.id === id);
     if (index !== -1) {

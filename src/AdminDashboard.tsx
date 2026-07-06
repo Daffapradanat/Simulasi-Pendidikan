@@ -414,17 +414,21 @@ const navigate = useNavigate();
           <button className={`btn ${view === 'dashboard' ? 'btn-primary' : 'btn-ghost'} btn-full`} style={{ justifyContent: 'flex-start', border: view === 'dashboard' ? undefined : 'none' }} onClick={() => setView('dashboard')}>
             <i className="ti ti-dashboard"></i> Dashboard
           </button>
+          {user?.role === 'admin' && (
           <button className={`btn ${view === 'modules' || view === 'modules_add_edit' ? 'btn-primary' : 'btn-ghost'} btn-full`} style={{ justifyContent: 'flex-start', border: (view === 'modules' || view === 'modules_add_edit') ? undefined : 'none' }} onClick={() => setView('modules')}>
             <i className="ti ti-books"></i> Manajemen Modul
           </button>
+          )}
           {user?.role === 'admin' && (
           <button className={`btn ${view === 'categories_subjects' ? 'btn-primary' : 'btn-ghost'} btn-full`} style={{ justifyContent: 'flex-start', border: view === 'categories_subjects' ? undefined : 'none' }} onClick={() => setView('categories_subjects')}>
             <i className="ti ti-tags"></i> Kategori & Mapel
           </button>
           )}
+          {user?.role === 'admin' && (
           <button className={`btn ${view === 'audit' ? 'btn-primary' : 'btn-ghost'} btn-full`} style={{ justifyContent: 'flex-start', border: view === 'audit' ? undefined : 'none' }} onClick={() => setView('audit')}>
             <i className="ti ti-clipboard-check"></i> Audit Konten
           </button>
+          )}
               <button className={`btn ${view === 'students' ? 'btn-primary' : 'btn-ghost'} btn-full`} style={{ justifyContent: 'flex-start', border: view === 'students' ? undefined : 'none' }} onClick={() => setView('students')}>
                 <i className="ti ti-users"></i> Manajemen Siswa
               </button>

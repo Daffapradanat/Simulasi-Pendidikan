@@ -359,6 +359,13 @@ export default function App() {
           </motion.div>
         } />
 
+        <Route path="/guru/login" element={
+          currentUser ? <Navigate to="/admin" replace /> :
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}>
+            <LoginView onLogin={(e, p, r) => handleLogin(e, p, r, 'guru')} defaultMode="guru" />
+          </motion.div>
+        } />
+
         <Route path="/admin" element={
           !currentUser ? <Navigate to="/admin/login" replace /> :
           ((currentUser.role === 'admin' || currentUser.role === 'guru') ? 

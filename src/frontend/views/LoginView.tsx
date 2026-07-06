@@ -70,7 +70,7 @@ export function LoginView({ onLogin, defaultMode = 'siswa' }: { onLogin: (e: str
     }, 3000);
   };
 
-  const title = defaultMode === 'siswa' ? 'Siswa' : defaultMode === 'guru' ? 'Guru' : 'Admin/Guru';
+  const title = defaultMode === 'siswa' ? 'Siswa' : defaultMode === 'guru' ? 'Guru' : 'Administrator';
   
   if (isForgotMode) {
     return (
