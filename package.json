@@ -29,7 +29,6 @@
     "lucide-react": "^0.546.0",
     "motion": "^12.23.24",
     "multer": "^2.1.1",
-    "puppeteer": "^25.3.0",
     "react": "^19.0.1",
     "react-dom": "^19.0.1",
     "react-is": "^19.2.7",
@@ -37,7 +36,7 @@
     "react-router-dom": "^7.17.0",
     "recharts": "^3.8.1",
     "sqlite": "^5.1.1",
-    "sqlite3": "^5.1.7",
+    "sqlite3": "^6.0.1",
     "vite": "^6.2.3",
     "xlsx": "^0.18.5"
   },
