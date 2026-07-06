@@ -40,7 +40,7 @@ const navigate = useNavigate();
     if (user?.role === 'guru') {
       const guruCatIds = user.category_ids || [];
       const guruSubIds = user.subject_ids || [];
-      if (guruCatIds.length === 0 && guruSubIds.length === 0) return []; // If no spec, see nothing
+      if (guruCatIds.length === 0 && guruSubIds.length === 0) return modules; // If no spec, see nothing
       return modules.filter(m => guruCatIds.includes(m.category_id) || guruSubIds.includes(m.subject_id));
     }
     return modules;

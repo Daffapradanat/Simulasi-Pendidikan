@@ -348,7 +348,7 @@ app.use(cookieParser());
       return res.status(401).json({ success: false, error: "Email atau password salah." });
     }
 
-    const user = { id: foundUser.id, name: foundUser.name, email: foundUser.email, role: foundUser.role, category_ids: foundUser.category_ids, subject_ids: foundUser.subject_ids };
+    const user = { id: foundUser.id, name: foundUser.name, email: foundUser.email, role: foundUser.role, category_ids: foundUser.category_ids, subject_ids: foundUser.subject_ids, avatar: foundUser.avatar };
 
     const token = jwt.sign({ id: user.id, email: user.email, role: user.role, name: user.name }, SECRET_KEY, { expiresIn: '1d' });
     res.cookie('token', token, { 
@@ -376,7 +376,15 @@ app.use(cookieParser());
          if (t) {
            userObj.category_ids = t.category_ids;
            userObj.subject_ids = t.subject_ids;
+           userObj.avatar = t.avatar;
          }
+      } else if (userObj.role === 'siswa') {
+         const s = studentsData.find(x => x.id === userObj.id);
+         if (s) {
+           userObj.avatar = s.avatar;
+         }
+      } else if (userObj.role === 'admin') {
+         // admin avatar if exists in a future implementation
       }
       
       res.json({ user: userObj });
