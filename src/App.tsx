@@ -391,7 +391,7 @@ export default function App() {
               user={currentUser} 
               onLogout={handleLogout} 
               onNavigate={setViewMode} 
-              onUpdateUser={setCurrentUser}
+              onUpdateUser={handleUpdateUser}
             /> : 
             <Navigate to={currentUser.role === 'guru' ? "/guru" : "/"} replace />
           )
@@ -404,7 +404,7 @@ export default function App() {
               user={currentUser} 
               onLogout={handleLogout} 
               onNavigate={setViewMode} 
-              onUpdateUser={setCurrentUser}
+              onUpdateUser={handleUpdateUser}
             /> : 
             <Navigate to={currentUser.role === 'admin' ? "/admin" : "/"} replace />
           )
@@ -466,7 +466,7 @@ export default function App() {
 
                 {viewMode === 'profile' && (
                   <motion.div key="profile" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}>
-                     <ProfileView user={currentUser} completedModuleIds={completedModuleIds} modules={appModules} subjects={appSubjects} setUser={setCurrentUser} />
+                     <ProfileView user={currentUser} completedModuleIds={completedModuleIds} modules={appModules} subjects={appSubjects} setUser={handleUpdateUser} />
                   </motion.div>
                 )}
               </AnimatePresence>

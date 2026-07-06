@@ -290,8 +290,8 @@ app.use(cookieParser());
     
     let found = false;
     if (role === 'admin') {
-      const idx = adminData.findIndex(a => a.id === id);
-      if (idx !== -1) { adminData[idx].avatar = avatar; found = true; }
+      // no persistent storage for hardcoded admin avatar yet, but we allow the frontend to update state
+      found = true;
     } else if (role === 'siswa') {
       const idx = studentsData.findIndex(s => s.id === id);
       if (idx !== -1) { studentsData[idx].avatar = avatar; found = true; }
