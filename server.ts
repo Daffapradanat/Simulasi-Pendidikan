@@ -423,7 +423,7 @@ app.put("/api/auth/profile", authenticateToken, (req, res) => {
     res.json({ success: true });
   });
 
-  app.get("/api/categories", authenticateToken, (req, res) => {
+  app.get("/api/categories", (req, res) => {
     res.json(categoriesData);
   });
 
@@ -451,7 +451,7 @@ app.put("/api/auth/profile", authenticateToken, (req, res) => {
     res.json({ success: true });
   });
 
-  app.get("/api/subjects", authenticateToken, (req, res) => {
+  app.get("/api/subjects", (req, res) => {
     res.json(subjectsData);
   });
 
@@ -479,7 +479,7 @@ app.put("/api/auth/profile", authenticateToken, (req, res) => {
     res.json({ success: true });
   });
 
-  app.get("/api/modules", authenticateToken, (req, res) => {
+  app.get("/api/modules", (req, res) => {
     res.json(modulesData);
   });
 

@@ -69,17 +69,18 @@ export default function AdminDashboard({ user, onLogout, onNavigate, onUpdateUse
       setLoading(true);
       try {
         const [modRes, stuRes, teachRes, catRes, subRes] = await Promise.all([
-          fetch('/api/modules').then(r => r.json()),
-          fetch('/api/students').then(r => r.json()),
-          fetch('/api/teachers').then(r => r.json()),
-          fetch('/api/categories').then(r => r.json()),
-          fetch('/api/subjects').then(r => r.json())
+          fetch('/api/modules').then(r => { if (r.status === 401) throw new Error('401'); return r.json(); }),
+          fetch('/api/students').then(r => { if (r.status === 401) throw new Error('401'); return r.json(); }),
+          fetch('/api/teachers').then(r => { if (r.status === 401) throw new Error('401'); return r.json(); }),
+          fetch('/api/categories').then(r => { if (r.status === 401) throw new Error('401'); return r.json(); }),
+          fetch('/api/subjects').then(r => { if (r.status === 401) throw new Error('401'); return r.json(); })
         ]);
-        setModules(modRes);
-        setStudents(stuRes);
-        setTeachers(teachRes);
-        setCategories(catRes);
-        setSubjects(subRes);
+        
+        if (Array.isArray(modRes)) setModules(modRes);
+        if (Array.isArray(stuRes)) setStudents(stuRes);
+        if (Array.isArray(teachRes)) setTeachers(teachRes);
+        if (Array.isArray(catRes)) setCategories(catRes);
+        if (Array.isArray(subRes)) setSubjects(subRes);
       } catch (err) {
         console.error("Failed to fetch data", err);
       }
@@ -219,9 +220,12 @@ export default function AdminDashboard({ user, onLogout, onNavigate, onUpdateUse
       setShowTeacherModal(false);
       setEditingTeacher(null);
       setTeacherForm({ name: '', subject: '', nip: '', email: '' });
-    } catch (err) {
-      console.error(err);
-    }
+    } catch (err: any) {
+          console.error(err);
+          if (err.message === '401') {
+             onLogout();
+          }
+        }
   };
 
   const handleDeleteTeacher = (id: number) => {
@@ -438,7 +442,9 @@ export default function AdminDashboard({ user, onLogout, onNavigate, onUpdateUse
       <div className="admin-main">
         <AnimatePresence mode="wait">
           <motion.div key={view} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.2 }}>
-            {renderContent()}
+            <Suspense fallback={<div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', padding: '64px' }}><div className="loading-spinner"></div></div>}>
+              {renderContent()}
+            </Suspense>
           </motion.div>
         </AnimatePresence>
       </div>
