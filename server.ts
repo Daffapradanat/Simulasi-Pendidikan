@@ -348,7 +348,7 @@ app.use(cookieParser());
       return res.status(401).json({ success: false, error: "Email atau password salah." });
     }
 
-    const user = { id: foundUser.id, name: foundUser.name, email: foundUser.email, role: foundUser.role };
+    const user = { id: foundUser.id, name: foundUser.name, email: foundUser.email, role: foundUser.role, category_ids: foundUser.category_ids, subject_ids: foundUser.subject_ids };
 
     const token = jwt.sign({ id: user.id, email: user.email, role: user.role, name: user.name }, SECRET_KEY, { expiresIn: '1d' });
     res.cookie('token', token, { 
@@ -369,7 +369,17 @@ app.use(cookieParser());
     if (!token) return res.status(401).json({ error: "Unauthorized" });
     try {
       const decoded = jwt.verify(token, SECRET_KEY) as any;
-      res.json({ user: { id: decoded.id, email: decoded.email, role: decoded.role, name: decoded.name } });
+      let userObj: any = { id: decoded.id, email: decoded.email, role: decoded.role, name: decoded.name };
+      
+      if (userObj.role === 'guru') {
+         const t = teachersData.find(x => x.id === userObj.id);
+         if (t) {
+           userObj.category_ids = t.category_ids;
+           userObj.subject_ids = t.subject_ids;
+         }
+      }
+      
+      res.json({ user: userObj });
     } catch {
       res.status(401).json({ error: "Invalid token" });
     }
@@ -533,7 +543,7 @@ app.put("/api/auth/profile", authenticateToken, (req, res) => {
     return null;
   }
 
-  app.post("/api/modules", authenticateToken, isStrictAdmin, upload.array('gameFiles'), async (req, res) => {
+  app.post("/api/modules", authenticateToken, isAdmin, upload.array('gameFiles'), async (req, res) => {
     try {
       let { title, desc, level, category_id, subject_id, duration, material, gamesMeta } = req.body;
       try { material = JSON.parse(material || '[]'); } catch(e) {}
@@ -581,7 +591,7 @@ app.put("/api/auth/profile", authenticateToken, (req, res) => {
     }
   });
 
-  app.put("/api/modules/:id", authenticateToken, isStrictAdmin, upload.array('gameFiles'), async (req, res) => {
+  app.put("/api/modules/:id", authenticateToken, isAdmin, upload.array('gameFiles'), async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const index = modulesData.findIndex(m => m.id === id);
@@ -630,7 +640,7 @@ app.put("/api/auth/profile", authenticateToken, (req, res) => {
     }
   });
 
-  app.delete("/api/modules/:id", authenticateToken, isStrictAdmin, (req, res) => {
+  app.delete("/api/modules/:id", authenticateToken, isAdmin, (req, res) => {
     const id = parseInt(req.params.id);
     const index = modulesData.findIndex(m => m.id === id);
     if (index !== -1) {
@@ -650,7 +660,7 @@ app.put("/api/auth/profile", authenticateToken, (req, res) => {
     res.json({ success: true, id });
   });
 
-  app.put("/api/modules/:id/restore", authenticateToken, isStrictAdmin, (req, res) => {
+  app.put("/api/modules/:id/restore", authenticateToken, isAdmin, (req, res) => {
     const id = parseInt(req.params.id);
     const index = modulesData.findIndex(m => m.id === id);
     if (index !== -1) {

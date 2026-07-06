@@ -36,6 +36,16 @@ const navigate = useNavigate();
   const [categories, setCategories] = useState<Category[]>([]);
   const [subjects, setSubjects] = useState<Subject[]>([]);
   
+  const displayedModules = React.useMemo(() => {
+    if (user?.role === 'guru') {
+      const guruCatIds = user.category_ids || [];
+      const guruSubIds = user.subject_ids || [];
+      if (guruCatIds.length === 0 && guruSubIds.length === 0) return []; // If no spec, see nothing
+      return modules.filter(m => guruCatIds.includes(m.category_id) || guruSubIds.includes(m.subject_id));
+    }
+    return modules;
+  }, [modules, user]);
+  
   // States for CRUD
   const [loading, setLoading] = useState(true);
   const [editingModule, setEditingModule] = useState<Module | null>(null);
@@ -48,7 +58,7 @@ const navigate = useNavigate();
     objectives: '', theory: '', keyTerms: [] as {term: string, def: string}[] 
   });
   const [studentForm, setStudentForm] = useState({ name: '', email: '', nisn: '', asalSekolah: '' });
-  const [teacherForm, setTeacherForm] = useState({ name: '', subject: '', nip: '', email: '' });
+  const [teacherForm, setTeacherForm] = useState({ name: '', nip: '', email: '', category_ids: [] as number[], subject_ids: [] as number[] });
   const [profileForm, setProfileForm] = useState({ name: user?.name || '', email: user?.email || '', role: user?.role || '' });
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [moduleGameFiles, setModuleGameFiles] = useState<{file: File | null, title: string, desc: string, id?: number, path?: string}[]>([]);
@@ -229,7 +239,7 @@ const navigate = useNavigate();
       }
       setShowTeacherModal(false);
       setEditingTeacher(null);
-      setTeacherForm({ name: '', subject: '', nip: '', email: '' });
+      setTeacherForm({ name: '', nip: '', email: '', category_ids: [], subject_ids: [] });
     } catch (err: any) {
           console.error(err);
           if (err.message === '401') {
@@ -328,10 +338,10 @@ const navigate = useNavigate();
 
     switch (view) {
       case 'dashboard':
-        return <DashboardView modules={modules} students={students} teachers={teachers} user={user} />;
+        return <DashboardView modules={displayedModules} students={students} teachers={teachers} user={user} />;
       case 'modules':
         return <ModulesView 
-          modules={modules} setView={setView} setEditingModule={setEditingModule} 
+          modules={displayedModules} setView={setView} setEditingModule={setEditingModule} 
           setModuleForm={setModuleForm} moduleSearch={moduleSearch} setModuleSearch={setModuleSearch} setModuleGameFiles={setModuleGameFiles} 
           handleRestoreModule={handleRestoreModule} handleDeleteModule={handleDeleteModule} 
         />;
@@ -379,7 +389,7 @@ const navigate = useNavigate();
         />;
       case 'audit':
 
-        return <AuditView modules={modules} />;
+        return <AuditView modules={displayedModules} />;
       case 'students':
         return <StudentsView 
           students={students} studentSearch={studentSearch} setStudentSearch={setStudentSearch}
@@ -392,6 +402,8 @@ const navigate = useNavigate();
           setShowTeacherModal={setShowTeacherModal} setEditingTeacher={setEditingTeacher}
           setTeacherForm={setTeacherForm} handleRestoreTeacher={handleRestoreTeacher}
           handleDeleteTeacher={handleDeleteTeacher} exportTeacherExcel={exportTeacherExcel}
+          categories={categories}
+          subjects={subjects}
          readOnly={user?.role === 'guru'} />;
       case 'profile':
         return <ProfileView 
@@ -547,9 +559,31 @@ const navigate = useNavigate();
                   <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: 500 }}>Email</label>
                   <input type="email" className="form-input" required value={teacherForm.email} onChange={e => setTeacherForm({...teacherForm, email: e.target.value})} placeholder="Masukkan email..." />
                 </div>
+                <div style={{ marginBottom: '16px' }}>
+                  <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: 500 }}>Jenjang (Spesialisasi)</label>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                    {categories.map(c => (
+                      <label key={c.id} style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '13px', cursor: 'pointer' }}>
+                        <input type="checkbox" checked={teacherForm.category_ids.includes(c.id)} onChange={(e) => {
+                          if (e.target.checked) setTeacherForm({...teacherForm, category_ids: [...teacherForm.category_ids, c.id]});
+                          else setTeacherForm({...teacherForm, category_ids: teacherForm.category_ids.filter(id => id !== c.id)});
+                        }} /> {c.name}
+                      </label>
+                    ))}
+                  </div>
+                </div>
                 <div style={{ marginBottom: '24px' }}>
-                  <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: 500 }}>Mata Pelajaran</label>
-                  <input type="text" className="form-input" required value={teacherForm.subject} onChange={e => setTeacherForm({...teacherForm, subject: e.target.value})} placeholder="Contoh: Matematika" />
+                  <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: 500 }}>Mata Pelajaran (Spesialisasi)</label>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                    {subjects.map(s => (
+                      <label key={s.id} style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '13px', cursor: 'pointer' }}>
+                        <input type="checkbox" checked={teacherForm.subject_ids.includes(s.id)} onChange={(e) => {
+                          if (e.target.checked) setTeacherForm({...teacherForm, subject_ids: [...teacherForm.subject_ids, s.id]});
+                          else setTeacherForm({...teacherForm, subject_ids: teacherForm.subject_ids.filter(id => id !== s.id)});
+                        }} /> {s.name}
+                      </label>
+                    ))}
+                  </div>
                 </div>
                 <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
                   <button type="button" className="btn btn-ghost" onClick={() => setShowTeacherModal(false)}>Batal</button>

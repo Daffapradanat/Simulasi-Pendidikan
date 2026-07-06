@@ -245,7 +245,14 @@ export default function TeachersView({
                   <h2 style={{ margin: '0 0 4px 0', fontSize: '24px', fontWeight: 800 }}>{viewingProfile.name}</h2>
                   <div style={{ fontSize: '14px', color: 'var(--text-muted)', display: 'flex', gap: '12px', marginBottom: '8px' }}>
                     <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><i className="ti ti-id"></i> {viewingProfile.nip || '-'}</span>
-                    <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><i className="ti ti-book"></i> {viewingProfile.subject || '-'}</span>
+                    
+                    {viewingProfile.category_ids?.length > 0 && (
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><i className="ti ti-tags"></i> {viewingProfile.category_ids.map((cid: number) => categories.find((c: any) => c.id === cid)?.name).filter(Boolean).join(', ')}</span>
+                    )}
+                    {viewingProfile.subject_ids?.length > 0 && (
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><i className="ti ti-book"></i> {viewingProfile.subject_ids.map((sid: number) => subjects.find((s: any) => s.id === sid)?.name).filter(Boolean).join(', ')}</span>
+                    )}
+  
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <span className="badge badge-primary">Guru</span>
