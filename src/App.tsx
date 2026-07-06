@@ -14,7 +14,7 @@ const fetchAuth = (url: string | URL | Request, options: any = {}) => {
       'Authorization': `Bearer ${token}`
     };
   }
-  return fetchAuth(url, options);
+  return fetch(url, options);
 };
 const LoginView = lazy(() => import('./frontend/views/LoginView').then(m => ({ default: m.LoginView })));
 const ModulesView = lazy(() => import('./frontend/views/ModulesView').then(m => ({ default: m.ModulesView })));

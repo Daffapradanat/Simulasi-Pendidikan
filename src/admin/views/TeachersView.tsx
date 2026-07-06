@@ -9,7 +9,7 @@ const fetchAuth = (url: string | URL | Request, options: any = {}) => {
       'Authorization': `Bearer ${token}`
     };
   }
-  return fetchAuth(url, options);
+  return fetch(url, options);
 };
 
 export default function TeachersView({
