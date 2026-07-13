@@ -287,7 +287,7 @@ export function DetailView({
                         </div>
                         <div className="game-card-actions">
                           <button className="btn btn-primary btn-sm" onClick={() => onLaunchGame(game.id, game.title)}>
-                            <i className="ti ti-player-play"></i> Mainkan
+                            <i className="ti ti-play"></i> Mainkan
                           </button>
                           {isPlayed && (
                             <span className="played-badge">

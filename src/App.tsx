@@ -51,6 +51,7 @@ export default function App() {
   const [completedModulePopup, setCompletedModulePopup] = useState<Module | null>(null);
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [isProgressLoaded, setIsProgressLoaded] = useState(false);
   
   // Anti spam state
   const [loginAttempts, setLoginAttempts] = useState(0);
@@ -123,7 +124,11 @@ export default function App() {
         const parsed = JSON.parse(savedUser);
         setCurrentUser(parsed);
         refreshUserData(parsed);
-      } catch(e) {}
+      } catch(e) {
+        setIsProgressLoaded(true);
+      }
+    } else {
+      setIsProgressLoaded(true);
     }
     fetchModules();
   }, []);
@@ -165,19 +170,28 @@ export default function App() {
       if (res.ok) {
          const data = await res.json();
          if (data.playedGames && data.playedGames.length > 0) setPlayedGames(new Set(data.playedGames));
+         else setPlayedGames(new Set());
          if (data.completedModuleIds && data.completedModuleIds.length > 0) setCompletedModuleIds(new Set(data.completedModuleIds));
+         else setCompletedModuleIds(new Set());
          if (data.reflections) setReflections(data.reflections);
+         else setReflections({});
       } else {
          const played = localStorage.getItem(`simpend_played_${user.id}`);
          if (played) setPlayedGames(new Set(JSON.parse(played)));
+         else setPlayedGames(new Set());
          const completed = localStorage.getItem(`simpend_completed_${user.id}`);
          if (completed) setCompletedModuleIds(new Set(JSON.parse(completed)));
+         else setCompletedModuleIds(new Set());
          const savedReflections = localStorage.getItem(`simpend_reflections_${user.id}`);
          if (savedReflections) setReflections(JSON.parse(savedReflections));
+         else setReflections({});
       }
       const lastMod = localStorage.getItem(`simpend_last_module_${user.id}`);
       if (lastMod) setLastModuleId(parseInt(lastMod, 10));
-    } catch(e) {}
+      setIsProgressLoaded(true);
+    } catch(e) {
+      setIsProgressLoaded(true);
+    }
   };
 
   const fetchModules = () => {
@@ -207,6 +221,7 @@ export default function App() {
 
   useEffect(() => {
     if (currentUser) {
+      if (!isProgressLoaded) return;
       localStorage.setItem('simpend_current_user', JSON.stringify(currentUser));
       const pArr = Array.from(playedGames);
       const cArr = Array.from(completedModuleIds);
@@ -229,7 +244,7 @@ export default function App() {
     } else {
       document.title = 'Pusat Asesmen Pendidikan - Website Literasi Sains 2025/2026';
     }
-  }, [playedGames, completedModuleIds, reflections, currentUser]);
+  }, [playedGames, completedModuleIds, reflections, currentUser, isProgressLoaded]);
 
   const handleLogin = async (email: string, pass: string, remember: boolean, mode: 'siswa' | 'guru' | 'admin') => {
     if (loginBlockTime && Date.now() < loginBlockTime) {
@@ -316,6 +331,7 @@ export default function App() {
     setActiveGameId(null);
     setPlayedGames(new Set());
     setCompletedModuleIds(new Set());
+    setIsProgressLoaded(false);
     setViewMode('main');
     showToast('Berhasil keluar.', 'info');
 

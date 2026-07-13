@@ -507,7 +507,9 @@ app.use(cookieParser());
     const completedModuleIds = modulesData.filter(m => !m.isDeleted).map(m => m.id);
     let playedGames: number[] = [];
     modulesData.filter(m => !m.isDeleted).forEach(m => {
-       m.games.forEach((g: any) => playedGames.push(g.id));
+       if (m.games && Array.isArray(m.games)) {
+          m.games.forEach((g: any) => playedGames.push(g.id));
+       }
     });
     userProgressData[id] = { playedGames, completedModuleIds };
     saveDb();
