@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
-export default function DashboardView({ modules, students, teachers, user }: { modules: any[], students: any[], teachers: any[], user: any }) {
+export default function DashboardView({ modules, students, teachers, user, setView }: { modules: any[], students: any[], teachers: any[], user: any, setView: (v: string) => void }) {
   const [activities, setActivities] = useState<any[]>([]);
   const [showAllActivities, setShowAllActivities] = useState(false);
 
@@ -213,7 +213,7 @@ export default function DashboardView({ modules, students, teachers, user }: { m
                <p style={{ fontSize: '14px', fontWeight: 500, color: 'var(--text-muted)', lineHeight: 1.6, maxWidth: '250px', margin: '0 0 24px 0' }}>
                   Rasio kelulusan siswa cukup baik bertumpu pada materi saat ini.
                </p>
-               <button className="btn btn-primary" style={{ padding: '10px 20px' }}>Lihat Detail Analisis</button>
+               <button className="btn btn-primary" style={{ padding: '10px 20px' }} onClick={() => setView('students')}>Lihat Detail Analisis</button>
             </div>
           </div>
 

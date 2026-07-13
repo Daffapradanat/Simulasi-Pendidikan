@@ -2,7 +2,7 @@
 
 /* ============================================================
    style.css — Base & Layout
-   Website Simulasi Pendidikan 2025/2026
+   Website Literasi Sains 2025/2026
    ============================================================ */
 
 /* ── CSS Variables ── */
@@ -119,7 +119,8 @@ input, textarea { font-family: inherit; }
   opacity: 0.75;
 }
 
-.navbar-spacer { flex: 1; }
+.navbar-spacer { flex: 1;
+  min-width: 0; }
 
 .navbar-menu {
   display: flex;
@@ -265,7 +266,7 @@ input, textarea { font-family: inherit; }
 
 /* ============================================================
    components.css — Buttons, Cards, Badges, Forms, Modals
-   Website Simulasi Pendidikan 2025/2026
+   Website Literasi Sains 2025/2026
    ============================================================ */
 
 /* ── Buttons ── */
@@ -400,6 +401,7 @@ input, textarea { font-family: inherit; }
   flex-direction: column;
   gap: 10px;
   flex: 1;
+  min-width: 0;
 }
 
 .module-card.unlocked {
@@ -469,7 +471,8 @@ input, textarea { font-family: inherit; }
   color: #90A4AE;
 }
 
-.module-card-body { flex: 1; }
+.module-card-body { flex: 1;
+  min-width: 0; }
 
 .module-card-title {
   font-family: var(--font-display);
@@ -825,7 +828,8 @@ select.form-input {
   flex-shrink: 0;
 }
 
-.game-info { flex: 1; min-width: 0; }
+.game-info { flex: 1;
+  min-width: 0; min-width: 0; }
 
 .game-title {
   font-family: var(--font-display);
@@ -1403,7 +1407,7 @@ select.form-input {
 
 /* ============================================================
    responsive.css — Media Queries
-   Website Simulasi Pendidikan 2025/2026
+   Website Literasi Sains 2025/2026
    ============================================================ */
 
 @media (min-width: 1280px) {
@@ -1641,6 +1645,7 @@ select.form-input {
 
 .admin-main {
   flex: 1;
+  min-width: 0;
   padding: 32px;
   overflow-x: hidden;
 }

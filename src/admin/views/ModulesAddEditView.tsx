@@ -3,7 +3,7 @@ import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
 
 export default function ModulesAddEditView({ 
-  editingModule, moduleForm, setModuleForm, setView, handleSaveModule, moduleGameFiles, setModuleGameFiles, isSaving, categories, subjects
+  editingModule, moduleForm, setModuleForm, setView, handleSaveModule, moduleGameFiles, setModuleGameFiles, isSaving, categories, subjects, moduleQuestions, setModuleQuestions
 }: any) {
   return (
           <div className="admin-content" style={{ maxWidth: '800px', margin: '0 auto' }}>
@@ -69,7 +69,7 @@ export default function ModulesAddEditView({
                           newTerms[index].def = e.target.value;
                           setModuleForm({...moduleForm, keyTerms: newTerms});
                         }} required />
-                        <button type="button" className="btn btn-ghost" style={{ padding: '8px', color: 'var(--danger)' }} onClick={() => {
+                        <button type="button" className="btn btn-danger" style={{ padding: '8px' }} onClick={() => {
                           const newTerms = [...moduleForm.keyTerms];
                           newTerms.splice(index, 1);
                           setModuleForm({...moduleForm, keyTerms: newTerms});
@@ -133,7 +133,7 @@ export default function ModulesAddEditView({
                            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', flex: 1 }}>
                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--primary)' }}><i className="ti ti-file-zip" style={{ marginRight: '6px' }}></i>{gf.file ? gf.file.name : 'File Game Tersimpan'} {gf.file && gf.file.size ? `(${(gf.file.size / 1024 / 1024).toFixed(2)} MB)` : ''}</span>
-                               <button type="button" className="btn btn-ghost btn-sm" style={{ color: 'var(--danger)', padding: '4px 8px' }} onClick={() => setModuleGameFiles(prev => prev.filter((_, idx) => idx !== i))}>
+                               <button type="button" className="btn btn-danger btn-sm" style={{ padding: '4px 8px' }} onClick={() => setModuleGameFiles(prev => prev.filter((_, idx) => idx !== i))}>
                                  <i className="ti ti-trash"></i>
                                </button>
                              </div>
@@ -155,6 +155,61 @@ export default function ModulesAddEditView({
                      </div>
                   )}
                 </div>
+                
+                <div style={{ marginBottom: '40px', padding: '24px', background: 'var(--surface-2)', borderRadius: '12px', border: '1px solid var(--border)' }}>
+                  <label style={{ display: 'block', marginBottom: '16px', fontSize: '16px', fontWeight: 600 }}><i className="ti ti-notes"></i> Soal</label>
+                  <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '16px' }}>Tambahkan soal-soal pilihan ganda yang akan dikerjakan siswa setelah menyelesaikan semua simulasi di modul ini.</p>
+                  
+                  {moduleQuestions && moduleQuestions.map((q: any, qIndex: number) => (
+                     <div key={qIndex} style={{ background: 'white', padding: '16px', border: '1px solid var(--border)', borderRadius: '8px', marginBottom: '16px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
+                          <span style={{ fontWeight: 600 }}>Soal #{qIndex + 1}</span>
+                          <button type="button" className="btn btn-danger btn-sm" onClick={() => {
+                             const nq = [...moduleQuestions];
+                             nq.splice(qIndex, 1);
+                             setModuleQuestions(nq);
+                          }}><i className="ti ti-trash"></i></button>
+                        </div>
+                        <input type="text" className="form-input" placeholder="Pertanyaan..." required value={q.text} onChange={e => {
+                           const nq = [...moduleQuestions];
+                           nq[qIndex].text = e.target.value;
+                           setModuleQuestions(nq);
+                        }} />
+                        <div style={{ marginTop: '12px' }}>
+                          <label style={{ fontSize: '13px', fontWeight: 500, marginBottom: '8px', display: 'block' }}>Pilihan Jawaban:</label>
+                          {q.options.map((opt: string, oIndex: number) => (
+                             <div key={oIndex} style={{ display: 'flex', gap: '8px', marginBottom: '8px', alignItems: 'center' }}>
+                               <input type="radio" name={`correct_${qIndex}`} checked={q.correctAnswerIndex === oIndex} onChange={() => {
+                                  const nq = [...moduleQuestions];
+                                  nq[qIndex].correctAnswerIndex = oIndex;
+                                  setModuleQuestions(nq);
+                               }} />
+                               <input type="text" className="form-input" style={{ margin: 0 }} placeholder={`Pilihan ${oIndex + 1}`} required value={opt} onChange={e => {
+                                  const nq = [...moduleQuestions];
+                                  nq[qIndex].options[oIndex] = e.target.value;
+                                  setModuleQuestions(nq);
+                               }} />
+                             </div>
+                          ))}
+                        </div>
+                        <div style={{ marginTop: '12px' }}>
+                          <label style={{ fontSize: '13px', fontWeight: 500, marginBottom: '8px', display: 'block' }}>Penjelasan Jawaban:</label>
+                          <textarea className="form-input" placeholder="Penjelasan kenapa jawaban tersebut benar..." value={q.explanation || ''} onChange={e => {
+                             const nq = [...moduleQuestions];
+                             nq[qIndex].explanation = e.target.value;
+                             setModuleQuestions(nq);
+                          }}></textarea>
+                        </div>
+                     </div>
+                  ))}
+                  
+                  <button type="button" className="btn btn-ghost btn-sm" onClick={() => {
+                     setModuleQuestions([...(moduleQuestions || []), { text: '', options: ['', '', '', ''], correctAnswerIndex: 0, explanation: '' }]);
+                  }}>
+                    <i className="ti ti-plus"></i> Tambah Soal
+                  </button>
+                </div>
+
                 <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
                   <button type="button" className="btn btn-ghost" onClick={() => setView('modules')} disabled={isSaving}>Batal</button>
                   <button type="submit" className="btn btn-primary" disabled={isSaving}>

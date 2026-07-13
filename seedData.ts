@@ -2,7 +2,7 @@ export const seedCategories = [
   { id: 1, name: 'SD' },
   { id: 2, name: 'SMP' },
   { id: 3, name: 'SMA' },
-  { id: 4, name: 'Umum' }
+  
 ];
 
 export const seedSubjects = [
@@ -10,7 +10,7 @@ export const seedSubjects = [
   { id: 2, name: 'IPA (Sains)' },
   { id: 3, name: 'Komputer' },
   { id: 4, name: 'Bahasa' },
-  { id: 5, name: 'Umum' }
+  
 ];
 
 export const seedStudents = [

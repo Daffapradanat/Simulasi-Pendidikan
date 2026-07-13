@@ -15,7 +15,7 @@ const fetchAuth = (url: string | URL | Request, options: any = {}) => {
 
 export default function ModulesView({ 
   modules, setView, setEditingModule, setModuleForm, 
-  moduleSearch, setModuleSearch, handleRestoreModule, setModuleGameFiles, handleDeleteModule 
+  moduleSearch, setModuleSearch, handleRestoreModule, setModuleGameFiles, handleDeleteModule, setModuleQuestions 
 }: any) {
   const [currentPage, setCurrentPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState('all');
@@ -23,7 +23,7 @@ export default function ModulesView({
   const itemsPerPage = 6;
 
   const filteredModules = modules.filter(m => {
-    const matchesSearch = m.title.toLowerCase().includes(moduleSearch.toLowerCase());
+    const matchesSearch = (m.title || '').toLowerCase().includes((moduleSearch || '').toLowerCase());
     
     let matchesStatus = true;
     if (statusFilter === 'active') matchesStatus = !m.isDeleted;
@@ -98,6 +98,7 @@ export default function ModulesView({
                 setEditingModule(null);
                 setModuleForm({ title: '', desc: '', level: 'SD', duration: '', category_id: 1, subject_id: 1, objectives: '', theory: '', keyTerms: [] });
                 setModuleGameFiles([]);
+                if (setModuleQuestions) setModuleQuestions([]);
                 setView('modules_add_edit');
               }}
             >
@@ -145,6 +146,7 @@ export default function ModulesView({
                       <div style={{ fontSize: '12px', color: 'var(--text)' }}><i className="ti ti-school" style={{ color: 'var(--primary)', width: '16px' }}></i> <strong>Jenjang:</strong> {mod.level}</div>
                       <div style={{ fontSize: '12px', color: 'var(--text)' }}><i className="ti ti-clock" style={{ color: 'var(--warning)', width: '16px' }}></i> <strong>Durasi:</strong> {mod.duration || '-'}</div>
                       <div style={{ fontSize: '12px', color: 'var(--text)' }}><i className="ti ti-device-gamepad" style={{ color: 'var(--success)', width: '16px' }}></i> <strong>Game:</strong> {mod.gameCount || 0} File</div>
+                      <div style={{ fontSize: '12px', color: 'var(--text)' }}><i className="ti ti-notes" style={{ color: 'var(--accent)', width: '16px' }}></i> <strong>Soal:</strong> {mod.questionCount || 0} Butir</div>
                     </div>
                   </td>
                   <td>
@@ -157,9 +159,16 @@ export default function ModulesView({
                   <td>
                     <div style={{ display: 'flex', gap: '8px' }}>
                     <button 
-                      className="btn btn-ghost btn-sm" 
+                      className="btn btn-primary btn-sm" 
                       onClick={() => {
                         setEditingModule(mod);
+                        // Fetch questions
+                        if (setModuleQuestions) {
+                           const token = localStorage.getItem('simpend_token');
+                           fetch(`/api/modules/${mod.id}/questions`, {
+                             headers: { 'Authorization': `Bearer ${token}` }
+                           }).then(res => res.json()).then(d => setModuleQuestions(d.questions || []));
+                        }
                         setModuleForm({ 
                           title: mod.title, 
                           desc: mod.desc, 
@@ -176,11 +185,11 @@ export default function ModulesView({
                       }}
                     ><i className="ti ti-edit"></i> Edit</button>
                     {mod.isDeleted ? (
-                      <button className="btn btn-ghost btn-sm" style={{ color: 'var(--primary)' }} onClick={() => handleRestoreModule(mod.id)}>
+                      <button className="btn btn-primary btn-sm" onClick={() => handleRestoreModule(mod.id)}>
                         <i className="ti ti-rotate-clockwise"></i> Restore
                       </button>
                     ) : (
-                      <button className="btn btn-ghost btn-sm" style={{ color: 'var(--danger)' }} onClick={() => handleDeleteModule(mod.id)}>
+                      <button className="btn btn-danger btn-sm" onClick={() => handleDeleteModule(mod.id)}>
                         <i className="ti ti-trash"></i> Hapus
                       </button>
                     )}
@@ -198,7 +207,7 @@ export default function ModulesView({
               </span>
               <div style={{ display: 'flex', gap: '4px' }}>
                 <button 
-                  className="btn btn-ghost btn-sm" 
+                  className="btn btn-primary btn-sm" 
                   disabled={currentPage === 1}
                   onClick={() => setCurrentPage(p => p - 1)}
                   style={{ padding: '4px 8px' }}
@@ -216,7 +225,7 @@ export default function ModulesView({
                   </button>
                 ))}
                 <button 
-                  className="btn btn-ghost btn-sm" 
+                  className="btn btn-primary btn-sm" 
                   disabled={currentPage === totalPages}
                   onClick={() => setCurrentPage(p => p + 1)}
                   style={{ padding: '4px 8px' }}

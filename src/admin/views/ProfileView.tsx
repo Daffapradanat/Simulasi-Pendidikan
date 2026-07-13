@@ -78,8 +78,8 @@ export default function ProfileView({
                 <p style={{ color: 'var(--text-muted)', margin: '0 0 20px', fontSize: '15px' }}><i className="ti ti-mail" style={{ marginRight: '6px' }}></i>{user.email}</p>
                 
                 <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
-                  <span className="badge" style={{ background: 'var(--primary-light)', color: 'var(--primary-dark)', fontSize: '13px', padding: '6px 12px' }}>
-                    <i className="ti ti-shield"></i> {user.role === 'admin' ? 'Administrator' : user.role === 'guru' ? 'Guru Pengajar' : 'Siswa'}
+                  <span className="badge" style={{ background: 'var(--primary)', color: '#ffffff', fontSize: '13px', padding: '6px 12px', fontWeight: 600 }}>
+                    <i className="ti ti-shield" style={{ color: '#ffffff', marginRight: '4px' }}></i> {user.role === 'admin' ? 'Administrator' : user.role === 'guru' ? 'Guru Pengajar' : 'Siswa'}
                   </span>
                   <span className="badge" style={{ background: 'var(--success-light)', color: 'var(--success)', fontSize: '13px', padding: '6px 12px' }}>
                     <i className="ti ti-check"></i> Akun Aktif

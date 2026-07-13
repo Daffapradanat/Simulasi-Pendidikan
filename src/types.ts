@@ -1,11 +1,13 @@
 export type Category = {
   id: number;
   name: string;
+  icon?: string;
 };
 
 export type Subject = {
   id: number;
   name: string;
+  icon?: string;
 };
 
 export type Module = {
@@ -25,6 +27,7 @@ export type Module = {
   duration: string;
   level: string;
   gameCount: number;
+  questionCount?: number;
 };
 
 export type User = { id?: number; name: string; username?: string; email: string; role: string };

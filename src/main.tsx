@@ -24,3 +24,10 @@ createRoot(document.getElementById('root')!).render(
     </BrowserRouter>
   </StrictMode>,
 );
+
+// Register game service worker for local offline playing
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/game-sw.js', { scope: '/local-game-play/' })
+    .then(reg => console.log('Game SW registered', reg.scope))
+    .catch(err => console.error('Game SW failed', err));
+}

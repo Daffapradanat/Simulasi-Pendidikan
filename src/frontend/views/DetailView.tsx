@@ -1,6 +1,8 @@
+import { QuestionsView } from './QuestionsView';
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Module, User } from '../../types';
+import JSZip from 'jszip';
 import { MODULE_THUMBS } from '../../data';
 
 // --- DETAIL VIEW ---
@@ -20,6 +22,7 @@ export function DetailView({
   onLaunchGame: (id: number, title: string) => void;
   onCloseGame: () => void;
   onCompleteModule: () => void;
+  user?: any;
 }) {
 
   useEffect(() => {
@@ -29,6 +32,99 @@ export function DetailView({
   const totalGames = module.games.length;
   const isModuleCompleted = module.status === 'completed';
   const allPlayed = totalGames === 0 || isModuleCompleted || module.games.every(g => playedGames.has(g.id));
+  const [questions, setQuestions] = useState<any[]>([]);
+  const [showQuestions, setShowQuestions] = useState(false);
+
+  const getMimeType = (filename: string) => {
+  const ext = filename.split('.').pop()?.toLowerCase() || '';
+  const types: Record<string, string> = {
+    'html': 'text/html', 'js': 'text/javascript', 'css': 'text/css', 'json': 'application/json',
+    'png': 'image/png', 'jpg': 'image/jpeg', 'jpeg': 'image/jpeg', 'svg': 'image/svg+xml',
+    'gif': 'image/gif', 'wav': 'audio/wav', 'mp3': 'audio/mpeg', 'ogg': 'audio/ogg',
+    'mp4': 'video/mp4', 'wasm': 'application/wasm'
+  };
+  return types[ext] || 'application/octet-stream';
+};
+
+  const [downloadingGame, setDownloadingGame] = useState(false);
+  const [downloadProgress, setDownloadProgress] = useState('');
+  const [localGameSrc, setLocalGameSrc] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (activeGameId) {
+      const game = module.games?.find((g: any) => g.id === activeGameId);
+      if (game?.path?.endsWith('.zip')) {
+        const cacheName = 'local-games-cache';
+        const gamePrefix = `/local-game-play/game_${game.id}/`;
+        
+        caches.open(cacheName).then(cache => {
+          cache.match(gamePrefix + 'index.html').then(res => {
+            if (res) {
+               setLocalGameSrc(gamePrefix + 'index.html');
+            } else {
+               setDownloadingGame(true);
+               setDownloadProgress('Mengunduh simulasi...');
+               
+               fetch(game.path)
+                 .then(res => res.blob())
+                 .then(blob => JSZip.loadAsync(blob))
+                 .then(async (zip) => {
+                   setDownloadProgress('Mengekstrak simulasi...');
+                   let indexPath = 'index.html';
+                   
+                   let foundIndex = false;
+                   for (const filename of Object.keys(zip.files)) {
+                     if (filename.endsWith('index.html') && !filename.includes('__MACOSX')) {
+                       indexPath = filename;
+                       foundIndex = true;
+                       break;
+                     }
+                   }
+                   
+                   const cache = await caches.open(cacheName);
+                   
+                   const promises = [];
+                   for (const [filename, zipEntry] of Object.entries(zip.files)) {
+                     if (!zipEntry.dir && !filename.includes('__MACOSX')) {
+                       promises.push(
+                         zipEntry.async('blob').then(fileBlob => {
+                           const fullPath = gamePrefix + filename;
+                           const headers = new Headers();
+                           headers.set('Content-Type', getMimeType(filename));
+                           const res = new Response(fileBlob, { headers });
+                           return cache.put(new Request(fullPath), res);
+                         })
+                       );
+                     }
+                   }
+                   
+                   await Promise.all(promises);
+                   
+                   setDownloadingGame(false);
+                   setLocalGameSrc(gamePrefix + indexPath);
+                 })
+                 .catch(err => {
+                   console.error(err);
+                   setDownloadProgress('Gagal memuat simulasi');
+                   setTimeout(() => setDownloadingGame(false), 2000);
+                 });
+            }
+          });
+        });
+      } else {
+        setLocalGameSrc(game?.path || null);
+      }
+    } else {
+      setLocalGameSrc(null);
+    }
+  }, [activeGameId, module.games]);
+  
+  useEffect(() => {
+    const token = localStorage.getItem('simpend_token');
+    fetch(`/api/modules/${module.id}/questions`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    }).then(r => r.json()).then(d => setQuestions(d.questions || []));
+  }, [module.id]);
   
   useEffect(() => {
     if (activeGameId !== null) {
@@ -127,23 +223,30 @@ export function DetailView({
                   </div>
                   <div className="webgl-container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', width: '100%', aspectRatio: '16/9', background: '#f8f9fa', borderRadius: '8px', overflow: 'hidden', border: '1px solid var(--border)' }}>
                     {activeGame?.path ? (
-                      <iframe 
-                        src={activeGame.path} 
-                        style={{ width: '100%', height: '100%', border: 'none', background: 'transparent' }} 
-                        title={activeGame.title}
-                        onLoad={(e) => {
-                          try {
-                            const win = (e.target as HTMLIFrameElement).contentWindow as any;
-                            if (win && win.console) {
-                              const noop = () => {};
-                              win.console.log = noop;
-                              win.console.info = noop;
-                              win.console.debug = noop;
-                              win.console.warn = noop;
-                            }
-                          } catch (err) {}
-                        }}
-                      />
+                      (downloadingGame && !localGameSrc) ? (
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--text-muted)' }}>
+                          <div className="loading-spinner" style={{ marginBottom: '16px' }}></div>
+                          <p>{downloadProgress}</p>
+                        </div>
+                      ) : localGameSrc ? (
+                        <iframe 
+                          src={localGameSrc} 
+                          style={{ width: '100%', height: '100%', border: 'none', background: 'transparent' }} 
+                          title={activeGame.title}
+                          onLoad={(e) => {
+                            try {
+                              const win = (e.target as HTMLIFrameElement).contentWindow as any;
+                              if (win && win.console) {
+                                const noop = () => {};
+                                win.console.log = noop;
+                                win.console.info = noop;
+                                win.console.debug = noop;
+                                win.console.warn = noop;
+                              }
+                            } catch (err) {}
+                          }}
+                        />
+                      ) : null
                     ) : (
                       <div className="webgl-placeholder" style={{ color: '#aaa', textAlign: 'center' }}>
                         <div className="play-icon" style={{ background: '#e9ecef', color: '#adb5bd', margin: '0 auto 16px', width: '64px', height: '64px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px' }}><i className="ti ti-device-gamepad-2"></i></div>
@@ -169,7 +272,7 @@ export function DetailView({
               <div className="games-list">
                 {module.games.length === 0 ? (
                   <div className="empty-state">
-                    <div className="empty-icon">🎮</div>
+                    <div className="empty-icon"><i className="ti ti-device-gamepad-2"></i></div>
                     <p>Game akan segera tersedia.</p>
                   </div>
                 ) : (
@@ -205,15 +308,27 @@ export function DetailView({
                 <span className="step-chip">Langkah 3</span>
               </div>
               <p className="complete-hint">Mainkan semua game simulasi di atas, lalu klik tombol di bawah untuk menyelesaikan modul dan membuka modul berikutnya.</p>
-              <button 
-                className={`btn btn-primary btn-complete ${!allPlayed ? 'disabled' : ''}`}
-                disabled={!allPlayed}
-                title={!allPlayed ? `Mainkan ${totalGames - playedGames.size} game lagi untuk melanjutkan` : ''}
-                onClick={onCompleteModule}
-              >
-                <i className="ti ti-circle-check"></i>
-                Tandai Selesai &amp; Buka Modul Berikutnya
-              </button>
+              
+             {showQuestions ? (
+                <QuestionsView questions={questions} onComplete={onCompleteModule} />
+             ) : (
+                <button 
+                  className={`btn btn-primary btn-complete ${!allPlayed ? 'disabled' : ''}`}
+                  disabled={!allPlayed}
+                  title={!allPlayed ? `Mainkan ${totalGames - playedGames.size} game lagi untuk melanjutkan` : ''}
+                  onClick={() => {
+                     if (questions.length > 0) {
+                        setShowQuestions(true);
+                        document.getElementById('webgl-section')?.scrollIntoView({ behavior: 'smooth' });
+                     } else {
+                        onCompleteModule();
+                     }
+                  }}
+                >
+                  <i className="ti ti-circle-check"></i>
+                  {questions.length > 0 ? 'Mulai Evaluasi' : 'Tandai Selesai & Buka Modul Berikutnya'}
+                </button>
+             )}
             </div>
           </div>
           

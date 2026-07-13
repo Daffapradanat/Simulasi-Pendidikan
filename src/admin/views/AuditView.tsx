@@ -25,6 +25,7 @@ export default function AuditView({ modules }: { modules: Module[] }) {
               <th>Penjelasan Materi</th>
               <th>Istilah Kunci</th>
               <th>Games Simulasi</th>
+              <th>Soal Evaluasi</th>
               <th>Status Audit</th>
             </tr>
           </thead>
@@ -34,8 +35,9 @@ export default function AuditView({ modules }: { modules: Module[] }) {
               const hasTheory = mod.material?.theory && mod.material.theory.trim() !== '' && mod.material.theory !== '<p><br></p>';
               const hasKeyTerms = mod.material?.keyTerms && mod.material.keyTerms.length > 0;
               const hasGames = mod.games && mod.games.length > 0;
+              const hasQuestions = (mod.questionCount || 0) > 0;
               
-              const isComplete = hasObjectives && hasTheory && hasKeyTerms && hasGames;
+              const isComplete = hasObjectives && hasTheory && hasKeyTerms && hasGames && hasQuestions;
               
               const CheckIcon = () => <i className="ti ti-check" style={{ color: 'var(--success)', fontSize: '18px', fontWeight: 800 }}></i>;
               const CrossIcon = () => <i className="ti ti-x" style={{ color: 'var(--danger)', fontSize: '18px', fontWeight: 800 }}></i>;
@@ -51,6 +53,7 @@ export default function AuditView({ modules }: { modules: Module[] }) {
                   <td>{hasTheory ? <CheckIcon/> : <CrossIcon/>}</td>
                   <td>{hasKeyTerms ? <CheckIcon/> : <CrossIcon/>}</td>
                   <td>{hasGames ? <CheckIcon/> : <CrossIcon/>}</td>
+                  <td>{hasQuestions ? <CheckIcon/> : <CrossIcon/>} ({mod.questionCount || 0})</td>
                   <td>
                     {isComplete ? (
                       <span className="badge badge-success">Lengkap</span>
@@ -64,7 +67,7 @@ export default function AuditView({ modules }: { modules: Module[] }) {
             
             {modules.length === 0 && (
               <tr>
-                <td colSpan={7} style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)' }}>
+                <td colSpan={8} style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)' }}>
                   <i className="ti ti-clipboard-list" style={{ fontSize: '32px', display: 'block', margin: '0 auto 8px', color: 'var(--border)' }}></i>
                   Tidak ada data modul.
                 </td>

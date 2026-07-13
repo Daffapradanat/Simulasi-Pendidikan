@@ -13,6 +13,14 @@ import sqlite3 from "sqlite3";
 import { open } from "sqlite";
 import { seedCategories, seedSubjects, seedStudents, seedTeachers } from "./seedData";
 
+declare global {
+  namespace Express {
+    interface Request {
+      user?: any;
+    }
+  }
+}
+
 const PUBLIC_GAMES_DIR = path.join(process.cwd(), "public", "games");
 if (!fs.existsSync(PUBLIC_GAMES_DIR)) {
   fs.mkdirSync(PUBLIC_GAMES_DIR, { recursive: true });
@@ -65,6 +73,7 @@ let activitiesData: any[] = [];
 let userProgressData: Record<number, any> = {};
 let categoriesData: any[] = [];
 let subjectsData: any[] = [];
+let questionsData: any[] = [];
 
 async function initDB() {
   db = await open({
@@ -454,6 +463,35 @@ app.put("/api/auth/profile", authenticateToken, (req, res) => {
     }
   });
 
+  
+  app.get('/api/modules/:id/questions', authenticateToken, (req, res) => {
+    const moduleId = parseInt(req.params.id);
+    const questions = questionsData.filter(q => q.module_id === moduleId);
+    res.json({ questions });
+  });
+
+  app.post('/api/modules/:id/questions', authenticateToken, isAdmin, (req, res) => {
+    const moduleId = parseInt(req.params.id);
+    const newQuestions = req.body.questions;
+    
+    questionsData = questionsData.filter(q => q.module_id !== moduleId);
+    
+    if (Array.isArray(newQuestions)) {
+       newQuestions.forEach(q => {
+          questionsData.push({
+             id: Date.now() + Math.floor(Math.random() * 1000),
+             module_id: moduleId,
+             text: q.text,
+             options: q.options,
+             correctAnswerIndex: q.correctAnswerIndex, explanation: q.explanation
+          });
+       });
+    }
+    
+    saveDb();
+    res.json({ success: true });
+  });
+
   app.get("/api/activities", authenticateToken, isAdmin, (req, res) => {
     res.json(activitiesData);
   });
@@ -481,18 +519,27 @@ app.put("/api/auth/profile", authenticateToken, (req, res) => {
   });
 
   app.post("/api/categories", authenticateToken, isStrictAdmin, (req, res) => {
-    const { name } = req.body;
-    const newCat = { id: Date.now(), name };
+    const { name, icon } = req.body;
+    const newCat = { id: Date.now(), name, icon };
     categoriesData.push(newCat);
     saveDb();
     res.json({ success: true, category: newCat });
+  });
+
+  app.put("/api/categories/reorder", authenticateToken, isStrictAdmin, (req, res) => {
+    const { orderIds } = req.body;
+    if (orderIds && Array.isArray(orderIds)) {
+      categoriesData = orderIds.map(id => categoriesData.find(c => c.id === id)).filter(Boolean);
+      saveDb();
+    }
+    res.json({ success: true, categories: categoriesData });
   });
 
   app.put("/api/categories/:id", authenticateToken, isStrictAdmin, (req, res) => {
     const id = parseInt(req.params.id);
     const index = categoriesData.findIndex(c => c.id === id);
     if (index === -1) return res.status(404).json({ error: "Not found" });
-    categoriesData[index] = { ...categoriesData[index], name: req.body.name };
+    categoriesData[index] = { ...categoriesData[index], name: req.body.name, icon: req.body.icon };
     saveDb();
     res.json({ success: true, category: categoriesData[index] });
   });
@@ -509,18 +556,27 @@ app.put("/api/auth/profile", authenticateToken, (req, res) => {
   });
 
   app.post("/api/subjects", authenticateToken, isStrictAdmin, (req, res) => {
-    const { name } = req.body;
-    const newSub = { id: Date.now(), name };
+    const { name, icon } = req.body;
+    const newSub = { id: Date.now(), name, icon };
     subjectsData.push(newSub);
     saveDb();
     res.json({ success: true, subject: newSub });
+  });
+
+  app.put("/api/subjects/reorder", authenticateToken, isStrictAdmin, (req, res) => {
+    const { orderIds } = req.body;
+    if (orderIds && Array.isArray(orderIds)) {
+      subjectsData = orderIds.map(id => subjectsData.find(c => c.id === id)).filter(Boolean);
+      saveDb();
+    }
+    res.json({ success: true, subjects: subjectsData });
   });
 
   app.put("/api/subjects/:id", authenticateToken, isStrictAdmin, (req, res) => {
     const id = parseInt(req.params.id);
     const index = subjectsData.findIndex(s => s.id === id);
     if (index === -1) return res.status(404).json({ error: "Not found" });
-    subjectsData[index] = { ...subjectsData[index], name: req.body.name };
+    subjectsData[index] = { ...subjectsData[index], name: req.body.name, icon: req.body.icon };
     saveDb();
     res.json({ success: true, subject: subjectsData[index] });
   });
@@ -533,7 +589,11 @@ app.put("/api/auth/profile", authenticateToken, (req, res) => {
   });
 
   app.get("/api/modules", (req, res) => {
-    res.json(modulesData);
+    const modulesWithQuestionCount = modulesData.map((m: any) => ({
+      ...m,
+      questionCount: questionsData.filter(q => q.module_id === m.id).length
+    }));
+    res.json(modulesWithQuestionCount);
   });
 
   function findIndexPath(dir: string): string | null {
@@ -568,9 +628,10 @@ app.put("/api/auth/profile", authenticateToken, (req, res) => {
               if (!fs.existsSync(gameDir)) {
                 fs.mkdirSync(gameDir, { recursive: true });
               }
-              await extract(file.path, { dir: path.resolve(gameDir) });
-              const indexPath = findIndexPath(gameDir) || 'index.html';
-              gamesMeta[i].path = `/games/game_${gamesMeta[i].id}/${indexPath}`;
+              // Save as zip
+              const zipPath = path.join(PUBLIC_GAMES_DIR, `game_${gamesMeta[i].id}.zip`);
+              fs.copyFileSync(file.path, zipPath);
+              gamesMeta[i].path = `/games/game_${gamesMeta[i].id}.zip`;
             } catch (zipError) {
               console.error("Failed to extract zip:", zipError);
             } finally {
@@ -620,9 +681,10 @@ app.put("/api/auth/profile", authenticateToken, (req, res) => {
               if (!fs.existsSync(gameDir)) {
                 fs.mkdirSync(gameDir, { recursive: true });
               }
-              await extract(file.path, { dir: path.resolve(gameDir) });
-              const indexPath = findIndexPath(gameDir) || 'index.html';
-              gamesMeta[i].path = `/games/game_${gamesMeta[i].id}/${indexPath}`;
+              // Save as zip
+              const zipPath = path.join(PUBLIC_GAMES_DIR, `game_${gamesMeta[i].id}.zip`);
+              fs.copyFileSync(file.path, zipPath);
+              gamesMeta[i].path = `/games/game_${gamesMeta[i].id}.zip`;
             } catch (zipError) {
               console.error("Failed to extract zip:", zipError);
             } finally {

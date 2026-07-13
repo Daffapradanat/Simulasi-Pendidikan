@@ -15,7 +15,7 @@ const fetchAuth = (url: string | URL | Request, options: any = {}) => {
 export default function TeachersView({
   teachers, teacherSearch, setTeacherSearch, setShowTeacherModal,
   setEditingTeacher, setTeacherForm, handleRestoreTeacher, handleDeleteTeacher, exportTeacherExcel,
-  readOnly
+  readOnly, categories, subjects
 }: any) {
   
   const [currentPage, setCurrentPage] = useState(1);
@@ -25,8 +25,7 @@ export default function TeachersView({
   const itemsPerPage = 8;
 
   const filteredTeachers = teachers.filter(t => {
-    const matchesSearch = t.name.toLowerCase().includes(teacherSearch.toLowerCase()) || 
-                          t.subject.toLowerCase().includes(teacherSearch.toLowerCase());
+    const matchesSearch = (t.name || '').toLowerCase().includes((teacherSearch || '').toLowerCase()); // removed t.subject search
     
     if (statusFilter === 'active') return matchesSearch && !t.isDeleted;
     if (statusFilter === 'deleted') return matchesSearch && t.isDeleted;
@@ -62,7 +61,7 @@ export default function TeachersView({
             </button>
             {!readOnly && (<button className="btn btn-primary btn-sm" onClick={() => {
               setEditingTeacher(null);
-              setTeacherForm({ name: '', subject: '', nip: '', email: '' });
+              setTeacherForm({ name: '', nip: '', email: '', category_ids: [], subject_ids: [] });
               setShowTeacherModal(true);
             }}>
               <i className="ti ti-plus"></i> Tambah Guru
@@ -77,6 +76,7 @@ export default function TeachersView({
                 <th>NIP</th>
                 <th>Nama Guru</th>
                 <th>Email</th>
+                <th>Jenjang</th>
                 <th>Mata Pelajaran</th>
                 <th>Status</th>
                 <th>Aksi</th>
@@ -85,7 +85,7 @@ export default function TeachersView({
             <tbody>
               {displayedTeachers.length === 0 ? (
                 <tr>
-                  <td colSpan={7} style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)' }}>
+                  <td colSpan={8} style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)' }}>
                     <i className="ti ti-user-check" style={{ fontSize: '32px', display: 'block', margin: '0 auto 8px', color: 'var(--border)' }}></i>
                     Tidak ada guru yang sesuai
                   </td>
@@ -105,7 +105,22 @@ export default function TeachersView({
                     <div style={{ color: 'var(--text-muted)' }}>{t.email || '-'}</div>
                   </td>
                   <td style={{ textDecoration: t.isDeleted ? 'line-through' : 'none' }}>
-                    <span className="badge badge-primary">{t.subject}</span>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                      {(t.category_ids || []).map((id: number) => {
+                         const cat = categories.find((c: any) => c.id === id);
+                         return cat ? <span key={'cat-'+id} className="badge" style={{ background: 'var(--surface-2)', color: 'var(--text)', fontSize: '11px', border: '1px solid var(--border)' }}>{cat.name}</span> : null;
+                      })}
+                      {(!t.category_ids?.length) && <span style={{ color: 'var(--text-muted)' }}>-</span>}
+                    </div>
+                  </td>
+                  <td style={{ textDecoration: t.isDeleted ? 'line-through' : 'none' }}>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                      {(t.subject_ids || []).map((id: number) => {
+                         const sub = subjects.find((s: any) => s.id === id);
+                         return sub ? <span key={'sub-'+id} className="badge badge-primary" style={{ fontSize: '11px' }}>{sub.name}</span> : null;
+                      })}
+                      {(!t.subject_ids?.length) && <span style={{ color: 'var(--text-muted)' }}>-</span>}
+                    </div>
                   </td>
                   <td>
                     {t.isDeleted ? (
@@ -122,9 +137,9 @@ export default function TeachersView({
                     </button>
                     {!readOnly && (
                     <>
-                    <button className="btn btn-ghost btn-sm" title="Edit" onClick={() => {
+                    <button className="btn btn-primary btn-sm" title="Edit" onClick={() => {
                       setEditingTeacher(t);
-                      setTeacherForm({ name: t.name, subject: t.subject, nip: t.nip || '', email: t.email || '' });
+                      setTeacherForm({ name: t.name, nip: t.nip || '', email: t.email || '', category_ids: t.category_ids || [], subject_ids: t.subject_ids || [] });
                       setShowTeacherModal(true);
                     }}>
                       <i className="ti ti-edit" style={{ fontSize: '18px' }}></i>
@@ -134,7 +149,7 @@ export default function TeachersView({
                         <i className="ti ti-rotate-clockwise" style={{ fontSize: '18px' }}></i>
                       </button>
                     ) : (
-                      <button className="btn btn-ghost btn-sm" title="Hapus" style={{ color: 'var(--danger)', padding: '4px 8px' }} onClick={() => handleDeleteTeacher(t.id)}>
+                      <button className="btn btn-danger btn-sm" title="Hapus" style={{ padding: '4px 8px' }} onClick={() => handleDeleteTeacher(t.id)}>
                         <i className="ti ti-trash" style={{ fontSize: '18px' }}></i>
                       </button>
                     )}
@@ -265,8 +280,8 @@ export default function TeachersView({
                 <h4 style={{ margin: '0 0 16px 0', fontSize: '14px', color: 'var(--text-muted)' }}>INFORMASI KONTAK</h4>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'var(--primary-light)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <i className="ti ti-mail"></i>
+                    <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'var(--primary)', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <i className="ti ti-mail" style={{ color: '#ffffff' }}></i>
                     </div>
                     <div>
                       <div style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 600 }}>Email Address</div>

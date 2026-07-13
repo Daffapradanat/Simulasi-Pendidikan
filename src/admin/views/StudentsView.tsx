@@ -26,8 +26,8 @@ export default function StudentsView({
   const itemsPerPage = 8;
 
   const filteredStudents = students.filter(s => {
-    const matchesSearch = s.name.toLowerCase().includes(studentSearch.toLowerCase()) || 
-                          s.email.toLowerCase().includes(studentSearch.toLowerCase()) ||
+    const matchesSearch = (s.name || '').toLowerCase().includes((studentSearch || '').toLowerCase()) || 
+                          (s.email || '').toLowerCase().includes((studentSearch || '').toLowerCase()) ||
                           (s.nisn && s.nisn.includes(studentSearch));
     
     if (statusFilter === 'active') return matchesSearch && !s.isDeleted;
@@ -133,7 +133,7 @@ export default function StudentsView({
                     </button>
                     {!readOnly && (
                     <>
-                    <button className="btn btn-ghost btn-sm" title="Edit" onClick={() => {
+                    <button className="btn btn-primary btn-sm" title="Edit" onClick={() => {
                       setEditingStudent(s);
                       setStudentForm({ name: s.name, email: s.email, nisn: s.nisn || '', asalSekolah: s.asalSekolah || '' });
                       setShowStudentModal(true);
@@ -145,7 +145,7 @@ export default function StudentsView({
                         <i className="ti ti-rotate-clockwise" style={{ fontSize: '18px' }}></i>
                       </button>
                     ) : (
-                      <button className="btn btn-ghost btn-sm" title="Hapus" style={{ color: 'var(--danger)', padding: '4px 8px' }} onClick={() => handleDeleteStudent(s.id)}>
+                      <button className="btn btn-danger btn-sm" title="Hapus" style={{ padding: '4px 8px' }} onClick={() => handleDeleteStudent(s.id)}>
                         <i className="ti ti-trash" style={{ fontSize: '18px' }}></i>
                       </button>
                     )}
@@ -271,8 +271,8 @@ export default function StudentsView({
                 <h4 style={{ margin: '0 0 16px 0', fontSize: '14px', color: 'var(--text-muted)' }}>INFORMASI KONTAK</h4>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'var(--primary-light)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <i className="ti ti-mail"></i>
+                    <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'var(--primary)', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <i className="ti ti-mail" style={{ color: '#ffffff' }}></i>
                     </div>
                     <div>
                       <div style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 600 }}>Email Address</div>

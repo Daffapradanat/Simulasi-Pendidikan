@@ -1,10 +1,16 @@
+import { LoginView } from './frontend/views/LoginView';
+import { ModulesView } from './frontend/views/ModulesView';
+import { DetailView } from './frontend/views/DetailView';
+import { ProfileView } from './frontend/views/ProfileView';
+import { SubjectSelectionView } from './frontend/views/SubjectSelectionView';
+import { CategorySelectionView } from './frontend/views/CategorySelectionView';
 import { User, Toast, Module } from './types';
 import { motion, AnimatePresence } from 'motion/react';
 import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 
-import React, { useState, useEffect, useMemo, Suspense, lazy } from 'react';
+import React, { useState, useEffect, useMemo, Suspense } from 'react';
 import { Navbar } from './frontend/components/Navbar';
-const AdminDashboard = lazy(() => import('./AdminDashboard'));
+import AdminDashboard from './AdminDashboard';
 
 const fetchAuth = (url: string | URL | Request, options: any = {}) => {
   const token = localStorage.getItem('simpend_token');
@@ -16,11 +22,7 @@ const fetchAuth = (url: string | URL | Request, options: any = {}) => {
   }
   return fetch(url, options);
 };
-const LoginView = lazy(() => import('./frontend/views/LoginView').then(m => ({ default: m.LoginView })));
-const ModulesView = lazy(() => import('./frontend/views/ModulesView').then(m => ({ default: m.ModulesView })));
-const DetailView = lazy(() => import('./frontend/views/DetailView').then(m => ({ default: m.DetailView })));
-const ProfileView = lazy(() => import('./frontend/views/ProfileView').then(m => ({ default: m.ProfileView })));
-const SubjectSelectionView = lazy(() => import('./frontend/views/SubjectSelectionView').then(m => ({ default: m.SubjectSelectionView })));
+
 
 // --- MAIN APP COMPONENT ---
 export default function App() {
@@ -35,7 +37,9 @@ export default function App() {
     return null;
   });
   const [appModules, setAppModules] = useState<Module[]>([]);
+  const [appCategories, setAppCategories] = useState<any[]>([]);
   const [appSubjects, setAppSubjects] = useState<any[]>([]);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
   const [selectedSubjectId, setSelectedSubjectId] = useState<number | null>(null);
   const [lastModuleId, setLastModuleId] = useState<number | null>(null);
   const [currentModuleId, setCurrentModuleId] = useState<number | null>(null);
@@ -173,6 +177,11 @@ export default function App() {
       })
       .catch(() => {});
       
+    fetchAuth('/api/categories')
+      .then(res => res.json())
+      .then(data => { if (Array.isArray(data)) setAppCategories(data); })
+      .catch(() => {});
+      
     fetchAuth('/api/subjects')
       .then(res => res.json())
       .then(data => {
@@ -204,7 +213,7 @@ export default function App() {
       else if (roleTitle === 'admin') roleTitle = 'Admin';
       document.title = `Pusmendik \u2014 ${roleTitle}`;
     } else {
-      document.title = 'Pusmendik \u2014 Website Simulasi Pendidikan 2025/2026';
+      document.title = 'Pusmendik \u2014 Website Literasi Sains 2025/2026';
     }
   }, [playedGames, completedModuleIds, currentUser]);
 
@@ -271,6 +280,14 @@ export default function App() {
       } else {
         showToast(err.message || 'Username/Email atau password salah.', 'error');
       }
+    }
+  };
+
+  const handleUpdateUser = (updatedUser: User) => {
+    setCurrentUser(updatedUser);
+    localStorage.setItem('simpend_current_user', JSON.stringify(updatedUser));
+    if (localStorage.getItem('simpend_auto_login')) {
+      localStorage.setItem('simpend_auto_login', JSON.stringify(updatedUser));
     }
   };
 
@@ -390,7 +407,7 @@ export default function App() {
             <AdminDashboard 
               user={currentUser} 
               onLogout={handleLogout} 
-              onNavigate={setViewMode} 
+              onNavigate={() => { setViewMode('main'); navigate('/'); }} 
               onUpdateUser={handleUpdateUser}
             /> : 
             <Navigate to={currentUser.role === 'guru' ? "/guru" : "/"} replace />
@@ -403,7 +420,7 @@ export default function App() {
             <AdminDashboard 
               user={currentUser} 
               onLogout={handleLogout} 
-              onNavigate={setViewMode} 
+              onNavigate={() => { setViewMode('main'); navigate('/'); }} 
               onUpdateUser={handleUpdateUser}
             /> : 
             <Navigate to={currentUser.role === 'admin' ? "/admin" : "/"} replace />
@@ -428,18 +445,27 @@ export default function App() {
               />
 
               <AnimatePresence mode="wait">
-                {viewMode === 'main' && !currentModuleId && !selectedSubjectId && (
+                {viewMode === 'main' && !currentModuleId && !selectedCategoryId && (
+                  <motion.div key="categories" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}>
+                    <CategorySelectionView 
+                      categories={appCategories} 
+                      onSelectCategory={(id) => setSelectedCategoryId(id)} 
+                    />
+                  </motion.div>
+                )}
+                {viewMode === 'main' && !currentModuleId && selectedCategoryId && !selectedSubjectId && (
                   <motion.div key="subjects" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}>
                     <SubjectSelectionView 
                       subjects={appSubjects} 
                       onSelectSubject={(id) => setSelectedSubjectId(id)} 
+                      onBack={() => setSelectedCategoryId(null)}
                     />
                   </motion.div>
                 )}
                 {viewMode === 'main' && !currentModuleId && selectedSubjectId && (
                   <motion.div key="modules" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}>
                     <ModulesView 
-                      modules={computedModules.filter(m => m.subject_id === selectedSubjectId)} 
+                      modules={computedModules.filter(m => m.subject_id === selectedSubjectId && m.category_id === selectedCategoryId)} 
                       onOpenModule={handleOpenModule} 
                       lastModuleId={lastModuleId}
                       onBack={() => setSelectedSubjectId(null)}
@@ -478,6 +504,7 @@ export default function App() {
       <AnimatePresence>
         {completedModulePopup && (
           <motion.div 
+            key="completedModulePopup"
             className="modal-overlay" 
             initial={{ opacity: 0 }} 
             animate={{ opacity: 1 }} 
@@ -504,6 +531,7 @@ export default function App() {
 
         {showAllDoneModal && (
           <motion.div 
+            key="showAllDoneModal"
             className="modal-overlay" 
             initial={{ opacity: 0 }} 
             animate={{ opacity: 1 }} 
@@ -520,7 +548,7 @@ export default function App() {
             >
               <div style={{ fontSize: '48px', color: 'var(--success)', marginBottom: '16px' }}><i className="ti ti-circle-check-filled"></i></div>
               <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '24px', color: 'var(--success)', marginBottom: '12px' }}>Modul Terselesaikan!</h2>
-              <p style={{ color: 'var(--text-muted)', marginBottom: '28px', lineHeight: 1.5 }}>Selamat! Kamu telah menyelesaikan seluruh modul pada Simulasi Pendidikan ini. Terus pertahankan semangat belajarmu untuk masa depan yang gemilang!</p>
+              <p style={{ color: 'var(--text-muted)', marginBottom: '28px', lineHeight: 1.5 }}>Selamat! Kamu telah menyelesaikan seluruh modul pada Literasi Sains ini. Terus pertahankan semangat belajarmu untuk masa depan yang gemilang!</p>
               <button className="btn btn-primary btn-full btn-lg" onClick={() => setShowAllDoneModal(false)}>
                 Tutup &amp; Lihat Progres
               </button>
@@ -532,6 +560,7 @@ export default function App() {
       <AnimatePresence>
         {showLogoutConfirm && (
           <motion.div 
+            key="showLogoutConfirm"
             className="modal-overlay" 
             initial={{ opacity: 0 }} 
             animate={{ opacity: 1 }} 

@@ -32,6 +32,7 @@ const getFallbackThumb = (id: number) => {
 const renderLevelBadge = (level: string) => {
   let style: React.CSSProperties = { fontSize: '11px', fontWeight: 700, padding: '4px 10px', borderRadius: '100px', whiteSpace: 'nowrap', letterSpacing: '0.3px', margin: 0, display: 'inline-flex', alignItems: 'center', gap: '4px' };
   let icon = 'ti-school';
+  if (!level) return null;
   if (level.toUpperCase().includes('SD')) {
     style = { ...style, background: '#dc2626', color: '#ffffff', border: '1px solid #b91c1c' };
   } else if (level.toUpperCase().includes('SMP')) {
@@ -69,8 +70,8 @@ export function ModulesView({ modules, onOpenModule, lastModuleId, onBack }: { m
   const pct = modules.length > 0 ? Math.round((completed / modules.length) * 100) : 0;
   
   const filteredModules = modules.filter(m => 
-    m.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-    m.desc.toLowerCase().includes(searchQuery.toLowerCase())
+    (m.title || '').toLowerCase().includes(searchQuery.toLowerCase()) || 
+    (m.desc || '').toLowerCase().includes(searchQuery.toLowerCase())
   );
   
   const totalPages = Math.ceil(filteredModules.length / ITEMS_PER_PAGE);
@@ -168,7 +169,7 @@ export function ModulesView({ modules, onOpenModule, lastModuleId, onBack }: { m
         <div className="modules-grid">
           {currentModules.length === 0 ? (
             <div className="empty-state" style={{ gridColumn: '1 / -1' }}>
-              <div className="empty-icon">🔍</div>
+              <div className="empty-icon"><i className="ti ti-search"></i></div>
               <p>Modul tidak ditemukan untuk pencarian "{searchQuery}".</p>
             </div>
           ) : (

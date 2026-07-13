@@ -1,3 +1,7 @@
+import { motion, AnimatePresence } from 'motion/react';
+import { Module, Category, Subject } from './types';
+import { useNavigate } from 'react-router-dom';
+import { Sidebar } from './admin/components/Sidebar';
 import React, { useState, useEffect, Suspense, lazy } from 'react';
 const ProfileView = lazy(() => import('./admin/views/ProfileView'));
 const TeachersView = lazy(() => import('./admin/views/TeachersView'));
@@ -7,9 +11,7 @@ const ModulesView = lazy(() => import('./admin/views/ModulesView'));
 const DashboardView = lazy(() => import('./admin/views/DashboardView'));
 const AuditView = lazy(() => import('./admin/views/AuditView'));
 const CategoriesSubjectsView = lazy(() => import('./admin/views/CategoriesSubjectsView'));
-import { motion, AnimatePresence } from 'motion/react';
-import { Module, Category, Subject } from './types';
-import { useNavigate } from 'react-router-dom';
+
 
 // Types for Admin
 type AdminViewMode = 'dashboard' | 'modules' | 'modules_add_edit' | 'students' | 'teachers' | 'profile' | 'audit' | 'categories_subjects';
@@ -62,6 +64,7 @@ const navigate = useNavigate();
   const [profileForm, setProfileForm] = useState({ name: user?.name || '', email: user?.email || '', role: user?.role || '' });
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [moduleGameFiles, setModuleGameFiles] = useState<{file: File | null, title: string, desc: string, id?: number, path?: string}[]>([]);
+  const [moduleQuestions, setModuleQuestions] = useState<any[]>([]);
 
   // Search states
   const [moduleSearch, setModuleSearch] = useState('');
@@ -72,7 +75,7 @@ const navigate = useNavigate();
   const [showTeacherModal, setShowTeacherModal] = useState(false);
   const [editingTeacher, setEditingTeacher] = useState<any | null>(null);
   const [editingStudent, setEditingStudent] = useState<any | null>(null);
-  const [confirmDelete, setConfirmDelete] = useState<{type: 'module'|'student'|'teacher', id: number} | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<{type: 'module'|'student'|'teacher'|'category'|'subject', id: number} | null>(null);
 
   useEffect(() => {
     if (showTeacherModal || showStudentModal || showLogoutConfirm || confirmDelete) {
@@ -165,11 +168,26 @@ const navigate = useNavigate();
         if (!res.ok) throw new Error(await res.text());
         const data = await res.json();
         setModules([...modules, data.module]);
+        
+        await fetchAuth(`/api/modules/${data.module.id}/questions`, {
+           method: 'POST',
+           headers: { 'Content-Type': 'application/json' },
+           body: JSON.stringify({ questions: moduleQuestions })
+        });
+      }
+      
+      if (editingModule) {
+        await fetchAuth(`/api/modules/${editingModule.id}/questions`, {
+           method: 'POST',
+           headers: { 'Content-Type': 'application/json' },
+           body: JSON.stringify({ questions: moduleQuestions })
+        });
       }
       setView('modules');
       setEditingModule(null);
       setModuleForm({ title: '', desc: '', level: 'SD', duration: '', objectives: '', theory: '', keyTerms: [] });
       setModuleGameFiles([]);
+                setModuleQuestions([]);
     } catch (err: any) {
       alert(`Error saving module: ${err.message}`);
       console.error(err);
@@ -292,6 +310,12 @@ const navigate = useNavigate();
       } else if (type === 'teacher') {
         await fetchAuth(`/api/teachers/${id}`, { method: 'DELETE' });
         setTeachers(teachers.map(t => t.id === id ? { ...t, isDeleted: true } : t));
+      } else if (type === 'category') {
+        await fetchAuth(`/api/categories/${id}`, { method: 'DELETE' });
+        setCategories(categories.filter(c => c.id !== id));
+      } else if (type === 'subject') {
+        await fetchAuth(`/api/subjects/${id}`, { method: 'DELETE' });
+        setSubjects(subjects.filter(c => c.id !== id));
       }
       setConfirmDelete(null);
     } catch (err) {
@@ -322,7 +346,8 @@ const navigate = useNavigate();
       ID: t.id,
       NIP: t.nip || '-',
       'Nama Guru': t.name,
-      'Mata Pelajaran': t.subject,
+      'Spesialisasi Kategori': (t.category_ids || []).map((id: number) => categories.find(c => c.id === id)?.name).filter(Boolean).join(', '),
+      'Spesialisasi Mata Pelajaran': (t.subject_ids || []).map((id: number) => subjects.find(s => s.id === id)?.name).filter(Boolean).join(', '),
       'Status': t.isDeleted ? 'Nonaktif' : 'Aktif'
     }));
     import('xlsx').then(XLSX => {
@@ -338,15 +363,17 @@ const navigate = useNavigate();
 
     switch (view) {
       case 'dashboard':
-        return <DashboardView modules={displayedModules} students={students} teachers={teachers} user={user} />;
+        return <DashboardView modules={displayedModules} students={students} teachers={teachers} user={user} setView={setView as any} />;
       case 'modules':
-        return <ModulesView 
+        return <ModulesView setModuleQuestions={setModuleQuestions} 
           modules={displayedModules} setView={setView} setEditingModule={setEditingModule} 
           setModuleForm={setModuleForm} moduleSearch={moduleSearch} setModuleSearch={setModuleSearch} setModuleGameFiles={setModuleGameFiles} 
           handleRestoreModule={handleRestoreModule} handleDeleteModule={handleDeleteModule} 
         />;
       case 'modules_add_edit':
-        return <ModulesAddEditView 
+        return <ModulesAddEditView
+          moduleQuestions={moduleQuestions}
+          setModuleQuestions={setModuleQuestions} 
           editingModule={editingModule} moduleForm={moduleForm} setModuleForm={setModuleForm}
           setView={setView} handleSaveModule={handleSaveModule}
           moduleGameFiles={moduleGameFiles} setModuleGameFiles={setModuleGameFiles}
@@ -358,33 +385,41 @@ const navigate = useNavigate();
         return <CategoriesSubjectsView 
           categories={categories}
           subjects={subjects}
-          onAddCategory={async (name) => {
-            const res = await fetchAuth('/api/categories', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name }) });
+          onAddCategory={async (name, icon) => {
+            const res = await fetchAuth('/api/categories', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, icon }) });
             const data = await res.json();
             setCategories([...categories, data.category]);
           }}
-          onEditCategory={async (id, name) => {
-            const res = await fetchAuth(`/api/categories/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name }) });
+          onEditCategory={async (id, name, icon) => {
+            const res = await fetchAuth(`/api/categories/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, icon }) });
             const data = await res.json();
             setCategories(categories.map(c => c.id === id ? data.category : c));
           }}
-          onDeleteCategory={async (id) => {
-            await fetchAuth(`/api/categories/${id}`, { method: 'DELETE' });
-            setCategories(categories.filter(c => c.id !== id));
+          onDeleteCategory={(id) => setConfirmDelete({ type: 'category', id })}
+          onReorderCategories={async (orderIds) => {
+            const res = await fetchAuth('/api/categories/reorder', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ orderIds }) });
+            if (res.ok) {
+              const data = await res.json();
+              setCategories(data.categories);
+            }
           }}
-          onAddSubject={async (name) => {
-            const res = await fetchAuth('/api/subjects', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name }) });
+          onAddSubject={async (name, icon) => {
+            const res = await fetchAuth('/api/subjects', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, icon }) });
             const data = await res.json();
             setSubjects([...subjects, data.subject]);
           }}
-          onEditSubject={async (id, name) => {
-            const res = await fetchAuth(`/api/subjects/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name }) });
+          onEditSubject={async (id, name, icon) => {
+            const res = await fetchAuth(`/api/subjects/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, icon }) });
             const data = await res.json();
             setSubjects(subjects.map(s => s.id === id ? data.subject : s));
           }}
-          onDeleteSubject={async (id) => {
-            await fetchAuth(`/api/subjects/${id}`, { method: 'DELETE' });
-            setSubjects(subjects.filter(s => s.id !== id));
+          onDeleteSubject={(id) => setConfirmDelete({ type: 'subject', id })}
+          onReorderSubjects={async (orderIds) => {
+            const res = await fetchAuth('/api/subjects/reorder', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ orderIds }) });
+            if (res.ok) {
+              const data = await res.json();
+              setSubjects(data.subjects);
+            }
           }}
         />;
       case 'audit':
@@ -416,53 +451,7 @@ const navigate = useNavigate();
   return (
     <div className="admin-layout">
       {/* Sidebar Admin */}
-      <div className="admin-sidebar">
-        <div style={{ padding: '24px', borderBottom: '1px solid var(--border)' }}>
-          <div className="navbar-logo" style={{ marginBottom: 0 }}>
-            <img src="/Pusmendik-dashboard.png" className="logo-img" alt="Pusmendik Dashboard Logo" />
-          </div>
-        </div>
-        <div className="admin-sidebar-menu">
-          <button className={`btn ${view === 'dashboard' ? 'btn-primary' : 'btn-ghost'} btn-full`} style={{ justifyContent: 'flex-start', border: view === 'dashboard' ? undefined : 'none' }} onClick={() => setView('dashboard')}>
-            <i className="ti ti-dashboard"></i> Dashboard
-          </button>
-          {(user?.role === 'admin' || user?.role === 'guru') && (
-          <button className={`btn ${view === 'modules' || view === 'modules_add_edit' ? 'btn-primary' : 'btn-ghost'} btn-full`} style={{ justifyContent: 'flex-start', border: (view === 'modules' || view === 'modules_add_edit') ? undefined : 'none' }} onClick={() => setView('modules')}>
-            <i className="ti ti-books"></i> Manajemen Modul
-          </button>
-          )}
-          {user?.role === 'admin' && (
-          <button className={`btn ${view === 'categories_subjects' ? 'btn-primary' : 'btn-ghost'} btn-full`} style={{ justifyContent: 'flex-start', border: view === 'categories_subjects' ? undefined : 'none' }} onClick={() => setView('categories_subjects')}>
-            <i className="ti ti-tags"></i> Kategori & Mapel
-          </button>
-          )}
-          {user?.role === 'admin' && (
-          <button className={`btn ${view === 'audit' ? 'btn-primary' : 'btn-ghost'} btn-full`} style={{ justifyContent: 'flex-start', border: view === 'audit' ? undefined : 'none' }} onClick={() => setView('audit')}>
-            <i className="ti ti-clipboard-check"></i> Audit Konten
-          </button>
-          )}
-              <button className={`btn ${view === 'students' ? 'btn-primary' : 'btn-ghost'} btn-full`} style={{ justifyContent: 'flex-start', border: view === 'students' ? undefined : 'none' }} onClick={() => setView('students')}>
-                <i className="ti ti-users"></i> Manajemen Siswa
-              </button>
-              <button className={`btn ${view === 'teachers' ? 'btn-primary' : 'btn-ghost'} btn-full`} style={{ justifyContent: 'flex-start', border: view === 'teachers' ? undefined : 'none' }} onClick={() => setView('teachers')}>
-                <i className="ti ti-user-check"></i> Manajemen Guru
-              </button>
-          <button className={`btn ${view === 'profile' ? 'btn-primary' : 'btn-ghost'} btn-full`} style={{ justifyContent: 'flex-start', border: view === 'profile' ? undefined : 'none' }} onClick={() => setView('profile')}>
-            <i className="ti ti-user"></i> Profil
-          </button>
-          
-          <button className={`btn btn-ghost btn-full`} style={{ justifyContent: 'flex-start', border: 'none', marginTop: '16px', color: 'var(--primary)' }} onClick={() => navigate('/')}>
-            <i className="ti ti-arrow-up-right"></i> Akses Frontend
-          </button>
-
-          <div className="admin-logout-wrapper">
-            <button className="btn btn-danger btn-full" style={{ justifyContent: 'flex-start' }} onClick={handleLogoutClick}>
-              <i className="ti ti-logout"></i> Logout
-            </button>
-          </div>
-        </div>
-      </div>
-
+      <Sidebar user={user} view={view} setView={setView} onLogout={() => setShowLogoutConfirm(true)} onNavigate={onNavigate as any} />
       <div className="admin-main">
         <AnimatePresence mode="wait">
           <motion.div key={view} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.2 }}>
@@ -521,7 +510,12 @@ const navigate = useNavigate();
             >
               <div style={{ fontSize: '48px', color: 'var(--danger)', marginBottom: '16px', lineHeight: 1 }}><i className="ti ti-trash"></i></div>
               <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '20px', color: 'var(--text)', marginBottom: '12px' }}>Konfirmasi Hapus</h2>
-              <p style={{ color: 'var(--text-muted)', marginBottom: '24px', lineHeight: 1.5 }}>Apakah Anda yakin ingin menonaktifkan data ini? Data yang dinonaktifkan tidak akan terlihat oleh pengguna, namun dapat direstore kembali.</p>
+              <p style={{ color: 'var(--text-muted)', marginBottom: '24px', lineHeight: 1.5 }}>
+                 {confirmDelete?.type === 'category' || confirmDelete?.type === 'subject' 
+                    ? 'Apakah Anda yakin ingin menghapus data ini secara permanen? Peringatan: Menghapus data ini juga akan menghapus atau memengaruhi data lain yang terkait (seperti modul yang menggunakan kategori/mapel ini).'
+                    : 'Apakah Anda yakin ingin menonaktifkan data ini? Peringatan: Menonaktifkan data ini mungkin berdampak pada data lain yang terkait dengannya. Data yang dinonaktifkan tidak akan terlihat oleh pengguna, namun dapat direstore kembali.'
+                 }
+              </p>
               
               <div style={{ display: 'flex', gap: '12px' }}>
                 <button className="btn btn-ghost btn-full" onClick={() => setConfirmDelete(null)}>Batal</button>
@@ -562,27 +556,41 @@ const navigate = useNavigate();
                 <div style={{ marginBottom: '16px' }}>
                   <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: 500 }}>Jenjang (Spesialisasi)</label>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                    {categories.map(c => (
-                      <label key={c.id} style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '13px', cursor: 'pointer' }}>
-                        <input type="checkbox" checked={teacherForm.category_ids.includes(c.id)} onChange={(e) => {
-                          if (e.target.checked) setTeacherForm({...teacherForm, category_ids: [...teacherForm.category_ids, c.id]});
-                          else setTeacherForm({...teacherForm, category_ids: teacherForm.category_ids.filter(id => id !== c.id)});
+                    {categories.map(c => {
+                      const isSelected = (teacherForm.category_ids || []).includes(c.id);
+                      return (
+                      <label key={c.id} style={{ 
+                         display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '13px', cursor: 'pointer',
+                         padding: '6px 12px', borderRadius: '100px', border: isSelected ? '1px solid var(--primary)' : '1px solid var(--border)',
+                         background: isSelected ? 'var(--primary-light)' : 'transparent', color: isSelected ? 'var(--primary)' : 'var(--text)',
+                         fontWeight: isSelected ? 600 : 500, transition: 'all 0.2s'
+                      }}>
+                        <input type="checkbox" style={{ display: 'none' }} checked={isSelected} onChange={(e) => {
+                          if (e.target.checked) setTeacherForm({...teacherForm, category_ids: [...(teacherForm.category_ids||[]), c.id]});
+                          else setTeacherForm({...teacherForm, category_ids: (teacherForm.category_ids||[]).filter(id => id !== c.id)});
                         }} /> {c.name}
                       </label>
-                    ))}
+                    )})}
                   </div>
                 </div>
                 <div style={{ marginBottom: '24px' }}>
                   <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: 500 }}>Mata Pelajaran (Spesialisasi)</label>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                    {subjects.map(s => (
-                      <label key={s.id} style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '13px', cursor: 'pointer' }}>
-                        <input type="checkbox" checked={teacherForm.subject_ids.includes(s.id)} onChange={(e) => {
-                          if (e.target.checked) setTeacherForm({...teacherForm, subject_ids: [...teacherForm.subject_ids, s.id]});
-                          else setTeacherForm({...teacherForm, subject_ids: teacherForm.subject_ids.filter(id => id !== s.id)});
+                    {subjects.map(s => {
+                      const isSelected = (teacherForm.subject_ids || []).includes(s.id);
+                      return (
+                      <label key={s.id} style={{ 
+                         display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '13px', cursor: 'pointer',
+                         padding: '6px 12px', borderRadius: '100px', border: isSelected ? '1px solid var(--primary)' : '1px solid var(--border)',
+                         background: isSelected ? 'var(--primary-light)' : 'transparent', color: isSelected ? 'var(--primary)' : 'var(--text)',
+                         fontWeight: isSelected ? 600 : 500, transition: 'all 0.2s'
+                      }}>
+                        <input type="checkbox" style={{ display: 'none' }} checked={isSelected} onChange={(e) => {
+                          if (e.target.checked) setTeacherForm({...teacherForm, subject_ids: [...(teacherForm.subject_ids||[]), s.id]});
+                          else setTeacherForm({...teacherForm, subject_ids: (teacherForm.subject_ids||[]).filter(id => id !== s.id)});
                         }} /> {s.name}
                       </label>
-                    ))}
+                    )})}
                   </div>
                 </div>
                 <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>

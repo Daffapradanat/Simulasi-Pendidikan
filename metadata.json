@@ -1,6 +1,6 @@
 {
-  "name": "",
-  "description": "",
+  "name": "Literasi Sains",
+  "description": "Aplikasi Literasi Sains Pusmendik",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

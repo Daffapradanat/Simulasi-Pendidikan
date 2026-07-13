@@ -16,11 +16,27 @@ export default defineConfig(() => {
         },
         workbox: {
           globPatterns: ['**/*.{js,css,html,ico,png,svg,json}'],
-          navigateFallbackDenylist: [/^\/api/, /^\/games/], // Prevent SW returning index.html for API or Games
+          navigateFallbackDenylist: [/^\/api/, /^\/games/], 
+          runtimeCaching: [
+            {
+              urlPattern: /^\/games\/.*/i,
+              handler: 'CacheFirst',
+              options: {
+                cacheName: 'games-cache',
+                expiration: {
+                  maxEntries: 1000,
+                  maxAgeSeconds: 60 * 60 * 24 * 30 // 30 Days
+                },
+                cacheableResponse: {
+                  statuses: [0, 200]
+                }
+              }
+            }
+          ]
         },
         manifest: {
-          name: 'Pusmendik',
-          short_name: 'Pusmendik',
+          name: 'Literasi Sains',
+          short_name: 'Literasi Sains',
           theme_color: '#1a56db',
           icons: [
             {
@@ -43,10 +59,7 @@ export default defineConfig(() => {
       },
     },
     server: {
-      // HMR is disabled via DISABLE_HMR env var.
-      // Do not modifyâfile watching is disabled to prevent flickering during agent edits.
       hmr: process.env.DISABLE_HMR !== 'true',
-      // Disable file watching when DISABLE_HMR is true to save CPU during agent edits.
       watch: {
         ignored: ['**/public/games/**', '**/database.json', '**/uploads/**', 'database.json']
       },
