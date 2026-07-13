@@ -21,7 +21,7 @@ export function DetailView({
   playedGames: Set<number>;
   onLaunchGame: (id: number, title: string) => void;
   onCloseGame: () => void;
-  onCompleteModule: () => void;
+  onCompleteModule: (reflection?: string) => void;
   user?: any;
 }) {
 
@@ -302,7 +302,7 @@ export function DetailView({
               </div>
             </div>
             
-            <div className="section-card complete-card" style={{ 
+            <div id="evaluation-section" className="section-card complete-card" style={{ 
               borderRadius: '16px', 
               border: '1.5px solid var(--border)', 
               overflow: 'hidden', 
@@ -413,7 +413,9 @@ export function DetailView({
                       }}
                       onClick={() => {
                         setShowQuestions(true);
-                        document.getElementById('webgl-section')?.scrollIntoView({ behavior: 'smooth' });
+                        setTimeout(() => {
+                          document.getElementById('evaluation-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        }, 80);
                       }}
                     >
                       <i className={`ti ${questions.length > 0 ? 'ti-notes' : 'ti-edit'}`}></i>

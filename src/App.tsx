@@ -225,9 +225,9 @@ export default function App() {
       if (roleTitle === 'siswa') roleTitle = 'Siswa';
       else if (roleTitle === 'guru') roleTitle = 'Guru';
       else if (roleTitle === 'admin') roleTitle = 'Admin';
-      document.title = `Pusmendik \u2014 ${roleTitle}`;
+      document.title = `Pusat Asesmen Pendidikan (${roleTitle})`;
     } else {
-      document.title = 'Pusmendik \u2014 Website Literasi Sains 2025/2026';
+      document.title = 'Pusat Asesmen Pendidikan - Website Literasi Sains 2025/2026';
     }
   }, [playedGames, completedModuleIds, reflections, currentUser]);
 

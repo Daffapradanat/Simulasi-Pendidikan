@@ -89,6 +89,7 @@ async function initDB() {
     CREATE TABLE IF NOT EXISTS user_progress (id INTEGER PRIMARY KEY, data TEXT);
     CREATE TABLE IF NOT EXISTS categories (id INTEGER PRIMARY KEY, name TEXT, data TEXT);
     CREATE TABLE IF NOT EXISTS subjects (id INTEGER PRIMARY KEY, name TEXT, data TEXT);
+    CREATE TABLE IF NOT EXISTS questions (id INTEGER PRIMARY KEY, module_id INTEGER, data TEXT);
   `);
 
   const tableCheck = await db.get("SELECT name FROM sqlite_master WHERE type='table' AND name='app_state'");
@@ -127,6 +128,13 @@ async function initDB() {
 
     const subs = await db.all("SELECT data FROM subjects");
     subjectsData = subs.map((r: any) => JSON.parse(r.data));
+
+    try {
+      const qData = await db.all("SELECT data FROM questions");
+      questionsData = qData.map((r: any) => JSON.parse(r.data));
+    } catch (e) {
+      questionsData = [];
+    }
   }
 
   if (categoriesData.length === 0) {
@@ -159,6 +167,76 @@ async function initDB() {
       teachersData.push({ ...seedUser });
     }
   });
+
+  if (!questionsData || questionsData.length === 0) {
+    questionsData = [
+      {
+        id: 101,
+        module_id: 1,
+        text: "Berapakah nilai desimal dari bilangan biner 1101?",
+        options: ["11", "12", "13", "14"],
+        correctAnswerIndex: 2,
+        explanation: "1101 biner = (1 * 2^3) + (1 * 2^2) + (0 * 2^1) + (1 * 2^0) = 8 + 4 + 0 + 1 = 13."
+      },
+      {
+        id: 102,
+        module_id: 1,
+        text: "Sistem bilangan heksadesimal menggunakan basis...",
+        options: ["Basis 2", "Basis 8", "Basis 10", "Basis 16"],
+        correctAnswerIndex: 3,
+        explanation: "Sistem heksadesimal menggunakan 16 simbol unik, yaitu angka 0-9 dan huruf A-F."
+      },
+      {
+        id: 201,
+        module_id: 2,
+        text: "Jika dua hambatan disusun secara seri, bagaimanakah kuat arus yang mengalir pada masing-masing hambatan tersebut?",
+        options: ["Arusnya berbeda-beda", "Arusnya sama besar", "Arusnya bernilai nol", "Tergantung nilai hambatannya"],
+        correctAnswerIndex: 1,
+        explanation: "Pada rangkaian seri, arus listrik tidak memiliki cabang sehingga kuat arus di setiap titik dalam rangkaian adalah sama."
+      },
+      {
+        id: 202,
+        module_id: 2,
+        text: "Menurut Hukum Ohm, hubungan antara Tegangan (V), Arus (I), dan Hambatan (R) dinyatakan dengan rumus...",
+        options: ["V = I / R", "V = I * R", "V = I + R", "V = R / I"],
+        correctAnswerIndex: 1,
+        explanation: "Hukum Ohm menyatakan bahwa tegangan (V) sebanding dengan kuat arus (I) dikalikan hambatan (R)."
+      },
+      {
+        id: 301,
+        module_id: 3,
+        text: "Dalam suatu ekosistem rantai makanan, tumbuhan hijau berperan sebagai...",
+        options: ["Konsumen I", "Konsumen II", "Produsen", "Dekomposer"],
+        correctAnswerIndex: 2,
+        explanation: "Tumbuhan hijau dapat memproduksi makanannya sendiri melalui proses fotosintesis, sehingga bertindak sebagai produsen."
+      },
+      {
+        id: 302,
+        module_id: 3,
+        text: "Organisme yang berfungsi menguraikan sisa-sisa makhluk hidup yang telah mati disebut...",
+        options: ["Produsen", "Herbivora", "Karnivora", "Dekomposer"],
+        correctAnswerIndex: 3,
+        explanation: "Dekomposer (seperti bakteri dan jamur) bertugas mengurai materi organik dari makhluk hidup yang telah mati kembali ke tanah."
+      },
+      {
+        id: 401,
+        module_id: 4,
+        text: "Hukum Newton yang menjelaskan tentang kelembaman atau sifat benda yang cenderung mempertahankan keadaannya adalah...",
+        options: ["Hukum I Newton", "Hukum II Newton", "Hukum III Newton", "Hukum Gravitasi"],
+        correctAnswerIndex: 0,
+        explanation: "Hukum I Newton (Inersia/Kelembaman) menyatakan bahwa benda akan mempertahankan posisinya (diam tetap diam, bergerak tetap bergerak) jika tidak ada gaya luar."
+      },
+      {
+        id: 402,
+        module_id: 4,
+        text: "Jika sebuah benda bermassa 5 kg diberi gaya sebesar 20 N, berapakah percepatan yang dialami benda tersebut?",
+        options: ["2 m/s²", "4 m/s²", "15 m/s²", "100 m/s²"],
+        correctAnswerIndex: 1,
+        explanation: "Menggunakan rumus Hukum II Newton: a = F / m = 20 N / 5 kg = 4 m/s²."
+      }
+    ];
+  }
+
   await saveDb();
 }
 
@@ -198,6 +276,11 @@ async function doSaveDb() {
     await db.run("DELETE FROM subjects");
     for (const sub of subjectsData) {
       await db.run("INSERT INTO subjects (id, name, data) VALUES (?, ?, ?)", [sub.id, sub.name, JSON.stringify(sub)]);
+    }
+
+    await db.run("DELETE FROM questions");
+    for (const q of questionsData) {
+      await db.run("INSERT INTO questions (id, module_id, data) VALUES (?, ?, ?)", [q.id, q.module_id, JSON.stringify(q)]);
     }
 
     await db.exec("COMMIT");
