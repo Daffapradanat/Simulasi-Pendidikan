@@ -563,7 +563,7 @@ const navigate = useNavigate();
                       <label key={c.id} style={{ 
                          display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '13px', cursor: 'pointer',
                          padding: '6px 12px', borderRadius: '100px', border: isSelected ? '1px solid var(--primary)' : '1px solid var(--border)',
-                         background: isSelected ? 'var(--primary-light)' : 'transparent', color: isSelected ? 'var(--primary)' : 'var(--text)',
+                         background: isSelected ? 'var(--primary)' : 'transparent', color: isSelected ? '#ffffff' : 'var(--text)',
                          fontWeight: isSelected ? 600 : 500, transition: 'all 0.2s'
                       }}>
                         <input type="checkbox" style={{ display: 'none' }} checked={isSelected} onChange={(e) => {
@@ -583,7 +583,7 @@ const navigate = useNavigate();
                       <label key={s.id} style={{ 
                          display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '13px', cursor: 'pointer',
                          padding: '6px 12px', borderRadius: '100px', border: isSelected ? '1px solid var(--primary)' : '1px solid var(--border)',
-                         background: isSelected ? 'var(--primary-light)' : 'transparent', color: isSelected ? 'var(--primary)' : 'var(--text)',
+                         background: isSelected ? 'var(--primary)' : 'transparent', color: isSelected ? '#ffffff' : 'var(--text)',
                          fontWeight: isSelected ? 600 : 500, transition: 'all 0.2s'
                       }}>
                         <input type="checkbox" style={{ display: 'none' }} checked={isSelected} onChange={(e) => {

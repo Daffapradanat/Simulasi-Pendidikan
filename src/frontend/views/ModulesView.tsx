@@ -141,7 +141,7 @@ export function ModulesView({ modules, onOpenModule, lastModuleId, onBack }: { m
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flex: '1 1 min-content' }}>
               <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: 'rgba(255,255,255,0.2)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', flexShrink: 0 }}>
-                <i className="ti ti-player-play-filled"></i>
+                <i className="ti ti-player-play"></i>
               </div>
               <div style={{ minWidth: '150px' }}>
                 <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.8)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '4px' }}>Lanjutkan Sesi Terakhir</div>

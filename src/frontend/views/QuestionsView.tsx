@@ -129,16 +129,16 @@ export function QuestionsView({ questions = [], onComplete }: { questions: any[]
               width: '120px', 
               height: '120px', 
               borderRadius: '50%', 
-              background: score >= 70 ? 'var(--success-light)' : 'var(--primary-light)', 
-              color: score >= 70 ? 'var(--success)' : 'var(--primary)', 
+              background: score >= 70 ? 'var(--success)' : 'var(--primary)', 
+              color: '#ffffff', 
               display: 'flex', 
               flexDirection: 'column',
               alignItems: 'center', 
               justifyContent: 'center',
-              boxShadow: '0 6px 16px -4px rgba(0,0,0,0.06)'
+              boxShadow: '0 6px 16px -4px rgba(0,0,0,0.15)'
             }}>
-              <span style={{ fontSize: '38px', fontWeight: 800, lineHeight: 1 }}>{score}</span>
-              <span style={{ fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', opacity: 0.8, marginTop: '4px' }}>Skor</span>
+              <span style={{ fontSize: '38px', fontWeight: 800, lineHeight: 1, color: '#ffffff' }}>{score}</span>
+              <span style={{ fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#ffffff', opacity: 1, marginTop: '4px' }}>Skor</span>
             </div>
           </div>
           

@@ -502,7 +502,7 @@ app.use(cookieParser());
     res.json({ success: true });
   });
 
-  app.post("/api/admin/complete_all/:id", authenticateToken, isStrictAdmin, (req, res) => {
+  app.post("/api/admin/complete_all/:id", authenticateToken, isAdmin, (req, res) => {
     const id = parseInt(req.params.id);
     const completedModuleIds = modulesData.filter(m => !m.isDeleted).map(m => m.id);
     let playedGames: number[] = [];
@@ -511,7 +511,7 @@ app.use(cookieParser());
     });
     userProgressData[id] = { playedGames, completedModuleIds };
     saveDb();
-    logActivity('admin', 'Admin', `Menyelesaikan semua modul untuk user ID ${id}`);
+    logActivity('admin', req.user.role === 'admin' ? 'Admin' : 'Guru', `Menyelesaikan semua modul untuk user ID ${id}`);
     res.json({ success: true, progress: userProgressData[id] });
   });
 

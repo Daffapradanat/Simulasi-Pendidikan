@@ -96,15 +96,18 @@ export default function ProfileView({
           </div>
         </div>
 
-        {user.role === 'admin' && !isEditingProfile && (
+        {(user.role === 'admin' || user.role === 'guru') && !isEditingProfile && (
           <div className="section-card" style={{ flex: 1 }}>
-             <div className="section-card-title"><i className="ti ti-tool"></i> Alat Administrator</div>
-             <p style={{ color: 'var(--text-muted)', fontSize: '14px', marginBottom: '16px' }}>Gunakan fungsi ini untuk mempercepat simulasi dan pengetesan akses konten. Fungsi ini akan langsung menyelesaikan semua modul & game untuk akun admin ini.</p>
+             <div className="section-card-title"><i className="ti ti-tool"></i> Alat Administrator / Guru</div>
+             <p style={{ color: 'var(--text-muted)', fontSize: '14px', marginBottom: '16px' }}>Gunakan fungsi ini untuk mempercepat simulasi dan pengetesan akses konten. Fungsi ini akan langsung menyelesaikan semua modul & game untuk akun ini.</p>
              <button className="btn" style={{ background: 'var(--success-light)', color: 'var(--success)', border: '1px solid var(--success-light)', width: '100%', justifyContent: 'center' }} onClick={async () => {
                 if (!confirm("Selesaikan semua modul untuk akun ini sekarang?")) return;
                 try {
                   const res = await fetchAuth(`/api/admin/complete_all/${user.id}`, { method: 'POST' });
-                  if (res.ok) alert("Berhasil! Semua modul dan game sekarang tercatat telah diselesaikan. Silakan kembali ke Beranda (jika anda meluncurkan modul dari admin dashboard) atau refresh.");
+                  if (res.ok) {
+                    alert("Berhasil! Semua modul dan game sekarang tercatat telah diselesaikan.");
+                    window.location.reload();
+                  }
                 } catch(e) {}
              }}>
                <i className="ti ti-checks"></i> Selesaikan Semua Modul Sekaligus
