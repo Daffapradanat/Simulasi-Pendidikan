@@ -302,33 +302,126 @@ export function DetailView({
               </div>
             </div>
             
-            <div className="section-card complete-card">
-              <div className="section-card-title">
-                <i className="ti ti-circle-check"></i> Tandai Modul Selesai
-                <span className="step-chip">Langkah 3</span>
+            <div className="section-card complete-card" style={{ 
+              borderRadius: '16px', 
+              border: '1.5px solid var(--border)', 
+              overflow: 'hidden', 
+              boxShadow: '0 4px 12px rgba(0,0,0,0.03)',
+              padding: 0
+            }}>
+              <div style={{ 
+                padding: '20px 24px', 
+                background: 'var(--surface-2)', 
+                borderBottom: '1px solid var(--border)',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <i className="ti ti-circle-check" style={{ color: 'var(--primary)', fontSize: '20px' }}></i>
+                  <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '16px', color: 'var(--text)' }}>Evaluasi & Penyelesaian</span>
+                </div>
+                <span className="step-chip" style={{ background: 'var(--primary-light)', color: 'var(--primary)', padding: '4px 10px', borderRadius: '100px', fontSize: '12px', fontWeight: 700 }}>Langkah 3</span>
               </div>
-              <p className="complete-hint">Mainkan semua game simulasi di atas, lalu klik tombol di bawah untuk menyelesaikan modul dan membuka modul berikutnya.</p>
               
-             {showQuestions ? (
-                <QuestionsView questions={questions} onComplete={onCompleteModule} />
-             ) : (
-                <button 
-                  className={`btn btn-primary btn-complete ${!allPlayed ? 'disabled' : ''}`}
-                  disabled={!allPlayed}
-                  title={!allPlayed ? `Mainkan ${totalGames - playedGames.size} game lagi untuk melanjutkan` : ''}
-                  onClick={() => {
-                     if (questions.length > 0) {
+              <div style={{ padding: '24px' }}>
+                {showQuestions ? (
+                  <QuestionsView questions={questions} onComplete={onCompleteModule} />
+                ) : (
+                  <div>
+                    {!allPlayed ? (
+                      <div style={{ 
+                        background: '#FFFBEB', 
+                        border: '1px solid #FEF3C7', 
+                        borderRadius: '12px', 
+                        padding: '18px', 
+                        display: 'flex', 
+                        gap: '14px', 
+                        marginBottom: '20px' 
+                      }}>
+                        <div style={{ 
+                          width: '40px', 
+                          height: '40px', 
+                          borderRadius: '50%', 
+                          background: '#FEF3C7', 
+                          color: '#D97706', 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          justifyContent: 'center', 
+                          fontSize: '20px', 
+                          flexShrink: 0 
+                        }}>
+                          <i className="ti ti-lock"></i>
+                        </div>
+                        <div>
+                          <h4 style={{ margin: '0 0 4px 0', fontSize: '14px', fontWeight: 700, color: '#92400E' }}>Simulasi Belum Selesai Dimainkan</h4>
+                          <p style={{ margin: 0, fontSize: '13px', lineHeight: 1.5, color: '#B45309' }}>
+                            Selesaikan dengan memainkan seluruh {totalGames} game simulasi pada <strong>Langkah 2</strong> terlebih dahulu untuk dapat memulai evaluasi atau menyelesaikan modul ini.
+                          </p>
+                        </div>
+                      </div>
+                    ) : (
+                      <div style={{ 
+                        background: '#ECFDF5', 
+                        border: '1px solid #A7F3D0', 
+                        borderRadius: '12px', 
+                        padding: '18px', 
+                        display: 'flex', 
+                        gap: '14px', 
+                        marginBottom: '20px' 
+                      }}>
+                        <div style={{ 
+                          width: '40px', 
+                          height: '40px', 
+                          borderRadius: '50%', 
+                          background: '#D1FAE5', 
+                          color: '#059669', 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          justifyContent: 'center', 
+                          fontSize: '20px', 
+                          flexShrink: 0 
+                        }}>
+                          <i className="ti ti-circle-check"></i>
+                        </div>
+                        <div>
+                          <h4 style={{ margin: '0 0 4px 0', fontSize: '14px', fontWeight: 700, color: '#065F46' }}>Seluruh Simulasi Selesai Dimainkan!</h4>
+                          <p style={{ margin: 0, fontSize: '13px', lineHeight: 1.5, color: '#047857' }}>
+                            Luar biasa! Anda telah menyelesaikan seluruh simulasi. Sekarang saatnya menguji pemahaman Anda dengan mengisi lembar refleksi dan evaluasi materi.
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
+                    <p style={{ margin: '0 0 20px 0', fontSize: '14px', lineHeight: 1.6, color: 'var(--text-muted)' }}>
+                      {questions.length > 0 
+                        ? 'Evaluasi ini terdiri dari soal-soal interaktif yang berkaitan langsung dengan materi simulasi yang telah Anda pelajari.' 
+                        : 'Karena modul ini berfokus pada eksperimen mandiri, silakan klik tombol di bawah untuk menuliskan refleksi singkat Anda.'}
+                    </p>
+
+                    <button 
+                      className={`btn btn-primary btn-complete ${!allPlayed ? 'disabled' : ''}`}
+                      disabled={!allPlayed}
+                      style={{ 
+                        width: '100%', 
+                        justifyContent: 'center', 
+                        height: '48px', 
+                        fontSize: '15px', 
+                        fontWeight: 600,
+                        opacity: !allPlayed ? 0.6 : 1,
+                        cursor: !allPlayed ? 'not-allowed' : 'pointer'
+                      }}
+                      onClick={() => {
                         setShowQuestions(true);
                         document.getElementById('webgl-section')?.scrollIntoView({ behavior: 'smooth' });
-                     } else {
-                        onCompleteModule();
-                     }
-                  }}
-                >
-                  <i className="ti ti-circle-check"></i>
-                  {questions.length > 0 ? 'Mulai Evaluasi' : 'Tandai Selesai & Buka Modul Berikutnya'}
-                </button>
-             )}
+                      }}
+                    >
+                      <i className={`ti ${questions.length > 0 ? 'ti-notes' : 'ti-edit'}`}></i>
+                      {questions.length > 0 ? 'Mulai Evaluasi Materi' : 'Tulis Refleksi & Selesaikan Modul'}
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
           

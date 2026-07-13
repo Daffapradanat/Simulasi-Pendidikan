@@ -16,7 +16,8 @@ export default function StudentsView({
   students, studentSearch, setStudentSearch, setShowStudentModal,
   setEditingStudent, setStudentForm,
   handleRestoreStudent, handleDeleteStudent, exportToExcel,
-  readOnly
+  readOnly,
+  modules = []
 }: any) {
   
   const [currentPage, setCurrentPage] = useState(1);
@@ -305,6 +306,33 @@ export default function StudentsView({
                 ) : (
                   <div style={{ textAlign: 'center', padding: '16px', color: 'var(--text-light)', fontSize: '14px' }}>
                     Belum ada progres modul yang diselesaikan.
+                  </div>
+                )}
+              </div>
+
+              <div style={{ background: 'var(--surface)', padding: '16px', borderRadius: '12px', border: '1px solid var(--border)' }}>
+                <h4 style={{ margin: '0 0 16px 0', fontSize: '14px', color: 'var(--text-muted)' }}>DAFTAR REFLEKSI PEMBELAJARAN</h4>
+                {viewingProfile.completedModuleIds && viewingProfile.completedModuleIds.length > 0 ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', maxHeight: '200px', overflowY: 'auto', paddingRight: '4px' }}>
+                    {viewingProfile.completedModuleIds.map((modId: number) => {
+                      const mod = modules.find((m: any) => m.id === modId);
+                      const reflectionText = viewingProfile.reflections && viewingProfile.reflections[modId];
+                      return (
+                        <div key={modId} style={{ background: 'var(--white)', padding: '12px 14px', borderRadius: '8px', border: '1px solid var(--border)' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                            <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text)' }}>{mod ? mod.title : `Modul #${modId}`}</span>
+                            <span className="badge badge-success" style={{ fontSize: '10px', padding: '2px 6px' }}>Selesai</span>
+                          </div>
+                          <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-muted)', fontStyle: reflectionText ? 'normal' : 'italic', lineHeight: 1.4 }}>
+                            {reflectionText ? `"${reflectionText}"` : 'Siswa belum menuliskan refleksi atau modul diselesaikan secara manual oleh admin.'}
+                          </p>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div style={{ textAlign: 'center', padding: '16px', color: 'var(--text-light)', fontSize: '13px' }}>
+                    Belum ada modul yang diselesaikan oleh siswa ini.
                   </div>
                 )}
               </div>

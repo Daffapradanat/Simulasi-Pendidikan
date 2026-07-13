@@ -46,6 +46,7 @@ export default function App() {
   const [activeGameId, setActiveGameId] = useState<number | null>(null);
   const [playedGames, setPlayedGames] = useState<Set<number>>(new Set());
   const [completedModuleIds, setCompletedModuleIds] = useState<Set<number>>(new Set());
+  const [reflections, setReflections] = useState<Record<number, string>>({});
   const [showAllDoneModal, setShowAllDoneModal] = useState(false);
   const [completedModulePopup, setCompletedModulePopup] = useState<Module | null>(null);
   const [toasts, setToasts] = useState<Toast[]>([]);
@@ -65,16 +66,25 @@ export default function App() {
 
 
   const computedModules = useMemo(() => {
-    // Find all unique subjects
-    const subjectIds = Array.from(new Set(appModules.map(m => m.subject_id || 0)));
+    // Group modules by category_id and subject_id
+    const grouped = new Map<string, typeof appModules>();
     
-    // Compute status per subject
-    const subjectStatuses = new Map<number, string>();
+    for (const mod of appModules) {
+      const catId = mod.category_id || 0;
+      const subId = mod.subject_id || 0;
+      const key = `${catId}_${subId}`;
+      if (!grouped.has(key)) {
+        grouped.set(key, []);
+      }
+      grouped.get(key)!.push(mod);
+    }
     
-    for (const subId of subjectIds) {
-      const subjectMods = appModules.filter(m => (m.subject_id || 0) === subId);
+    const moduleStatuses = new Map<number, string>();
+    
+    for (const [key, mods] of grouped.entries()) {
+      // Sort mods preserve their natural order in appModules
       let prevCompleted = true;
-      for (const mod of subjectMods) {
+      for (const mod of mods) {
          let status = 'locked';
          if (completedModuleIds.has(mod.id)) {
             status = 'completed';
@@ -82,13 +92,13 @@ export default function App() {
             status = 'unlocked';
          }
          prevCompleted = (status === 'completed');
-         subjectStatuses.set(mod.id, status);
+         moduleStatuses.set(mod.id, status);
       }
     }
     
     return appModules.map(mod => ({
       ...mod,
-      status: subjectStatuses.get(mod.id) || 'locked'
+      status: moduleStatuses.get(mod.id) || 'locked'
     }));
   }, [completedModuleIds, appModules]);
 
@@ -156,11 +166,14 @@ export default function App() {
          const data = await res.json();
          if (data.playedGames && data.playedGames.length > 0) setPlayedGames(new Set(data.playedGames));
          if (data.completedModuleIds && data.completedModuleIds.length > 0) setCompletedModuleIds(new Set(data.completedModuleIds));
+         if (data.reflections) setReflections(data.reflections);
       } else {
          const played = localStorage.getItem(`simpend_played_${user.id}`);
          if (played) setPlayedGames(new Set(JSON.parse(played)));
          const completed = localStorage.getItem(`simpend_completed_${user.id}`);
          if (completed) setCompletedModuleIds(new Set(JSON.parse(completed)));
+         const savedReflections = localStorage.getItem(`simpend_reflections_${user.id}`);
+         if (savedReflections) setReflections(JSON.parse(savedReflections));
       }
       const lastMod = localStorage.getItem(`simpend_last_module_${user.id}`);
       if (lastMod) setLastModuleId(parseInt(lastMod, 10));
@@ -199,12 +212,13 @@ export default function App() {
       const cArr = Array.from(completedModuleIds);
       localStorage.setItem(`simpend_played_${currentUser.id}`, JSON.stringify(pArr));
       localStorage.setItem(`simpend_completed_${currentUser.id}`, JSON.stringify(cArr));
+      localStorage.setItem(`simpend_reflections_${currentUser.id}`, JSON.stringify(reflections));
       
       // Sync with server
       fetchAuth(`/api/users/${currentUser.id}/progress`, {
          method: 'POST',
          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('simpend_token')}` },
-         body: JSON.stringify({ playedGames: pArr, completedModuleIds: cArr })
+         body: JSON.stringify({ playedGames: pArr, completedModuleIds: cArr, reflections })
       }).catch(console.error);
 
       let roleTitle = currentUser.role;
@@ -215,7 +229,7 @@ export default function App() {
     } else {
       document.title = 'Pusmendik \u2014 Website Literasi Sains 2025/2026';
     }
-  }, [playedGames, completedModuleIds, currentUser]);
+  }, [playedGames, completedModuleIds, reflections, currentUser]);
 
   const handleLogin = async (email: string, pass: string, remember: boolean, mode: 'siswa' | 'guru' | 'admin') => {
     if (loginBlockTime && Date.now() < loginBlockTime) {
@@ -352,7 +366,7 @@ export default function App() {
     showToast('Game ditutup.', 'info');
   };
 
-  const handleCompleteModule = () => {
+  const handleCompleteModule = (reflection?: string) => {
     if (!currentModule) return;
     const totalGames = currentModule.games.length;
     const unplayed = currentModule.games.filter(g => !playedGames.has(g.id));
@@ -361,6 +375,13 @@ export default function App() {
       const names = unplayed.map(g => `"${g.title}"`).join(', ');
       showToast(`Mainkan dulu game: ${names}`, 'error');
       return;
+    }
+
+    if (reflection) {
+      setReflections(prev => ({
+        ...prev,
+        [currentModule.id]: reflection
+      }));
     }
 
     setCompletedModuleIds(prev => {
@@ -492,7 +513,7 @@ export default function App() {
 
                 {viewMode === 'profile' && (
                   <motion.div key="profile" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}>
-                     <ProfileView user={currentUser} completedModuleIds={completedModuleIds} modules={appModules} subjects={appSubjects} setUser={handleUpdateUser} />
+                     <ProfileView user={currentUser} completedModuleIds={completedModuleIds} modules={appModules} subjects={appSubjects} setUser={handleUpdateUser} reflections={reflections} />
                   </motion.div>
                 )}
               </AnimatePresence>

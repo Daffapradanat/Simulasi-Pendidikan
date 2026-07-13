@@ -14,7 +14,7 @@ const fetchAuth = (url: string | URL | Request, options: any = {}) => {
 };
 
 // --- PROFILE VIEW ---
-export function ProfileView({ user, completedModuleIds, modules, subjects = [], setUser }: { user: User, completedModuleIds: Set<number>, modules: Module[], subjects?: Subject[], setUser: (u: User) => void }) {
+export function ProfileView({ user, completedModuleIds, modules, subjects = [], setUser, reflections = {} }: { user: User, completedModuleIds: Set<number>, modules: Module[], subjects?: Subject[], setUser: (u: User) => void, reflections?: Record<number, string> }) {
   const completedCount = completedModuleIds.size;
   const pct = modules.length ? Math.round((completedCount / modules.length) * 100) : 0;
   
@@ -124,6 +124,29 @@ export function ProfileView({ user, completedModuleIds, modules, subjects = [], 
                     </div>
                   </div>
                 ))}
+              </div>
+            </>
+          )}
+
+          {completedModuleIds.size > 0 && (
+            <>
+              <div className="section-card-title" style={{ marginTop: '32px' }}><i className="ti ti-notebook"></i> Riwayat Refleksi Belajarku</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {Array.from(completedModuleIds).map(modId => {
+                  const mod = modules.find(m => m.id === modId);
+                  const reflectionText = reflections[modId];
+                  return (
+                    <div key={modId} style={{ padding: '16px', background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0', textAlign: 'left' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                        <span style={{ fontWeight: 600, fontSize: '14px', color: 'var(--text)' }}>{mod ? mod.title : `Modul #${modId}`}</span>
+                        <span className="badge badge-success" style={{ fontSize: '11px', padding: '4px 8px' }}><i className="ti ti-circle-check"></i> Selesai</span>
+                      </div>
+                      <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-muted)', fontStyle: reflectionText ? 'normal' : 'italic', lineHeight: 1.5 }}>
+                        {reflectionText ? `"${reflectionText}"` : 'Belum menuliskan refleksi.'}
+                      </p>
+                    </div>
+                  );
+                })}
               </div>
             </>
           )}

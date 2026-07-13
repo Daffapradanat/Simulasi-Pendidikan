@@ -404,13 +404,17 @@ app.use(cookieParser());
 
   app.get("/api/users/:id/progress", authenticateToken, (req, res) => {
     const id = parseInt(req.params.id);
-    res.json(userProgressData[id] || { playedGames: [], completedModuleIds: [] });
+    res.json(userProgressData[id] || { playedGames: [], completedModuleIds: [], reflections: {} });
   });
 
   app.post("/api/users/:id/progress", authenticateToken, (req, res) => {
     const id = parseInt(req.params.id);
-    const { playedGames, completedModuleIds } = req.body;
-    userProgressData[id] = { playedGames: playedGames || [], completedModuleIds: completedModuleIds || [] };
+    const { playedGames, completedModuleIds, reflections } = req.body;
+    userProgressData[id] = { 
+      playedGames: playedGames || [], 
+      completedModuleIds: completedModuleIds || [],
+      reflections: reflections || {}
+    };
     saveDb();
     res.json({ success: true });
   });
@@ -793,8 +797,9 @@ app.put("/api/auth/profile", authenticateToken, (req, res) => {
     });
 
     const augmentedStudents = studentsData.map((s: any) => {
-       const userProg = userProgressData[s.id] || { playedGames: [], completedModuleIds: [] };
+       const userProg = userProgressData[s.id] || { playedGames: [], completedModuleIds: [], reflections: {} };
        const completedModuleIds = userProg.completedModuleIds || [];
+       const reflections = userProg.reflections || {};
        const completed = completedModuleIds.length;
        const progress = totalMods > 0 ? Math.round((completed / totalMods) * 100) : 0;
        
@@ -805,7 +810,7 @@ app.put("/api/auth/profile", authenticateToken, (req, res) => {
           subjectProgress[sub.name] = subMods.length > 0 ? Math.round((subCompleted / subMods.length) * 100) : 0;
        });
        
-       return { ...s, progress, subjectProgress, completedModuleIds };
+       return { ...s, progress, subjectProgress, completedModuleIds, reflections };
     });
     res.json(augmentedStudents);
   });

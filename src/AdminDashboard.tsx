@@ -430,7 +430,8 @@ const navigate = useNavigate();
           students={students} studentSearch={studentSearch} setStudentSearch={setStudentSearch}
           setShowStudentModal={setShowStudentModal} setEditingStudent={setEditingStudent} setStudentForm={setStudentForm}
           handleRestoreStudent={handleRestoreStudent} handleDeleteStudent={handleDeleteStudent} exportToExcel={exportToExcel}
-         readOnly={user?.role === 'guru'} />;
+          readOnly={user?.role === 'guru'}
+          modules={modules} />;
       case 'teachers':
         return <TeachersView 
           teachers={teachers} teacherSearch={teacherSearch} setTeacherSearch={setTeacherSearch}
