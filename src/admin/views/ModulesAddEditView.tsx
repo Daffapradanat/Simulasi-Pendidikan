@@ -1,12 +1,98 @@
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+import { ConfirmModal } from '../../components/ConfirmModal';
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
 
 export default function ModulesAddEditView({ 
   editingModule, moduleForm, setModuleForm, setView, handleSaveModule, moduleGameFiles, setModuleGameFiles, isSaving, categories, subjects, moduleQuestions, setModuleQuestions
 }: any) {
+  const [showAddMenu, setShowAddMenu] = useState(false);
+  const [questionToDelete, setQuestionToDelete] = useState<number | null>(null);
+  const [questionTypes, setQuestionTypes] = useState<any[]>([]);
+  const [isUploadingBanner, setIsUploadingBanner] = useState(false);
+  const [bannerPreview, setBannerPreview] = useState('');
+
+  useEffect(() => {
+    const token = localStorage.getItem('simpend_token');
+    fetch('/api/question_types', { headers: { 'Authorization': `Bearer ${token}` }})
+      .then(r => r.json())
+      .then(data => {
+        if (Array.isArray(data)) setQuestionTypes(data);
+      })
+      .catch(console.error);
+  }, []);
+
+  const handleAddQuestion = (code: string) => {
+     let newQ: any = { type: code, text: '', explanation: '' };
+     if (code === 'multiple_choice') newQ = { ...newQ, options: ['', '', '', ''], correctAnswerIndex: 0 };
+     else if (code === 'multiple_select') newQ = { ...newQ, options: ['', '', '', ''], correctAnswers: [] };
+     else if (code === 'true_false') newQ = { ...newQ, correctAnswer: true };
+     else if (code === 'short_answer') newQ = { ...newQ, correctAnswerText: '' };
+     else if (code === 'essay') newQ = { ...newQ, explanation: 'Jawaban uraian akan dinilai berdasarkan kata kunci yang relevan oleh guru.' };
+     else if (code === 'matching') newQ = { ...newQ, pairs: [{left: '', right: ''}, {left: '', right: ''}] };
+     else if (code === 'ordering') newQ = { ...newQ, options: ['', '', ''] };
+     
+     setModuleQuestions([...(moduleQuestions || []), newQ]);
+     setShowAddMenu(false);
+  };
+
+
+    const handleBannerUpload = async (file: File) => {
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg'];
+    if (!allowedTypes.includes(file.type)) {
+      alert('Format file tidak didukung. Harap gunakan PNG, JPG, atau JPEG.');
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      alert('Ukuran file terlalu besar. Maksimal 10MB.');
+      return;
+    }
+    
+    // Set local preview
+    const objectUrl = URL.createObjectURL(file);
+    setBannerPreview(objectUrl);
+    setIsUploadingBanner(true);
+    
+    const formData = new FormData();
+    formData.append('image', file);
+    try {
+      const token = localStorage.getItem('simpend_token');
+      const res = await fetch('/api/upload-image', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` },
+        body: formData
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setModuleForm({...moduleForm, banner_url: data.url});
+      } else {
+        alert(data.error || 'Gagal mengupload gambar');
+        setBannerPreview(''); // revert
+      }
+    } catch (err) {
+      alert('Gagal mengupload gambar');
+      setBannerPreview(''); // revert
+    } finally {
+      setIsUploadingBanner(false);
+    }
+  };
+
   return (
           <div className="admin-content" style={{ maxWidth: '800px', margin: '0 auto' }}>
+      <ConfirmModal
+        isOpen={questionToDelete !== null}
+        title="Hapus Soal"
+        message="Apakah Anda yakin ingin menghapus soal ini?"
+        onConfirm={() => {
+          if (questionToDelete !== null) {
+            const nq = [...(moduleQuestions || [])];
+            nq.splice(questionToDelete, 1);
+            setModuleQuestions(nq);
+            setQuestionToDelete(null);
+          }
+        }}
+        onCancel={() => setQuestionToDelete(null)}
+      />
             <div style={{ display: 'flex', alignItems: 'center', marginBottom: '24px', gap: '16px' }}>
               <button className="btn btn-ghost" onClick={() => setView('modules')}>
                 <i className="ti ti-arrow-left"></i> Kembali
@@ -46,8 +132,57 @@ export default function ModulesAddEditView({
                 </div>
                 <div style={{ marginBottom: '16px' }}>
                   <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: 500 }}>Deskripsi Singkat</label>
+                  <p style={{ fontSize: '12px', color: 'var(--text-muted)', margin: '-4px 0 8px 0' }}>Penjelasan singkat materi, akan ditampilkan di kartu daftar modul di halaman utama siswa.</p>
                   <textarea className="form-input" required value={moduleForm.desc} onChange={e => setModuleForm({...moduleForm, desc: e.target.value})} placeholder="Deskripsi singkat modul..." rows={2}></textarea>
                 </div>
+
+                <div style={{ marginBottom: '24px' }}>
+                  <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: 500 }}>Gambar Banner Modul (Opsional)</label>
+                  <p style={{ fontSize: '12px', color: 'var(--text-muted)', margin: '-4px 0 12px 0' }}>Banner akan ditampilkan di halaman daftar modul. Akan dikompres secara otomatis.</p>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    {(moduleForm.banner_url || bannerPreview) ? (
+                      <div style={{ position: 'relative', width: '100%', height: '200px', borderRadius: '12px', overflow: 'hidden', border: '1px solid var(--border)', background: 'var(--bg-alt)' }}>
+                        <img src={bannerPreview || moduleForm.banner_url} alt="Banner" style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: isUploadingBanner ? 0.5 : 1, transition: 'opacity 0.2s' }} />
+                        {isUploadingBanner && (
+                           <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.2)' }}>
+                             <div className="spinner" style={{ width: '32px', height: '32px', border: '3px solid white', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
+                           </div>
+                        )}
+                        {!isUploadingBanner && (
+                          <button type="button" className="btn btn-danger btn-sm" style={{ position: 'absolute', top: '12px', right: '12px', background: 'rgba(239, 68, 68, 0.9)', border: 'none', backdropFilter: 'blur(4px)', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }} onClick={() => { setModuleForm({...moduleForm, banner_url: ''}); setBannerPreview(''); }}>
+                            <i className="ti ti-trash"></i> Hapus Banner
+                          </button>
+                        )}
+                      </div>
+                    ) : (
+                      <div style={{ border: '2px dashed var(--border)', borderRadius: '12px', padding: '32px 20px', textAlign: 'center', background: 'var(--bg-alt)', cursor: 'pointer', transition: 'all 0.2s ease', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '160px' }} 
+                           onClick={() => document.getElementById('banner-upload')?.click()}
+                           onDragOver={(e) => { e.preventDefault(); e.currentTarget.style.borderColor = 'var(--primary)'; e.currentTarget.style.background = 'var(--primary-light)'; }}
+                           onDragLeave={(e) => { e.preventDefault(); e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.background = 'var(--bg-alt)'; }}
+                           onDrop={async (e) => {
+                             e.preventDefault();
+                             e.currentTarget.style.borderColor = 'var(--border)';
+                             e.currentTarget.style.background = 'var(--bg-alt)';
+                             if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                               await handleBannerUpload(e.dataTransfer.files[0]);
+                             }
+                           }}>
+                        <div style={{ width: '56px', height: '56px', borderRadius: '50%', background: 'white', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', fontSize: '28px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
+                          <i className="ti ti-cloud-upload"></i>
+                        </div>
+                        <h4 style={{ fontSize: '15px', fontWeight: 600, marginBottom: '6px', color: 'var(--text)' }}>Klik atau Drag & Drop banner kesini</h4>
+                        <p style={{ fontSize: '13px', color: 'var(--text-muted)', margin: 0 }}>PNG, JPG, JPEG (Maks. 10MB)</p>
+                      </div>
+                    )}
+                    <input id="banner-upload" type="file" accept="image/png, image/jpeg, image/jpg" style={{ display: 'none' }} onChange={async e => {
+                      if (e.target.files && e.target.files.length > 0) {
+                        await handleBannerUpload(e.target.files[0]);
+                        e.target.value = ''; // Reset input
+                      }
+                    }} />
+                  </div>
+                </div>
+
                 <div style={{ marginBottom: '16px' }}>
                   <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: 500 }}>Tujuan Pembelajaran</label>
                   <p style={{ fontSize: '12px', color: 'var(--text-muted)', margin: '-4px 0 8px 0' }}>Satu tujuan per baris.</p>
@@ -158,17 +293,15 @@ export default function ModulesAddEditView({
                 
                 <div style={{ marginBottom: '40px', padding: '24px', background: 'var(--surface-2)', borderRadius: '12px', border: '1px solid var(--border)' }}>
                   <label style={{ display: 'block', marginBottom: '16px', fontSize: '16px', fontWeight: 600 }}><i className="ti ti-notes"></i> Soal</label>
-                  <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '16px' }}>Tambahkan soal-soal pilihan ganda yang akan dikerjakan siswa setelah menyelesaikan semua simulasi di modul ini.</p>
+                  <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '16px' }}>Tambahkan soal-soal evaluasi dengan berbagai tipe yang akan dikerjakan siswa.</p>
                   
                   {moduleQuestions && moduleQuestions.map((q: any, qIndex: number) => (
                      <div key={qIndex} style={{ background: 'white', padding: '16px', border: '1px solid var(--border)', borderRadius: '8px', marginBottom: '16px' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
                           <span style={{ fontWeight: 600 }}>Soal #{qIndex + 1}</span>
-                          <button type="button" className="btn btn-danger btn-sm" onClick={() => {
-                             const nq = [...moduleQuestions];
-                             nq.splice(qIndex, 1);
-                             setModuleQuestions(nq);
-                          }}><i className="ti ti-trash"></i></button>
+                          <button type="button" className="btn btn-danger btn-sm" onClick={() => setQuestionToDelete(qIndex)}>
+                            <i className="ti ti-trash"></i>
+                          </button>
                         </div>
                         <input type="text" className="form-input" placeholder="Pertanyaan..." required value={q.text} onChange={e => {
                            const nq = [...moduleQuestions];
@@ -176,21 +309,146 @@ export default function ModulesAddEditView({
                            setModuleQuestions(nq);
                         }} />
                         <div style={{ marginTop: '12px' }}>
-                          <label style={{ fontSize: '13px', fontWeight: 500, marginBottom: '8px', display: 'block' }}>Pilihan Jawaban:</label>
-                          {q.options.map((opt: string, oIndex: number) => (
-                             <div key={oIndex} style={{ display: 'flex', gap: '8px', marginBottom: '8px', alignItems: 'center' }}>
-                               <input type="radio" name={`correct_${qIndex}`} checked={q.correctAnswerIndex === oIndex} onChange={() => {
+                          {(!q.type || q.type === 'multiple_choice') && (
+                            <>
+                              <label style={{ fontSize: '13px', fontWeight: 500, marginBottom: '8px', display: 'block' }}>Pilihan Jawaban (Pilihan Ganda):</label>
+                              {q.options?.map((opt: string, oIndex: number) => (
+                                 <div key={oIndex} style={{ display: 'flex', gap: '8px', marginBottom: '8px', alignItems: 'center' }}>
+                                   <input type="radio" name={`correct_${qIndex}`} checked={q.correctAnswerIndex === oIndex} onChange={() => {
+                                      const nq = [...moduleQuestions];
+                                      nq[qIndex].correctAnswerIndex = oIndex;
+                                      setModuleQuestions(nq);
+                                   }} />
+                                   <input type="text" className="form-input" style={{ margin: 0 }} placeholder={`Pilihan ${oIndex + 1}`} required value={opt} onChange={e => {
+                                      const nq = [...moduleQuestions];
+                                      nq[qIndex].options[oIndex] = e.target.value;
+                                      setModuleQuestions(nq);
+                                   }} />
+                                 </div>
+                              ))}
+                            </>
+                          )}
+                          {q.type === 'true_false' && (
+                            <>
+                              <label style={{ fontSize: '13px', fontWeight: 500, marginBottom: '8px', display: 'block' }}>Jawaban Benar (Benar/Salah):</label>
+                              <div style={{ display: 'flex', gap: '16px' }}>
+                                <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                  <input type="radio" name={`tf_${qIndex}`} checked={q.correctAnswer === true} onChange={() => {
+                                      const nq = [...moduleQuestions];
+                                      nq[qIndex].correctAnswer = true;
+                                      setModuleQuestions(nq);
+                                  }} /> Benar
+                                </label>
+                                <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                  <input type="radio" name={`tf_${qIndex}`} checked={q.correctAnswer === false} onChange={() => {
+                                      const nq = [...moduleQuestions];
+                                      nq[qIndex].correctAnswer = false;
+                                      setModuleQuestions(nq);
+                                  }} /> Salah
+                                </label>
+                              </div>
+                            </>
+                          )}
+                          {q.type === 'short_answer' && (
+                            <>
+                              <label style={{ fontSize: '13px', fontWeight: 500, marginBottom: '8px', display: 'block' }}>Jawaban Benar (Isian Singkat):</label>
+                              <input type="text" className="form-input" required placeholder="Contoh: Gravitasi" value={q.correctAnswerText || ''} onChange={e => {
                                   const nq = [...moduleQuestions];
-                                  nq[qIndex].correctAnswerIndex = oIndex;
+                                  nq[qIndex].correctAnswerText = e.target.value;
                                   setModuleQuestions(nq);
-                               }} />
-                               <input type="text" className="form-input" style={{ margin: 0 }} placeholder={`Pilihan ${oIndex + 1}`} required value={opt} onChange={e => {
+                              }} />
+                            </>
+                          )}
+                          {q.type === 'multiple_select' && (
+                            <>
+                              <label style={{ fontSize: '13px', fontWeight: 500, marginBottom: '4px', display: 'block' }}>Pilihan Jawaban (Pilihan Ganda Kompleks):</label>
+                              <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '8px' }}>Pilih kotak centang untuk jawaban-jawaban yang benar (bisa lebih dari satu).</p>
+                              {q.options?.map((opt: string, oIndex: number) => (
+                                 <div key={oIndex} style={{ display: 'flex', gap: '8px', marginBottom: '8px', alignItems: 'center' }}>
+                                   <input type="checkbox" checked={q.correctAnswers?.includes(oIndex)} onChange={(e) => {
+                                      const nq = [...moduleQuestions];
+                                      if (!nq[qIndex].correctAnswers) nq[qIndex].correctAnswers = [];
+                                      if (e.target.checked) {
+                                        nq[qIndex].correctAnswers.push(oIndex);
+                                      } else {
+                                        nq[qIndex].correctAnswers = nq[qIndex].correctAnswers.filter((id: number) => id !== oIndex);
+                                      }
+                                      setModuleQuestions(nq);
+                                   }} />
+                                   <input type="text" className="form-input" style={{ margin: 0 }} placeholder={`Pilihan ${oIndex + 1}`} required value={opt} onChange={e => {
+                                      const nq = [...moduleQuestions];
+                                      nq[qIndex].options[oIndex] = e.target.value;
+                                      setModuleQuestions(nq);
+                                   }} />
+                                 </div>
+                              ))}
+                            </>
+                          )}
+                          {q.type === 'essay' && (
+                            <>
+                              <label style={{ fontSize: '13px', fontWeight: 500, marginBottom: '8px', display: 'block' }}>Kriteria Penilaian Uraian:</label>
+                              <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Soal uraian tidak dinilai secara otomatis oleh sistem (selalu dianggap benar selama dijawab). Gunakan kolom penjelasan untuk memberikan kriteria atau rubrik jawaban yang benar.</p>
+                            </>
+                          )}
+                          {q.type === 'matching' && (
+                            <>
+                              <label style={{ fontSize: '13px', fontWeight: 500, marginBottom: '4px', display: 'block' }}>Pasangan (Menjodohkan):</label>
+                              <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '8px' }}>Tuliskan pasangan yang benar. Sistem akan mengacak urutannya untuk siswa.</p>
+                              {q.pairs?.map((pair: any, pIndex: number) => (
+                                <div key={pIndex} style={{ display: 'flex', gap: '8px', marginBottom: '8px', alignItems: 'center' }}>
+                                  <input type="text" className="form-input" style={{ margin: 0 }} placeholder="Sisi Kiri" required value={pair.left} onChange={e => {
+                                      const nq = [...moduleQuestions];
+                                      nq[qIndex].pairs[pIndex].left = e.target.value;
+                                      setModuleQuestions(nq);
+                                  }} />
+                                  <span style={{ color: 'var(--text-muted)' }}><i className="ti ti-arrows-right-left"></i></span>
+                                  <input type="text" className="form-input" style={{ margin: 0 }} placeholder="Sisi Kanan (Pasangan Benar)" required value={pair.right} onChange={e => {
+                                      const nq = [...moduleQuestions];
+                                      nq[qIndex].pairs[pIndex].right = e.target.value;
+                                      setModuleQuestions(nq);
+                                  }} />
+                                  <button type="button" className="btn btn-danger btn-sm" onClick={() => {
+                                      const nq = [...moduleQuestions];
+                                      nq[qIndex].pairs.splice(pIndex, 1);
+                                      setModuleQuestions(nq);
+                                  }}><i className="ti ti-x"></i></button>
+                                </div>
+                              ))}
+                              <button type="button" className="btn btn-ghost btn-sm" onClick={() => {
                                   const nq = [...moduleQuestions];
-                                  nq[qIndex].options[oIndex] = e.target.value;
+                                  if (!nq[qIndex].pairs) nq[qIndex].pairs = [];
+                                  nq[qIndex].pairs.push({left: '', right: ''});
                                   setModuleQuestions(nq);
-                               }} />
-                             </div>
-                          ))}
+                              }}><i className="ti ti-plus"></i> Tambah Pasangan</button>
+                            </>
+                          )}
+                          {q.type === 'ordering' && (
+                            <>
+                              <label style={{ fontSize: '13px', fontWeight: 500, marginBottom: '4px', display: 'block' }}>Urutan Benar:</label>
+                              <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '8px' }}>Tuliskan item dalam urutan yang benar dari atas ke bawah. Sistem akan mengacaknya untuk siswa.</p>
+                              {q.options?.map((opt: string, oIndex: number) => (
+                                <div key={oIndex} style={{ display: 'flex', gap: '8px', marginBottom: '8px', alignItems: 'center' }}>
+                                  <span style={{ fontWeight: 600, width: '24px' }}>{oIndex + 1}.</span>
+                                  <input type="text" className="form-input" style={{ margin: 0 }} placeholder={`Item ke-${oIndex + 1}`} required value={opt} onChange={e => {
+                                      const nq = [...moduleQuestions];
+                                      nq[qIndex].options[oIndex] = e.target.value;
+                                      setModuleQuestions(nq);
+                                  }} />
+                                  <button type="button" className="btn btn-danger btn-sm" onClick={() => {
+                                      const nq = [...moduleQuestions];
+                                      nq[qIndex].options.splice(oIndex, 1);
+                                      setModuleQuestions(nq);
+                                  }}><i className="ti ti-x"></i></button>
+                                </div>
+                              ))}
+                              <button type="button" className="btn btn-ghost btn-sm" onClick={() => {
+                                  const nq = [...moduleQuestions];
+                                  if (!nq[qIndex].options) nq[qIndex].options = [];
+                                  nq[qIndex].options.push('');
+                                  setModuleQuestions(nq);
+                              }}><i className="ti ti-plus"></i> Tambah Item</button>
+                            </>
+                          )}
                         </div>
                         <div style={{ marginTop: '12px' }}>
                           <label style={{ fontSize: '13px', fontWeight: 500, marginBottom: '8px', display: 'block' }}>Penjelasan Jawaban:</label>
@@ -203,11 +461,24 @@ export default function ModulesAddEditView({
                      </div>
                   ))}
                   
-                  <button type="button" className="btn btn-ghost btn-sm" onClick={() => {
-                     setModuleQuestions([...(moduleQuestions || []), { text: '', options: ['', '', '', ''], correctAnswerIndex: 0, explanation: '' }]);
-                  }}>
-                    <i className="ti ti-plus"></i> Tambah Soal
-                  </button>
+                  {!showAddMenu ? (
+                    <button type="button" className="btn btn-ghost btn-sm" onClick={() => setShowAddMenu(true)}>
+                      <i className="ti ti-plus"></i> Tambah Soal
+                    </button>
+                  ) : (
+                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', padding: '16px', background: 'var(--bg)', borderRadius: '8px', border: '1px solid var(--border)' }}>
+                       <span style={{ width: '100%', fontSize: '13px', fontWeight: 600, marginBottom: '8px' }}>Pilih Tipe Soal:</span>
+                       
+                       {questionTypes.map(qt => (
+                         <button key={qt.code} type="button" className="btn btn-primary btn-sm" title={qt.description} onClick={() => handleAddQuestion(qt.code)}>{qt.name}</button>
+                       ))}
+                       {questionTypes.length === 0 && (
+                         <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>Memuat tipe soal...</div>
+                       )}
+
+                       <button type="button" className="btn btn-ghost btn-sm" onClick={() => setShowAddMenu(false)}>Batal</button>
+                    </div>
+                  )}
                 </div>
 
                 <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>

@@ -2,7 +2,8 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Module, Category, Subject } from './types';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Sidebar } from './admin/components/Sidebar';
-import React, { useState, useEffect, Suspense, lazy } from 'react';
+import React, { useState, useEffect, Suspense, lazy } from "react";
+import { ConfirmModal } from "./components/ConfirmModal";
 const ProfileView = lazy(() => import('./admin/views/ProfileView'));
 const TeachersView = lazy(() => import('./admin/views/TeachersView'));
 const StudentsView = lazy(() => import('./admin/views/StudentsView'));
@@ -76,9 +77,9 @@ const navigate = useNavigate();
   
   // Form states
   const [moduleForm, setModuleForm] = useState({ 
-    title: '', desc: '', level: 'SD', duration: '', 
+    title: '', desc: '', level: categories.length > 0 ? categories[0].name : '', duration: '', 
     category_id: 1, subject_id: 1,
-    objectives: '', theory: '', keyTerms: [] as {term: string, def: string}[] 
+    objectives: '', theory: '', keyTerms: [] as {term: string, def: string}[], banner_url: '' 
   });
   const [studentForm, setStudentForm] = useState<any>({ name: '', email: '', nisn: '', school_id: '' });
   const [teacherForm, setTeacherForm] = useState<any>({ name: '', nip: '', email: '', subject_ids: [] as number[], school_id: '' });
@@ -97,15 +98,16 @@ const navigate = useNavigate();
   const [editingTeacher, setEditingTeacher] = useState<any | null>(null);
   const [editingStudent, setEditingStudent] = useState<any | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<{type: 'module'|'student'|'teacher'|'category'|'subject', id: number} | null>(null);
+  const [showClearAllConfirm, setShowClearAllConfirm] = useState(false);
 
   useEffect(() => {
-    if (showTeacherModal || showStudentModal || showLogoutConfirm || confirmDelete) {
+    if (showTeacherModal || showStudentModal || showLogoutConfirm || confirmDelete || showClearAllConfirm) {
       document.body.style.overflow = 'hidden';
     } else {
       document.body.style.overflow = 'unset';
     }
     return () => { document.body.style.overflow = 'unset'; };
-  }, [showTeacherModal, showStudentModal, showLogoutConfirm, confirmDelete]);
+  }, [showTeacherModal, showStudentModal, showLogoutConfirm, confirmDelete, showClearAllConfirm]);
 
   // Fetch initial data
   useEffect(() => {
@@ -158,6 +160,7 @@ const navigate = useNavigate();
       formData.append('category_id', moduleForm.category_id.toString());
       formData.append('subject_id', moduleForm.subject_id.toString());
       formData.append('duration', moduleForm.duration);
+      formData.append('banner_url', moduleForm.banner_url || '');
       formData.append('material', JSON.stringify(material));
       
       const gamesMeta = moduleGameFiles.map((gf, idx) => ({ 
@@ -208,7 +211,7 @@ const navigate = useNavigate();
       }
       setView('modules');
       setEditingModule(null);
-      setModuleForm({ title: '', desc: '', level: 'SD', duration: '', objectives: '', theory: '', keyTerms: [] });
+      setModuleForm({ title: '', desc: '', level: categories.length > 0 ? categories[0].name : '', duration: '', category_id: 1, subject_id: 1, objectives: '', theory: '', keyTerms: [], banner_url: '' });
       setModuleGameFiles([]);
                 setModuleQuestions([]);
     } catch (err: any) {
@@ -346,6 +349,26 @@ const navigate = useNavigate();
     }
   };
 
+  const executeClearAll = async () => {
+    try {
+      const res = await fetchAuth('/api/admin/clear_all', { method: 'POST' });
+      if (res.ok) {
+        setModules([]);
+        setStudents([]);
+        setTeachers([]);
+        setCategories([]);
+        setSchools([]);
+        setSubjects([]);
+        setShowClearAllConfirm(false);
+      } else {
+        const txt = await res.text();
+        alert(`Gagal menghapus data: ${txt}`);
+      }
+    } catch (err: any) {
+      alert(`Terjadi kesalahan: ${err.message}`);
+    }
+  };
+
   const exportToExcel = () => {
     const data = students.map(s => ({
       ID: s.id,
@@ -391,6 +414,7 @@ const navigate = useNavigate();
           modules={displayedModules} setView={handleSetView} setEditingModule={setEditingModule} 
           setModuleForm={setModuleForm} moduleSearch={moduleSearch} setModuleSearch={setModuleSearch} setModuleGameFiles={setModuleGameFiles} 
           handleRestoreModule={handleRestoreModule} handleDeleteModule={handleDeleteModule} 
+          categories={categories}
         />;
       case 'modules_add_edit':
         return <ModulesAddEditView
@@ -481,7 +505,7 @@ const navigate = useNavigate();
   return (
     <div className="admin-layout">
       {/* Sidebar Admin */}
-      <Sidebar user={user} view={view} setView={handleSetView} onLogout={() => setShowLogoutConfirm(true)} onNavigate={onNavigate as any} />
+      <Sidebar user={user} view={view} setView={handleSetView} onLogout={() => setShowLogoutConfirm(true)} onNavigate={onNavigate as any} onClearAll={() => setShowClearAllConfirm(true)} />
       <div className="admin-main">
         <AnimatePresence mode="wait">
           <motion.div key={view} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.2 }}>
@@ -492,68 +516,45 @@ const navigate = useNavigate();
         </AnimatePresence>
       </div>
 
+      {/* Clear All Confirmation Modal */}
+      <AnimatePresence>
+        <ConfirmModal
+          isOpen={showClearAllConfirm}
+          title="HAPUS SEMUA DATA SISTEM"
+          message="Peringatan Kritis: Apakah Anda yakin ingin menghapus seluruh data di sistem? Tindakan ini akan menghapus semua modul, kategori, subjek, sekolah, guru, siswa, dan riwayat aktivitas secara permanen. Hanya akun Administrator Utama Anda yang akan dipertahankan. Tindakan ini tidak dapat dibatalkan!"
+          confirmText="Ya, Hapus Semua Data"
+          isDanger={true}
+          onConfirm={executeClearAll}
+          onCancel={() => setShowClearAllConfirm(false)}
+        />
+      </AnimatePresence>
+
       {/* Logout Warning Modal */}
       <AnimatePresence>
-        {showLogoutConfirm && (
-          <motion.div 
-            className="modal-overlay" 
-            initial={{ opacity: 0 }} 
-            animate={{ opacity: 1 }} 
-            exit={{ opacity: 0 }}
-            style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-          >
-            <motion.div 
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="modal-content"
-              style={{ background: 'white', padding: '32px', borderRadius: '16px', maxWidth: '400px', width: '100%', textAlign: 'center', boxShadow: '0 10px 40px rgba(0,0,0,0.3)' }}
-            >
-              <div style={{ fontSize: '48px', color: 'var(--accent)', marginBottom: '16px', lineHeight: 1 }}><i className="ti ti-alert-triangle"></i></div>
-              <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '20px', color: 'var(--text)', marginBottom: '12px' }}>Konfirmasi Logout</h2>
-              <p style={{ color: 'var(--text-muted)', marginBottom: '24px', lineHeight: 1.5 }}>Apakah Anda yakin ingin keluar dari panel ini? Sesi Anda akan berakhir dan Anda harus masuk kembali.</p>
-              
-              <div style={{ display: 'flex', gap: '12px' }}>
-                <button className="btn btn-ghost btn-full" onClick={() => setShowLogoutConfirm(false)}>Batal</button>
-                <button className="btn btn-danger btn-full" onClick={() => {
-                  setShowLogoutConfirm(false);
-                  onLogout();
-                }}>Ya, Keluar</button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
+        <ConfirmModal
+          isOpen={showLogoutConfirm}
+          title="Konfirmasi Keluar"
+          message="Apakah Anda yakin ingin keluar dari sesi ini? Anda harus login kembali untuk mengakses dashboard administrator."
+          confirmText="Ya, Keluar"
+          isDanger={true}
+          onConfirm={onLogout}
+          onCancel={() => setShowLogoutConfirm(false)}
+        />
       </AnimatePresence>
 
       {/* Delete Confirmation Modal */}
       <AnimatePresence>
-        {confirmDelete && (
-          <motion.div 
-            className="modal-overlay" 
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-          >
-            <motion.div 
-              initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
-              className="modal-content"
-              style={{ background: 'white', padding: '32px', borderRadius: '16px', maxWidth: '400px', width: '100%', textAlign: 'center', boxShadow: '0 10px 40px rgba(0,0,0,0.3)' }}
-            >
-              <div style={{ fontSize: '48px', color: 'var(--danger)', marginBottom: '16px', lineHeight: 1 }}><i className="ti ti-trash"></i></div>
-              <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '20px', color: 'var(--text)', marginBottom: '12px' }}>Konfirmasi Hapus</h2>
-              <p style={{ color: 'var(--text-muted)', marginBottom: '24px', lineHeight: 1.5 }}>
-                 {confirmDelete?.type === 'category' || confirmDelete?.type === 'subject' 
-                    ? 'Apakah Anda yakin ingin menghapus data ini secara permanen? Peringatan: Menghapus data ini juga akan menghapus atau memengaruhi data lain yang terkait (seperti modul yang menggunakan kategori/mapel ini).'
-                    : 'Apakah Anda yakin ingin menonaktifkan data ini? Peringatan: Menonaktifkan data ini mungkin berdampak pada data lain yang terkait dengannya. Data yang dinonaktifkan tidak akan terlihat oleh pengguna, namun dapat direstore kembali.'
-                 }
-              </p>
-              
-              <div style={{ display: 'flex', gap: '12px' }}>
-                <button className="btn btn-ghost btn-full" onClick={() => setConfirmDelete(null)}>Batal</button>
-                <button className="btn btn-danger btn-full" onClick={executeDelete}>Ya, Hapus</button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
+        <ConfirmModal
+          isOpen={!!confirmDelete}
+          title="Konfirmasi Penghapusan"
+          message={
+            confirmDelete?.type === 'category' || confirmDelete?.type === 'subject' || confirmDelete?.type === 'module'
+              ? 'Apakah Anda yakin ingin menghapus data ini secara permanen? Peringatan: Menghapus data ini juga akan menghapus atau memengaruhi data lain yang terkait.'
+              : 'Apakah Anda yakin ingin menonaktifkan data ini? Data yang dinonaktifkan tidak akan terlihat oleh pengguna, namun dapat direstore kembali.'
+          }
+          onConfirm={executeDelete}
+          onCancel={() => setConfirmDelete(null)}
+        />
       </AnimatePresence>
 
       {/* Teacher Modal */}

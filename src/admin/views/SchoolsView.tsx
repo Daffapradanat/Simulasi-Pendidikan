@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { ConfirmModal } from '../../components/ConfirmModal';
 import { motion, AnimatePresence } from 'motion/react';
 import * as XLSX from 'xlsx';
 
@@ -19,6 +20,7 @@ export default function SchoolsView({ schools, setSchools, categories }: any) {
   const [showSchoolModal, setShowSchoolModal] = useState(false);
   const [editingSchool, setEditingSchool] = useState<any | null>(null);
   const [schoolForm, setSchoolForm] = useState({ name: '', category_id: '' });
+  const [schoolToDelete, setSchoolToDelete] = useState<number | null>(null);
   
   const itemsPerPage = 8;
 
@@ -66,8 +68,9 @@ export default function SchoolsView({ schools, setSchools, categories }: any) {
     }
   };
 
-  const handleDeleteSchool = async (id: number) => {
-    if (!confirm('Apakah Anda yakin ingin menghapus sekolah ini? Data yang terhubung mungkin akan terpengaruh.')) return;
+  const executeDeleteSchool = async () => {
+    if (schoolToDelete === null) return;
+    const id = schoolToDelete;
     try {
       const res = await fetchAuth(`/api/schools/${id}`, { method: 'DELETE' });
       const data = await res.json();
@@ -75,7 +78,13 @@ export default function SchoolsView({ schools, setSchools, categories }: any) {
       setSchools(schools.filter((s: any) => s.id !== id));
     } catch (err: any) {
       alert(`Error deleting school: ${err.message}`);
+    } finally {
+      setSchoolToDelete(null);
     }
+  };
+
+  const handleDeleteSchool = (id: number) => {
+    setSchoolToDelete(id);
   };
 
   const exportToExcel = () => {

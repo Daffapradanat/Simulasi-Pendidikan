@@ -33,15 +33,16 @@ const renderLevelBadge = (level: string) => {
   let style: React.CSSProperties = { fontSize: '11px', fontWeight: 700, padding: '4px 10px', borderRadius: '100px', whiteSpace: 'nowrap', letterSpacing: '0.3px', margin: 0, display: 'inline-flex', alignItems: 'center', gap: '4px' };
   let icon = 'ti-school';
   if (!level) return null;
-  if (level.toUpperCase().includes('SD')) {
-    style = { ...style, background: '#dc2626', color: '#ffffff', border: '1px solid #b91c1c' };
-  } else if (level.toUpperCase().includes('SMP')) {
-    style = { ...style, background: '#0284c7', color: '#ffffff', border: '1px solid #0369a1' };
-  } else if (level.toUpperCase().includes('SMA')) {
-    style = { ...style, background: '#f3f4f6', color: '#111827', border: '1px solid #e5e7eb' };
-  } else {
-    style = { ...style, background: 'var(--primary-light)', color: 'var(--primary)' };
+  
+  // Hash the level string to a hue
+  let hash = 0;
+  for (let i = 0; i < level.length; i++) {
+    hash = level.charCodeAt(i) + ((hash << 5) - hash);
   }
+  const hue = Math.abs(hash) % 360;
+  
+  style = { ...style, background: `hsl(${hue}, 70%, 90%)`, color: `hsl(${hue}, 80%, 30%)`, border: `1px solid hsl(${hue}, 70%, 80%)` };
+  
   return <span style={style}><i className={`ti ${icon}`}></i> {level}</span>;
 }
 
@@ -175,7 +176,15 @@ export function ModulesView({ modules, onOpenModule, lastModuleId, onBack }: { m
           ) : (
             currentModules.map(mod => (
               <div key={mod.id} className={`module-card ${mod.status}`} onClick={() => { if (mod.status !== 'locked') onOpenModule(mod.id); }} style={{ cursor: mod.status === 'locked' ? 'not-allowed' : 'pointer', opacity: mod.status === 'locked' ? 0.7 : 1 }}>
-                <div className="module-thumb" dangerouslySetInnerHTML={{ __html: MODULE_THUMBS[mod.id] || getFallbackThumb(mod.id) }} />
+                
+                {mod.banner_url ? (
+                  <div className="module-thumb" style={{ padding: 0, overflow: 'hidden' }}>
+                    <img src={mod.banner_url} alt={mod.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  </div>
+                ) : (
+                  <div className="module-thumb" dangerouslySetInnerHTML={{ __html: MODULE_THUMBS[mod.id] || getFallbackThumb(mod.id) }} />
+                )}
+
                 <div className="module-card-inner">
                   <div className="module-card-top">
                     <div className="module-number">{modules.findIndex(m => m.id === mod.id) + 1}</div>

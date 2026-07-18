@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { ConfirmModal } from '../../components/ConfirmModal';
 import { Module } from '../../types';
 import * as XLSX from 'xlsx';
 
@@ -15,9 +16,10 @@ const fetchAuth = (url: string | URL | Request, options: any = {}) => {
 
 export default function ModulesView({ 
   modules, setView, setEditingModule, setModuleForm, 
-  moduleSearch, setModuleSearch, handleRestoreModule, setModuleGameFiles, handleDeleteModule, setModuleQuestions 
+  moduleSearch, setModuleSearch, handleRestoreModule, setModuleGameFiles, handleDeleteModule, setModuleQuestions, categories 
 }: any) {
   const [currentPage, setCurrentPage] = useState(1);
+  const [showClearAllConfirm, setShowClearAllConfirm] = useState(false);
   const [statusFilter, setStatusFilter] = useState('all');
   const [levelFilter, setLevelFilter] = useState('all');
   const itemsPerPage = 6;
@@ -30,7 +32,7 @@ export default function ModulesView({
     if (statusFilter === 'deleted') matchesStatus = m.isDeleted;
     
     let matchesLevel = true;
-    if (levelFilter !== 'all') matchesLevel = m.level === levelFilter;
+    if (levelFilter !== 'all') matchesLevel = m.category_id?.toString() === levelFilter || m.level === levelFilter;
     
     return matchesSearch && matchesStatus && matchesLevel;
   });
@@ -83,10 +85,9 @@ export default function ModulesView({
               onChange={e => { setLevelFilter(e.target.value); setCurrentPage(1); }}
             >
               <option value="all">Semua Jenjang</option>
-              <option value="SD">SD</option>
-              <option value="SMP">SMP</option>
-              <option value="SMA">SMA</option>
-              <option value="Umum">Umum</option>
+              {categories && categories.map((c: any) => (
+                <option key={c.id} value={c.id.toString()}>{c.name}</option>
+              ))}
             </select>
             <div style={{ position: 'relative', width: '200px' }}>
               <i className="ti ti-search" style={{ position: 'absolute', top: '50%', transform: 'translateY(-50%)', left: '12px', color: 'var(--text-muted)' }}></i>
@@ -96,7 +97,7 @@ export default function ModulesView({
               className="btn btn-primary btn-sm" 
               onClick={() => {
                 setEditingModule(null);
-                setModuleForm({ title: '', desc: '', level: 'SD', duration: '', category_id: 1, subject_id: 1, objectives: '', theory: '', keyTerms: [] });
+                setModuleForm({ title: '', desc: '', level: categories && categories.length > 0 ? categories[0].name : '', duration: '', category_id: 1, subject_id: 1, objectives: '', theory: '', keyTerms: [], banner_url: '' });
                 setModuleGameFiles([]);
                 if (setModuleQuestions) setModuleQuestions([]);
                 setView('modules_add_edit');

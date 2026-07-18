@@ -1,6 +1,6 @@
 import React from 'react';
 
-export function Sidebar({ user, view, setView, onLogout, onNavigate }: { user: any, view: string, setView: (view: string) => void, onLogout?: () => void, onNavigate?: (v: 'main' | 'profile') => void }) {
+export function Sidebar({ user, view, setView, onLogout, onNavigate, onClearAll }: { user: any, view: string, setView: (view: string) => void, onLogout?: () => void, onNavigate?: (v: 'main' | 'profile') => void, onClearAll?: () => void }) {
   return (
     <div className="admin-sidebar" style={{ display: 'flex', flexDirection: 'column', height: '100vh', position: 'sticky', top: 0 }}>
       <div style={{ padding: '24px', borderBottom: '1px solid var(--border)' }}>
@@ -44,11 +44,16 @@ export function Sidebar({ user, view, setView, onLogout, onNavigate }: { user: a
           <i className="ti ti-settings"></i> Profil Admin
         </button>
       </div>
-      {(onLogout || onNavigate) && (
-      <div style={{ padding: '16px', borderTop: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+      {(onLogout || onNavigate || (user?.role === 'admin' && onClearAll)) && (
+      <div style={{ padding: '16px', borderTop: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: '16px' }}>
         {onNavigate && (
         <button className="btn btn-outline btn-full" onClick={() => onNavigate('main')}>
           <i className="ti ti-device-desktop"></i> Akses Frontend
+        </button>
+        )}
+        {user?.role === 'admin' && onClearAll && (
+        <button className="btn btn-danger btn-full" style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.2)' }} onClick={onClearAll}>
+          <i className="ti ti-trash"></i> Hapus Semua Data
         </button>
         )}
         {onLogout && (

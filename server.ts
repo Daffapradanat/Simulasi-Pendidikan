@@ -1,5 +1,7 @@
 import express from "express";
+import bcrypt from "bcrypt";
 import path from "path";
+import sharp from "sharp";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import jwt from "jsonwebtoken";
@@ -32,6 +34,11 @@ if (!fs.existsSync(UPLOADS_DIR)) {
 }
 
 const AVATAR_DIR = path.join(process.cwd(), "uploads", "avatars");
+const BANNERS_DIR = path.join(process.cwd(), "uploads", "banners");
+if (!fs.existsSync(BANNERS_DIR)) {
+  fs.mkdirSync(BANNERS_DIR, { recursive: true });
+}
+
 if (!fs.existsSync(AVATAR_DIR)) {
   fs.mkdirSync(AVATAR_DIR, { recursive: true });
 }
@@ -49,7 +56,7 @@ const avatarStorage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, AVATAR_DIR),
   filename: (req, file, cb) => {
 
-     const ext = require('path').extname(file.originalname).toLowerCase();
+     const ext = path.extname(file.originalname).toLowerCase();
      const safeName = Date.now() + "-" + Math.round(Math.random() * 1e9) + (ext.match(/^\.[a-z0-9]+$/i) ? ext : '.png');
      cb(null, safeName);
   }
@@ -91,8 +98,42 @@ async function initDB() {
     CREATE TABLE IF NOT EXISTS categories (id INTEGER PRIMARY KEY, data TEXT);
     CREATE TABLE IF NOT EXISTS schools (id INTEGER PRIMARY KEY, data TEXT);
     CREATE TABLE IF NOT EXISTS subjects (id INTEGER PRIMARY KEY, data TEXT);
-    CREATE TABLE IF NOT EXISTS questions (id INTEGER PRIMARY KEY, data TEXT);
+    CREATE TABLE IF NOT EXISTS question_types (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      code TEXT UNIQUE NOT NULL,
+      name TEXT NOT NULL,
+      description TEXT
+    );
+    CREATE TABLE IF NOT EXISTS questions (
+      id INTEGER PRIMARY KEY,
+      module_id INTEGER,
+      type_id INTEGER,
+      data TEXT,
+      FOREIGN KEY (type_id) REFERENCES question_types(id)
+    );
   `);
+
+  
+  
+  // Seed question_types
+  const typesCount = await db.get("SELECT COUNT(*) as c FROM question_types");
+  if (typesCount.c === 0) {
+    await db.run("INSERT INTO question_types (code, name, description) VALUES ('multiple_choice', 'Pilihan Ganda', 'Soal dengan beberapa pilihan jawaban dimana hanya satu yang benar.')");
+    await db.run("INSERT INTO question_types (code, name, description) VALUES ('multiple_select', 'Pilihan Ganda Kompleks', 'Soal dengan beberapa pilihan jawaban dimana lebih dari satu pilihan yang benar.')");
+    await db.run("INSERT INTO question_types (code, name, description) VALUES ('true_false', 'Benar / Salah', 'Soal pernyataan yang harus ditentukan apakah benar atau salah.')");
+    await db.run("INSERT INTO question_types (code, name, description) VALUES ('short_answer', 'Isian Singkat', 'Soal dengan jawaban singkat/kata-kata tertentu.')");
+    await db.run("INSERT INTO question_types (code, name, description) VALUES ('essay', 'Uraian / Essay', 'Soal yang membutuhkan jawaban berupa teks/penjelasan panjang.')");
+    await db.run("INSERT INTO question_types (code, name, description) VALUES ('matching', 'Menjodohkan', 'Soal yang mengharuskan siswa mencocokkan pasangan dari dua kolom.')");
+    await db.run("INSERT INTO question_types (code, name, description) VALUES ('ordering', 'Mengurutkan', 'Soal yang mengharuskan mengurutkan poin-poin yang diberikan.')");
+  }
+
+  // Ensure questions table has the columns (for migration if it was just id and data)
+  try {
+    await db.exec("ALTER TABLE questions ADD COLUMN module_id INTEGER");
+  } catch (e) {}
+  try {
+    await db.exec("ALTER TABLE questions ADD COLUMN type_id INTEGER REFERENCES question_types(id)");
+  } catch (e) {}
 
   const tableCheck = await db.get("SELECT name FROM sqlite_master WHERE type='table' AND name='app_state'");
   if (tableCheck) {
@@ -203,73 +244,8 @@ async function initDB() {
     }
   });
 
-  if (!questionsData || questionsData.length === 0) {
-    questionsData = [
-      {
-        id: 101,
-        module_id: 1,
-        text: "Berapakah nilai desimal dari bilangan biner 1101?",
-        options: ["11", "12", "13", "14"],
-        correctAnswerIndex: 2,
-        explanation: "1101 biner = (1 * 2^3) + (1 * 2^2) + (0 * 2^1) + (1 * 2^0) = 8 + 4 + 0 + 1 = 13."
-      },
-      {
-        id: 102,
-        module_id: 1,
-        text: "Sistem bilangan heksadesimal menggunakan basis...",
-        options: ["Basis 2", "Basis 8", "Basis 10", "Basis 16"],
-        correctAnswerIndex: 3,
-        explanation: "Sistem heksadesimal menggunakan 16 simbol unik, yaitu angka 0-9 dan huruf A-F."
-      },
-      {
-        id: 201,
-        module_id: 2,
-        text: "Jika dua hambatan disusun secara seri, bagaimanakah kuat arus yang mengalir pada masing-masing hambatan tersebut?",
-        options: ["Arusnya berbeda-beda", "Arusnya sama besar", "Arusnya bernilai nol", "Tergantung nilai hambatannya"],
-        correctAnswerIndex: 1,
-        explanation: "Pada rangkaian seri, arus listrik tidak memiliki cabang sehingga kuat arus di setiap titik dalam rangkaian adalah sama."
-      },
-      {
-        id: 202,
-        module_id: 2,
-        text: "Menurut Hukum Ohm, hubungan antara Tegangan (V), Arus (I), dan Hambatan (R) dinyatakan dengan rumus...",
-        options: ["V = I / R", "V = I * R", "V = I + R", "V = R / I"],
-        correctAnswerIndex: 1,
-        explanation: "Hukum Ohm menyatakan bahwa tegangan (V) sebanding dengan kuat arus (I) dikalikan hambatan (R)."
-      },
-      {
-        id: 301,
-        module_id: 3,
-        text: "Dalam suatu ekosistem rantai makanan, tumbuhan hijau berperan sebagai...",
-        options: ["Konsumen I", "Konsumen II", "Produsen", "Dekomposer"],
-        correctAnswerIndex: 2,
-        explanation: "Tumbuhan hijau dapat memproduksi makanannya sendiri melalui proses fotosintesis, sehingga bertindak sebagai produsen."
-      },
-      {
-        id: 302,
-        module_id: 3,
-        text: "Organisme yang berfungsi menguraikan sisa-sisa makhluk hidup yang telah mati disebut...",
-        options: ["Produsen", "Herbivora", "Karnivora", "Dekomposer"],
-        correctAnswerIndex: 3,
-        explanation: "Dekomposer (seperti bakteri dan jamur) bertugas mengurai materi organik dari makhluk hidup yang telah mati kembali ke tanah."
-      },
-      {
-        id: 401,
-        module_id: 4,
-        text: "Hukum Newton yang menjelaskan tentang kelembaman atau sifat benda yang cenderung mempertahankan keadaannya adalah...",
-        options: ["Hukum I Newton", "Hukum II Newton", "Hukum III Newton", "Hukum Gravitasi"],
-        correctAnswerIndex: 0,
-        explanation: "Hukum I Newton (Inersia/Kelembaman) menyatakan bahwa benda akan mempertahankan posisinya (diam tetap diam, bergerak tetap bergerak) jika tidak ada gaya luar."
-      },
-      {
-        id: 402,
-        module_id: 4,
-        text: "Jika sebuah benda bermassa 5 kg diberi gaya sebesar 20 N, berapakah percepatan yang dialami benda tersebut?",
-        options: ["2 m/s²", "4 m/s²", "15 m/s²", "100 m/s²"],
-        correctAnswerIndex: 1,
-        explanation: "Menggunakan rumus Hukum II Newton: a = F / m = 20 N / 5 kg = 4 m/s²."
-      }
-    ];
+  if (!questionsData) {
+    questionsData = [];
   }
 
   await saveDb();
@@ -319,7 +295,9 @@ async function doSaveDb() {
 
     await db.run("DELETE FROM questions");
     for (const q of questionsData) {
-      await db.run("INSERT INTO questions (id, data) VALUES (?, ?)", [q.id, JSON.stringify(q)]);
+      const typeRow = await db.get("SELECT id FROM question_types WHERE code = ?", [q.type || 'multiple_choice']);
+      const type_id = typeRow ? typeRow.id : null;
+      await db.run("INSERT INTO questions (id, module_id, type_id, data) VALUES (?, ?, ?, ?)", [q.id, q.module_id, type_id, JSON.stringify(q)]);
     }
 
     await db.exec("COMMIT");
@@ -357,7 +335,7 @@ async function startServer() {
   await initDB();
   const app = express();
   app.use(compression({ level: 9, threshold: 0 }));
-  const PORT = Number(process.env.PORT || 3000);
+  const PORT = 3000;
 
   // Security controls are moved to /serverSecurity.ts
   configureSecurity(app);
@@ -398,12 +376,26 @@ app.use(cookieParser());
     next();
   };
 
+  
+  app.get("/api/banners/:filename", (req, res) => {
+    const filename = req.params.filename;
+    if (filename.includes('/') || filename.includes('..') || filename.includes('\\')) {
+      return res.status(400).json({ error: "Invalid filename" });
+    }
+    const filepath = path.join(BANNERS_DIR, filename);
+    if (!fs.existsSync(filepath)) {
+      return res.status(404).json({ error: "Not found" });
+    }
+    res.set('Cache-Control', 'public, max-age=31536000, immutable');
+    res.sendFile(filepath);
+  });
+
   app.get("/api/avatars/:filename", (req, res) => {
     const filename = req.params.filename;
     if (filename.includes('/') || filename.includes('..') || filename.includes('\\')) {
       return res.status(400).json({ error: "Invalid filename" });
     }
-    const filepath = require('path').join(AVATAR_DIR, filename);
+    const filepath = path.join(AVATAR_DIR, filename);
     if (!fs.existsSync(filepath)) {
       return res.status(404).json({ error: "Not found" });
     }
@@ -439,18 +431,64 @@ app.use(cookieParser());
     }
   });
 
+  
+const uploadBannerMemory = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/jpg'];
+    if (allowedMimeTypes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Hanya diperbolehkan format PNG, JPG, dan JPEG.'));
+    }
+  }
+});
+
+
+
+app.post("/api/upload-image", authenticateToken, isAdmin, (req, res) => {
+  uploadBannerMemory.single('image')(req, res, async (err) => {
+    if (err) {
+       return res.status(400).json({ error: err.message });
+    }
+    if (!req.file) return res.status(400).json({ error: "No file uploaded or invalid format" });
+    
+    try {
+      const filename = 'img-' + Date.now() + '.webp';
+      const filepath = path.join(BANNERS_DIR, filename);
+      
+      await sharp(req.file.buffer)
+        .resize(800, null, { withoutEnlargement: true }) // Resize width to 800px max
+        .webp({ quality: 80 }) // Compress to webp format
+        .toFile(filepath);
+        
+      res.json({ success: true, url: `/api/banners/${filename}` });
+    } catch (error) {
+      console.error('Error processing image:', error);
+      res.status(500).json({ error: 'Failed to process image' });
+    }
+  });
+});
+
   app.post("/api/upload-avatar", uploadAvatar.single('avatar'), (req, res) => {
     if (!req.file) return res.status(400).json({ error: "No file uploaded or invalid format" });
     res.json({ success: true, url: `/api/avatars/${req.file.filename}` });
   });
 
-  app.post("/api/auth/login", (req, res) => {
+  app.post("/api/auth/login", async (req, res) => {
     const { email, password } = req.body;
 
     let foundUser = null;
 
-    if ((email === 'admin' || email === 'admin@sch.id') && password === 'admin123') {
-      foundUser = { id: 3, name: "Administrator", email: "admin@sch.id", role: "admin" };
+    // Hardcoded Admin with bcrypt fallback (admin123)
+    if (email === 'admin' || email === 'admin@sch.id') {
+       const defaultAdminHash = await bcrypt.hash('admin123', 10);
+       // In real app, load admin from DB. Here we simulate it.
+       const match = await bcrypt.compare(password, defaultAdminHash);
+       if (match) {
+         foundUser = { id: 3, name: "Administrator", email: "admin@sch.id", role: "admin" };
+       }
     }
 
     if (!foundUser) {
@@ -459,8 +497,10 @@ app.use(cookieParser());
         const s = studentsData.find(s => s.email === 'siswa@murid.sekolah.sch.id') || studentsData.find(s => s.id === 1);
         if (s) foundUser = { ...s, role: "siswa", name: s.name, email: 'siswa@murid.sekolah.sch.id' };
         else foundUser = { id: 1, name: "Siswa Siswi", email: "siswa@murid.sekolah.sch.id", role: "siswa" };
-      } else if (student && password === 'siswa') {
-        foundUser = { ...student, role: "siswa" };
+      } else if (student) {
+        // Assume default password 'siswa' is hashed, or if not present, assume 'siswa'
+        const match = student.password ? await bcrypt.compare(password, student.password) : (password === 'siswa');
+        if (match) foundUser = { ...student, role: "siswa" };
       }
     }
 
@@ -470,8 +510,9 @@ app.use(cookieParser());
         const t = teachersData.find(t => t.email === 'guru@sekolah.sch.id') || teachersData.find(t => t.id === 2);
         if (t) foundUser = { ...t, role: "guru", name: t.name, email: 'guru@sekolah.sch.id' };
         else foundUser = { id: 2, name: "Guru Pengajar", email: "guru@sekolah.sch.id", role: "guru" };
-      } else if (teacher && password === 'guru') {
-        foundUser = { ...teacher, role: "guru" };
+      } else if (teacher) {
+        const match = teacher.password ? await bcrypt.compare(password, teacher.password) : (password === 'guru');
+        if (match) foundUser = { ...teacher, role: "guru" };
       }
     }
 
@@ -613,7 +654,17 @@ app.put("/api/auth/profile", authenticateToken, (req, res) => {
   });
 
   
-  app.get('/api/modules/:id/questions', authenticateToken, (req, res) => {
+  
+app.get('/api/question_types', authenticateToken, isAdmin, async (req, res) => {
+  try {
+    const types = await db.all("SELECT * FROM question_types");
+    res.json(types);
+  } catch (e) {
+    res.status(500).json({ error: 'Failed to fetch question types' });
+  }
+});
+
+app.get('/api/modules/:id/questions', authenticateToken, (req, res) => {
     const moduleId = parseInt(req.params.id);
     const questions = questionsData.filter(q => q.module_id === moduleId);
     res.json({ questions });
@@ -630,9 +681,15 @@ app.put("/api/auth/profile", authenticateToken, (req, res) => {
           questionsData.push({
              id: Date.now() + Math.floor(Math.random() * 1000),
              module_id: moduleId,
+             type: q.type || 'multiple_choice',
              text: q.text,
              options: q.options,
-             correctAnswerIndex: q.correctAnswerIndex, explanation: q.explanation
+             correctAnswerIndex: q.correctAnswerIndex,
+             correctAnswer: q.correctAnswer,
+             correctAnswerText: q.correctAnswerText,
+             correctAnswers: q.correctAnswers,
+             pairs: q.pairs,
+             explanation: q.explanation
           });
        });
     }
@@ -648,6 +705,14 @@ app.put("/api/auth/profile", authenticateToken, (req, res) => {
   app.post("/api/admin/clear_all", authenticateToken, isStrictAdmin, (req, res) => {
 
     modulesData = [];
+    teachersData = [];
+    studentsData = [];
+    activitiesData = [];
+    userProgressData = {};
+    categoriesData = [];
+    schoolsData = [];
+    subjectsData = [];
+    questionsData = [];
 
     try {
       const uFiles = fs.readdirSync(UPLOADS_DIR);
@@ -786,7 +851,7 @@ app.put("/api/auth/profile", authenticateToken, (req, res) => {
 
   app.post("/api/modules", authenticateToken, isAdmin, upload.array('gameFiles'), async (req, res) => {
     try {
-      let { title, desc, level, category_id, subject_id, duration, material, gamesMeta } = req.body;
+      let { title, desc, level, category_id, subject_id, duration, material, gamesMeta, banner_url } = req.body;
       try { material = JSON.parse(material || '[]'); } catch(e) {}
       try { gamesMeta = JSON.parse(gamesMeta || '[]'); } catch(e) {}
 
@@ -917,8 +982,10 @@ app.put("/api/auth/profile", authenticateToken, (req, res) => {
   app.get("/api/teachers", authenticateToken, isAdmin, (req, res) => {
     res.json(teachersData);
   });
-  app.post("/api/teachers", authenticateToken, isStrictAdmin, (req, res) => {
+  app.post("/api/teachers", authenticateToken, isStrictAdmin, async (req, res) => {
     const newTeacher = { id: Date.now(), ...req.body };
+    if (!newTeacher.password) newTeacher.password = await bcrypt.hash('guru', 10);
+    else newTeacher.password = await bcrypt.hash(newTeacher.password, 10);
     teachersData.push(newTeacher);
     logActivity('teacher', 'Admin', `Mendaftarkan guru "${newTeacher.name}"`);
     saveDb();
@@ -984,8 +1051,10 @@ app.put("/api/auth/profile", authenticateToken, (req, res) => {
     res.json(augmentedStudents);
   });
 
-  app.post("/api/students", authenticateToken, isStrictAdmin, (req, res) => {
+  app.post("/api/students", authenticateToken, isStrictAdmin, async (req, res) => {
     const newStudent = { id: Date.now(), progress: 0, ...req.body };
+    if (!newStudent.password) newStudent.password = await bcrypt.hash('siswa', 10);
+    else newStudent.password = await bcrypt.hash(newStudent.password, 10);
     studentsData.push(newStudent);
     logActivity('student', 'Admin', `Mendaftarkan siswa "${newStudent.name}"`);
     saveDb();

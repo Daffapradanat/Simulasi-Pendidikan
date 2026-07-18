@@ -12,7 +12,7 @@ import React, { useState, useEffect, useMemo, Suspense } from 'react';
 import { Navbar } from './frontend/components/Navbar';
 import AdminDashboard from './AdminDashboard';
 
-const fetchAuth = (url: string | URL | Request, options: any = {}) => {
+const fetchAuth = async (url: string | URL | Request, options: any = {}) => {
   const token = localStorage.getItem('simpend_token');
   if (token) {
     options.headers = {
@@ -20,7 +20,12 @@ const fetchAuth = (url: string | URL | Request, options: any = {}) => {
       'Authorization': `Bearer ${token}`
     };
   }
-  return fetch(url, options);
+  const res = await fetch(url, options);
+  if (res.status === 401) {
+     // Trigger logout on 401 Unauthorized
+     window.dispatchEvent(new Event('auth_unauthorized'));
+  }
+  return res;
 };
 
 
