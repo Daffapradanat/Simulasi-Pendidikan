@@ -17,7 +17,8 @@ export default function StudentsView({
   setEditingStudent, setStudentForm,
   handleRestoreStudent, handleDeleteStudent, exportToExcel,
   readOnly,
-  modules = []
+  modules = [],
+  schools = []
 }: any) {
   
   const [currentPage, setCurrentPage] = useState(1);
@@ -65,7 +66,7 @@ export default function StudentsView({
             </button>
             {!readOnly && (<button className="btn btn-primary btn-sm" onClick={() => {
               setEditingStudent(null);
-              setStudentForm({ name: '', email: '', nisn: '', asalSekolah: '' });
+              setStudentForm({ name: '', email: '', nisn: '', school_id: '' });
               setShowStudentModal(true);
             }}>
               <i className="ti ti-plus"></i> Tambah Siswa
@@ -103,7 +104,9 @@ export default function StudentsView({
                     {s.isDeleted && <span className="badge" style={{ background: 'var(--border)', color: 'var(--text-muted)', marginTop: '6px', display: 'inline-block' }}>Dihapus</span>}
                   </td>
                   <td style={{ textDecoration: s.isDeleted ? 'line-through' : 'none' }}>{s.name}</td>
-                  <td style={{ textDecoration: s.isDeleted ? 'line-through' : 'none' }}>{s.asalSekolah || '-'}</td>
+                  <td style={{ textDecoration: s.isDeleted ? 'line-through' : 'none' }}>
+                    {schools.find((sch: any) => sch.id === s.school_id)?.name || '-'}
+                  </td>
                   <td style={{ textDecoration: s.isDeleted ? 'line-through' : 'none' }}>{s.email}</td>
 
                   <td>
@@ -136,7 +139,7 @@ export default function StudentsView({
                     <>
                     <button className="btn btn-primary btn-sm" title="Edit" onClick={() => {
                       setEditingStudent(s);
-                      setStudentForm({ name: s.name, email: s.email, nisn: s.nisn || '', asalSekolah: s.asalSekolah || '' });
+                      setStudentForm({ name: s.name, email: s.email, nisn: s.nisn || '', school_id: s.school_id || '' });
                       setShowStudentModal(true);
                     }}>
                       <i className="ti ti-edit" style={{ fontSize: '18px' }}></i>
@@ -259,7 +262,7 @@ export default function StudentsView({
                   <h2 style={{ margin: '0 0 4px 0', fontSize: '24px', fontWeight: 800 }}>{viewingProfile.name}</h2>
                   <div style={{ fontSize: '14px', color: 'var(--text-muted)', display: 'flex', gap: '12px', marginBottom: '8px' }}>
                     <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><i className="ti ti-id"></i> {viewingProfile.nisn || '-'}</span>
-                    <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><i className="ti ti-building"></i> {viewingProfile.asalSekolah || '-'}</span>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><i className="ti ti-building"></i> {schools.find((sch: any) => sch.id === viewingProfile.school_id)?.name || '-'}</span>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <span className="badge badge-primary">Siswa</span>

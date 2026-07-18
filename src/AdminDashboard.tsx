@@ -1,6 +1,6 @@
 import { motion, AnimatePresence } from 'motion/react';
 import { Module, Category, Subject } from './types';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Sidebar } from './admin/components/Sidebar';
 import React, { useState, useEffect, Suspense, lazy } from 'react';
 const ProfileView = lazy(() => import('./admin/views/ProfileView'));
@@ -11,10 +11,11 @@ const ModulesView = lazy(() => import('./admin/views/ModulesView'));
 const DashboardView = lazy(() => import('./admin/views/DashboardView'));
 const AuditView = lazy(() => import('./admin/views/AuditView'));
 const CategoriesSubjectsView = lazy(() => import('./admin/views/CategoriesSubjectsView'));
+const SchoolsView = lazy(() => import('./admin/views/SchoolsView'));
 
 
 // Types for Admin
-type AdminViewMode = 'dashboard' | 'modules' | 'modules_add_edit' | 'students' | 'teachers' | 'profile' | 'audit' | 'categories_subjects';
+type AdminViewMode = 'dashboard' | 'modules' | 'modules_add_edit' | 'students' | 'teachers' | 'profile' | 'audit' | 'categories_subjects' | 'schools';
 
 export default function AdminDashboard({ user, onLogout, onNavigate, onUpdateUser }: { user: any, onLogout: () => void, onNavigate: (v: 'main' | 'profile') => void, onUpdateUser?: (u: any) => void }) {
   const fetchAuth = (url: string, options: any = {}) => {
@@ -28,7 +29,26 @@ export default function AdminDashboard({ user, onLogout, onNavigate, onUpdateUse
     return fetch(url, options);
   };
 const navigate = useNavigate();
-  const [view, setView] = useState<AdminViewMode>('dashboard');
+  const location = useLocation();
+  const [view, setView] = useState<AdminViewMode>(() => {
+    const path = location.pathname.split("/").pop() as AdminViewMode;
+    const validPaths: AdminViewMode[] = ["dashboard", "modules", "modules_add_edit", "students", "teachers", "profile", "audit", "categories_subjects", "schools"];
+    return validPaths.includes(path) ? path : "dashboard";
+  });
+
+  useEffect(() => {
+    const path = location.pathname.split("/").pop() as AdminViewMode;
+    const validPaths: AdminViewMode[] = ["dashboard", "modules", "modules_add_edit", "students", "teachers", "profile", "audit", "categories_subjects", "schools"];
+    if (validPaths.includes(path) && view !== path) {
+      setView(path);
+    }
+  }, [location.pathname]);
+
+  const handleSetView = (newView: AdminViewMode) => {
+    setView(newView);
+    const basePath = user?.role === "admin" ? "/admin" : "/guru";
+    navigate(`${basePath}/${newView}`);
+  };
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   // States for data
@@ -36,6 +56,7 @@ const navigate = useNavigate();
   const [students, setStudents] = useState<any[]>([]);
   const [teachers, setTeachers] = useState<any[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [schools, setSchools] = useState<any[]>([]);
   const [subjects, setSubjects] = useState<Subject[]>([]);
   
   const displayedModules = React.useMemo(() => {
@@ -59,8 +80,8 @@ const navigate = useNavigate();
     category_id: 1, subject_id: 1,
     objectives: '', theory: '', keyTerms: [] as {term: string, def: string}[] 
   });
-  const [studentForm, setStudentForm] = useState({ name: '', email: '', nisn: '', asalSekolah: '' });
-  const [teacherForm, setTeacherForm] = useState({ name: '', nip: '', email: '', category_ids: [] as number[], subject_ids: [] as number[] });
+  const [studentForm, setStudentForm] = useState<any>({ name: '', email: '', nisn: '', school_id: '' });
+  const [teacherForm, setTeacherForm] = useState<any>({ name: '', nip: '', email: '', subject_ids: [] as number[], school_id: '' });
   const [profileForm, setProfileForm] = useState({ name: user?.name || '', email: user?.email || '', role: user?.role || '' });
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [moduleGameFiles, setModuleGameFiles] = useState<{file: File | null, title: string, desc: string, id?: number, path?: string}[]>([]);
@@ -91,12 +112,13 @@ const navigate = useNavigate();
     const fetchData = async () => {
       setLoading(true);
       try {
-        const [modRes, stuRes, teachRes, catRes, subRes] = await Promise.all([
-          fetchAuth('/api/modules').then(r => { if (r.status === 401) throw new Error('401'); return r.json(); }),
-          fetchAuth('/api/students').then(r => { if (r.status === 401) throw new Error('401'); return r.json(); }),
-          fetchAuth('/api/teachers').then(r => { if (r.status === 401) throw new Error('401'); return r.json(); }),
-          fetchAuth('/api/categories').then(r => { if (r.status === 401) throw new Error('401'); return r.json(); }),
-          fetchAuth('/api/subjects').then(r => { if (r.status === 401) throw new Error('401'); return r.json(); })
+        const [modRes, stuRes, teachRes, catRes, subRes, schRes] = await Promise.all([
+          fetchAuth('/api/modules').then(r => { if (r.status === 401) { onLogout(); throw new Error('401'); } return r.json(); }),
+          fetchAuth('/api/students').then(r => { if (r.status === 401) { onLogout(); throw new Error('401'); } return r.json(); }),
+          fetchAuth('/api/teachers').then(r => { if (r.status === 401) { onLogout(); throw new Error('401'); } return r.json(); }),
+          fetchAuth('/api/categories').then(r => { if (r.status === 401) { onLogout(); throw new Error('401'); } return r.json(); }),
+          fetchAuth('/api/subjects').then(r => { if (r.status === 401) { onLogout(); throw new Error('401'); } return r.json(); }),
+          fetchAuth('/api/schools').then(r => { if (r.status === 401) { onLogout(); throw new Error('401'); } return r.json(); })
         ]);
         
         if (Array.isArray(modRes)) setModules(modRes);
@@ -104,6 +126,7 @@ const navigate = useNavigate();
         if (Array.isArray(teachRes)) setTeachers(teachRes);
         if (Array.isArray(catRes)) setCategories(catRes);
         if (Array.isArray(subRes)) setSubjects(subRes);
+        if (Array.isArray(schRes)) setSchools(schRes);
       } catch (err) {
         console.error("Failed to fetch data", err);
       }
@@ -224,7 +247,7 @@ const navigate = useNavigate();
       }
       setShowStudentModal(false);
       setEditingStudent(null);
-      setStudentForm({ name: '', email: '', nisn: '', asalSekolah: '' });
+      setStudentForm({ name: '', email: '', nisn: '', school_id: '' });
     } catch (err: any) {
       alert(`Error saving student: ${err.message}`);
       console.error(err);
@@ -257,7 +280,7 @@ const navigate = useNavigate();
       }
       setShowTeacherModal(false);
       setEditingTeacher(null);
-      setTeacherForm({ name: '', nip: '', email: '', category_ids: [], subject_ids: [] });
+      setTeacherForm({ name: '', nip: '', email: '', subject_ids: [], school_id: '' });
     } catch (err: any) {
           console.error(err);
           if (err.message === '401') {
@@ -329,7 +352,7 @@ const navigate = useNavigate();
       NISN: s.nisn || '-',
       'Nama Siswa': s.name,
       'Email': s.email,
-      'Asal Sekolah': s.asalSekolah || '-',
+      'Asal Sekolah': schools.find((sch: any) => sch.id === s.school_id)?.name || '-',
       'Progres Belajar (%)': s.progress,
       'Status': s.isDeleted ? 'Nonaktif' : (s.progress === 100 ? 'Lulus' : s.progress > 0 ? 'Aktif' : 'Belum Mulai')
     }));
@@ -346,7 +369,6 @@ const navigate = useNavigate();
       ID: t.id,
       NIP: t.nip || '-',
       'Nama Guru': t.name,
-      'Spesialisasi Kategori': (t.category_ids || []).map((id: number) => categories.find(c => c.id === id)?.name).filter(Boolean).join(', '),
       'Spesialisasi Mata Pelajaran': (t.subject_ids || []).map((id: number) => subjects.find(s => s.id === id)?.name).filter(Boolean).join(', '),
       'Status': t.isDeleted ? 'Nonaktif' : 'Aktif'
     }));
@@ -363,10 +385,10 @@ const navigate = useNavigate();
 
     switch (view) {
       case 'dashboard':
-        return <DashboardView modules={displayedModules} students={students} teachers={teachers} user={user} setView={setView as any} />;
+        return <DashboardView modules={displayedModules} students={students} teachers={teachers} user={user} setView={handleSetView as any} />;
       case 'modules':
         return <ModulesView setModuleQuestions={setModuleQuestions} 
-          modules={displayedModules} setView={setView} setEditingModule={setEditingModule} 
+          modules={displayedModules} setView={handleSetView} setEditingModule={setEditingModule} 
           setModuleForm={setModuleForm} moduleSearch={moduleSearch} setModuleSearch={setModuleSearch} setModuleGameFiles={setModuleGameFiles} 
           handleRestoreModule={handleRestoreModule} handleDeleteModule={handleDeleteModule} 
         />;
@@ -375,7 +397,7 @@ const navigate = useNavigate();
           moduleQuestions={moduleQuestions}
           setModuleQuestions={setModuleQuestions} 
           editingModule={editingModule} moduleForm={moduleForm} setModuleForm={setModuleForm}
-          setView={setView} handleSaveModule={handleSaveModule}
+          setView={handleSetView} handleSaveModule={handleSaveModule}
           moduleGameFiles={moduleGameFiles} setModuleGameFiles={setModuleGameFiles}
           isSaving={isSavingModule}
           categories={categories} subjects={subjects}
@@ -431,7 +453,7 @@ const navigate = useNavigate();
           setShowStudentModal={setShowStudentModal} setEditingStudent={setEditingStudent} setStudentForm={setStudentForm}
           handleRestoreStudent={handleRestoreStudent} handleDeleteStudent={handleDeleteStudent} exportToExcel={exportToExcel}
           readOnly={user?.role === 'guru'}
-          modules={modules} />;
+          modules={modules} schools={schools} />;
       case 'teachers':
         return <TeachersView 
           teachers={teachers} teacherSearch={teacherSearch} setTeacherSearch={setTeacherSearch}
@@ -440,7 +462,14 @@ const navigate = useNavigate();
           handleDeleteTeacher={handleDeleteTeacher} exportTeacherExcel={exportTeacherExcel}
           categories={categories}
           subjects={subjects}
+          schools={schools}
          readOnly={user?.role === 'guru'} />;
+      case 'schools':
+        return <SchoolsView 
+          schools={schools}
+          setSchools={setSchools}
+          categories={categories}
+        />;
       case 'profile':
         return <ProfileView 
           user={user} isEditingProfile={isEditingProfile} setIsEditingProfile={setIsEditingProfile}
@@ -452,7 +481,7 @@ const navigate = useNavigate();
   return (
     <div className="admin-layout">
       {/* Sidebar Admin */}
-      <Sidebar user={user} view={view} setView={setView} onLogout={() => setShowLogoutConfirm(true)} onNavigate={onNavigate as any} />
+      <Sidebar user={user} view={view} setView={handleSetView} onLogout={() => setShowLogoutConfirm(true)} onNavigate={onNavigate as any} />
       <div className="admin-main">
         <AnimatePresence mode="wait">
           <motion.div key={view} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.2 }}>
@@ -555,24 +584,17 @@ const navigate = useNavigate();
                   <input type="email" className="form-input" required value={teacherForm.email} onChange={e => setTeacherForm({...teacherForm, email: e.target.value})} placeholder="Masukkan email..." />
                 </div>
                 <div style={{ marginBottom: '16px' }}>
-                  <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: 500 }}>Jenjang (Spesialisasi)</label>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                    {categories.map(c => {
-                      const isSelected = (teacherForm.category_ids || []).includes(c.id);
-                      return (
-                      <label key={c.id} style={{ 
-                         display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '13px', cursor: 'pointer',
-                         padding: '6px 12px', borderRadius: '100px', border: isSelected ? '1px solid var(--primary)' : '1px solid var(--border)',
-                         background: isSelected ? 'var(--primary)' : 'transparent', color: isSelected ? '#ffffff' : 'var(--text)',
-                         fontWeight: isSelected ? 600 : 500, transition: 'all 0.2s'
-                      }}>
-                        <input type="checkbox" style={{ display: 'none' }} checked={isSelected} onChange={(e) => {
-                          if (e.target.checked) setTeacherForm({...teacherForm, category_ids: [...(teacherForm.category_ids||[]), c.id]});
-                          else setTeacherForm({...teacherForm, category_ids: (teacherForm.category_ids||[]).filter(id => id !== c.id)});
-                        }} /> {c.name}
-                      </label>
-                    )})}
-                  </div>
+                  <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: 500 }}>Asal Sekolah</label>
+                  <select 
+                    className="form-input" 
+                    value={teacherForm.school_id || ''} 
+                    onChange={e => setTeacherForm({...teacherForm, school_id: Number(e.target.value)})}
+                  >
+                    <option value="">Pilih Sekolah (Opsional)</option>
+                    {schools.map(s => (
+                      <option key={s.id} value={s.id}>{s.name}</option>
+                    ))}
+                  </select>
                 </div>
                 <div style={{ marginBottom: '24px' }}>
                   <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: 500 }}>Mata Pelajaran (Spesialisasi)</label>
@@ -629,7 +651,17 @@ const navigate = useNavigate();
                 </div>
                 <div style={{ marginBottom: '16px' }}>
                   <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: 500 }}>Asal Sekolah</label>
-                  <input type="text" className="form-input" required value={studentForm.asalSekolah} onChange={e => setStudentForm({...studentForm, asalSekolah: e.target.value})} placeholder="Misal: SMAN 1 Jakarta" />
+                  <select 
+                    className="form-input" 
+                    required 
+                    value={studentForm.school_id || ''} 
+                    onChange={e => setStudentForm({...studentForm, school_id: Number(e.target.value)})}
+                  >
+                    <option value="" disabled>Pilih Sekolah</option>
+                    {schools.map(s => (
+                      <option key={s.id} value={s.id}>{s.name}</option>
+                    ))}
+                  </select>
                 </div>
                 <div style={{ marginBottom: '24px' }}>
                   <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: 500 }}>Email</label>

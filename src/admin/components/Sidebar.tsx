@@ -23,6 +23,11 @@ export function Sidebar({ user, view, setView, onLogout, onNavigate }: { user: a
         </button>
         )}
         {(user?.role === 'admin') && (
+        <button className={`btn ${view === 'schools' ? 'btn-primary' : 'btn-ghost'} btn-full`} style={{ justifyContent: 'flex-start', border: view === 'schools' ? undefined : 'none' }} onClick={() => setView('schools')}>
+          <i className="ti ti-building-community"></i> Sekolah
+        </button>
+        )}
+        {(user?.role === 'admin') && (
         <button className={`btn ${view === 'audit' ? 'btn-primary' : 'btn-ghost'} btn-full`} style={{ justifyContent: 'flex-start', border: view === 'audit' ? undefined : 'none' }} onClick={() => setView('audit')}>
           <i className="ti ti-clipboard-check"></i> Audit Modul
         </button>

@@ -11,7 +11,7 @@ import compression from "compression";
 import extract from "extract-zip";
 import sqlite3 from "sqlite3";
 import { open } from "sqlite";
-import { seedCategories, seedSubjects, seedStudents, seedTeachers } from "./seedData";
+import { seedCategories, seedSubjects, seedStudents, seedTeachers, seedSchools } from "./seedData";
 
 declare global {
   namespace Express {
@@ -72,6 +72,7 @@ let studentsData: any[] = [];
 let activitiesData: any[] = [];
 let userProgressData: Record<number, any> = {};
 let categoriesData: any[] = [];
+let schoolsData: any[] = [];
 let subjectsData: any[] = [];
 let questionsData: any[] = [];
 
@@ -82,14 +83,15 @@ async function initDB() {
   });
 
   await db.exec(`
-    CREATE TABLE IF NOT EXISTS modules (id INTEGER PRIMARY KEY, title TEXT, data TEXT);
-    CREATE TABLE IF NOT EXISTS teachers (id INTEGER PRIMARY KEY, name TEXT, email TEXT, data TEXT);
-    CREATE TABLE IF NOT EXISTS students (id INTEGER PRIMARY KEY, name TEXT, email TEXT, data TEXT);
-    CREATE TABLE IF NOT EXISTS activities (id INTEGER PRIMARY KEY, time TEXT, data TEXT);
+    CREATE TABLE IF NOT EXISTS modules (id INTEGER PRIMARY KEY, data TEXT);
+    CREATE TABLE IF NOT EXISTS teachers (id INTEGER PRIMARY KEY, data TEXT);
+    CREATE TABLE IF NOT EXISTS students (id INTEGER PRIMARY KEY, data TEXT);
+    CREATE TABLE IF NOT EXISTS activities (id INTEGER PRIMARY KEY, data TEXT);
     CREATE TABLE IF NOT EXISTS user_progress (id INTEGER PRIMARY KEY, data TEXT);
-    CREATE TABLE IF NOT EXISTS categories (id INTEGER PRIMARY KEY, name TEXT, data TEXT);
-    CREATE TABLE IF NOT EXISTS subjects (id INTEGER PRIMARY KEY, name TEXT, data TEXT);
-    CREATE TABLE IF NOT EXISTS questions (id INTEGER PRIMARY KEY, module_id INTEGER, data TEXT);
+    CREATE TABLE IF NOT EXISTS categories (id INTEGER PRIMARY KEY, data TEXT);
+    CREATE TABLE IF NOT EXISTS schools (id INTEGER PRIMARY KEY, data TEXT);
+    CREATE TABLE IF NOT EXISTS subjects (id INTEGER PRIMARY KEY, data TEXT);
+    CREATE TABLE IF NOT EXISTS questions (id INTEGER PRIMARY KEY, data TEXT);
   `);
 
   const tableCheck = await db.get("SELECT name FROM sqlite_master WHERE type='table' AND name='app_state'");
@@ -126,6 +128,13 @@ async function initDB() {
     const cats = await db.all("SELECT data FROM categories");
     categoriesData = cats.map((r: any) => JSON.parse(r.data));
 
+    try {
+      const schs = await db.all("SELECT data FROM schools");
+      schoolsData = schs.map((r: any) => JSON.parse(r.data));
+    } catch (e) {
+      schoolsData = [];
+    }
+
     const subs = await db.all("SELECT data FROM subjects");
     subjectsData = subs.map((r: any) => JSON.parse(r.data));
 
@@ -143,6 +152,32 @@ async function initDB() {
   if (subjectsData.length === 0) {
     subjectsData = [...seedSubjects];
   }
+  if (schoolsData.length === 0) {
+    schoolsData = [...seedSchools];
+  }
+
+  // Migrate existing asalSekolah to school_id if needed
+  let schoolIdCounter = Math.max(0, ...schoolsData.map(s => s.id)) + 1;
+  const ensureSchool = (asalSekolah: string) => {
+    let sch = schoolsData.find(s => s.name === asalSekolah);
+    if (!sch) {
+      sch = { id: schoolIdCounter++, name: asalSekolah, category_id: 2 }; // Default to SMP
+      schoolsData.push(sch);
+    }
+    return sch.id;
+  };
+
+  studentsData.forEach(s => {
+    if (s.asalSekolah && !s.school_id) {
+      s.school_id = ensureSchool(s.asalSekolah);
+    }
+  });
+
+  teachersData.forEach(t => {
+    if (t.asalSekolah && !t.school_id) {
+      t.school_id = ensureSchool(t.asalSekolah);
+    }
+  });
 
   // Migrate from database.json if completely empty
   if (modulesData.length === 0 && studentsData.length === 0 && teachersData.length === 0) {
@@ -246,22 +281,22 @@ async function doSaveDb() {
   try {
     await db.run("DELETE FROM modules");
     for (const m of modulesData) {
-      await db.run("INSERT INTO modules (id, title, data) VALUES (?, ?, ?)", [m.id, m.title, JSON.stringify(m)]);
+      await db.run("INSERT INTO modules (id, data) VALUES (?, ?)", [m.id, JSON.stringify(m)]);
     }
 
     await db.run("DELETE FROM teachers");
     for (const t of teachersData) {
-      await db.run("INSERT INTO teachers (id, name, email, data) VALUES (?, ?, ?, ?)", [t.id, t.name, t.email, JSON.stringify(t)]);
+      await db.run("INSERT INTO teachers (id, data) VALUES (?, ?)", [t.id, JSON.stringify(t)]);
     }
 
     await db.run("DELETE FROM students");
     for (const s of studentsData) {
-      await db.run("INSERT INTO students (id, name, email, data) VALUES (?, ?, ?, ?)", [s.id, s.name, s.email, JSON.stringify(s)]);
+      await db.run("INSERT INTO students (id, data) VALUES (?, ?)", [s.id, JSON.stringify(s)]);
     }
 
     await db.run("DELETE FROM activities");
     for (const a of activitiesData) {
-      await db.run("INSERT INTO activities (id, time, data) VALUES (?, ?, ?)", [a.id, a.time, JSON.stringify(a)]);
+      await db.run("INSERT INTO activities (id, data) VALUES (?, ?)", [a.id, JSON.stringify(a)]);
     }
 
     await db.run("DELETE FROM user_progress");
@@ -271,16 +306,20 @@ async function doSaveDb() {
 
     await db.run("DELETE FROM categories");
     for (const c of categoriesData) {
-      await db.run("INSERT INTO categories (id, name, data) VALUES (?, ?, ?)", [c.id, c.name, JSON.stringify(c)]);
+      await db.run("INSERT INTO categories (id, data) VALUES (?, ?)", [c.id, JSON.stringify(c)]);
+    }
+    await db.run("DELETE FROM schools");
+    for (const s of schoolsData) {
+      await db.run("INSERT INTO schools (id, data) VALUES (?, ?)", [s.id, JSON.stringify(s)]);
     }
     await db.run("DELETE FROM subjects");
     for (const sub of subjectsData) {
-      await db.run("INSERT INTO subjects (id, name, data) VALUES (?, ?, ?)", [sub.id, sub.name, JSON.stringify(sub)]);
+      await db.run("INSERT INTO subjects (id, data) VALUES (?, ?)", [sub.id, JSON.stringify(sub)]);
     }
 
     await db.run("DELETE FROM questions");
     for (const q of questionsData) {
-      await db.run("INSERT INTO questions (id, module_id, data) VALUES (?, ?, ?)", [q.id, q.module_id, JSON.stringify(q)]);
+      await db.run("INSERT INTO questions (id, data) VALUES (?, ?)", [q.id, JSON.stringify(q)]);
     }
 
     await db.exec("COMMIT");
@@ -440,9 +479,17 @@ app.use(cookieParser());
       return res.status(401).json({ success: false, error: "Email atau password salah." });
     }
 
-    const user = { id: foundUser.id, name: foundUser.name, email: foundUser.email, role: foundUser.role, category_ids: foundUser.category_ids, subject_ids: foundUser.subject_ids, avatar: foundUser.avatar };
+    let category_ids = foundUser.category_ids || [];
+    if (foundUser.school_id) {
+      const school = schoolsData.find(s => s.id === foundUser.school_id);
+      if (school && !category_ids.includes(school.category_id)) {
+        category_ids = [...category_ids, school.category_id];
+      }
+    }
 
-    const token = jwt.sign({ id: user.id, email: user.email, role: user.role, name: user.name }, SECRET_KEY, { expiresIn: '1d' });
+    const user = { id: foundUser.id, name: foundUser.name, email: foundUser.email, role: foundUser.role, category_ids, subject_ids: foundUser.subject_ids, avatar: foundUser.avatar, school_id: foundUser.school_id };
+
+    const token = jwt.sign({ id: user.id, email: user.email, role: user.role, name: user.name, school_id: user.school_id }, SECRET_KEY, { expiresIn: '1d' });
     res.cookie('token', token, { 
       httpOnly: true, 
       secure: true,
@@ -461,19 +508,32 @@ app.use(cookieParser());
     if (!token) return res.status(401).json({ error: "Unauthorized" });
     try {
       const decoded = jwt.verify(token, SECRET_KEY) as any;
-      let userObj: any = { id: decoded.id, email: decoded.email, role: decoded.role, name: decoded.name };
+      let userObj: any = { id: decoded.id, email: decoded.email, role: decoded.role, name: decoded.name, school_id: decoded.school_id };
       
       if (userObj.role === 'guru') {
          const t = teachersData.find(x => x.id === userObj.id);
          if (t) {
-           userObj.category_ids = t.category_ids;
+           userObj.category_ids = t.category_ids || [];
            userObj.subject_ids = t.subject_ids;
            userObj.avatar = t.avatar;
+           userObj.school_id = t.school_id;
+           if (t.school_id) {
+             const school = schoolsData.find(s => s.id === t.school_id);
+             if (school && !userObj.category_ids.includes(school.category_id)) {
+               userObj.category_ids.push(school.category_id);
+             }
+           }
          }
       } else if (userObj.role === 'siswa') {
          const s = studentsData.find(x => x.id === userObj.id);
          if (s) {
            userObj.avatar = s.avatar;
+           userObj.school_id = s.school_id;
+           userObj.category_ids = [];
+           if (s.school_id) {
+             const school = schoolsData.find(sch => sch.id === s.school_id);
+             if (school) userObj.category_ids.push(school.category_id);
+           }
          }
       } else if (userObj.role === 'admin') {
          // admin avatar if exists in a future implementation
@@ -636,6 +696,30 @@ app.put("/api/auth/profile", authenticateToken, (req, res) => {
   app.delete("/api/categories/:id", authenticateToken, isStrictAdmin, (req, res) => {
     const id = parseInt(req.params.id);
     categoriesData = categoriesData.filter(c => c.id !== id);
+    saveDb();
+    res.json({ success: true });
+  });
+
+  app.get("/api/schools", (req, res) => {
+    res.json(schoolsData);
+  });
+  app.post("/api/schools", authenticateToken, isStrictAdmin, (req, res) => {
+    const newSchool = { id: Date.now(), name: req.body.name, category_id: req.body.category_id };
+    schoolsData.push(newSchool);
+    saveDb();
+    res.json({ success: true, school: newSchool });
+  });
+  app.put("/api/schools/:id", authenticateToken, isStrictAdmin, (req, res) => {
+    const id = parseInt(req.params.id);
+    const index = schoolsData.findIndex(s => s.id === id);
+    if (index === -1) return res.status(404).json({ error: "Not found" });
+    schoolsData[index] = { ...schoolsData[index], name: req.body.name, category_id: req.body.category_id };
+    saveDb();
+    res.json({ success: true, school: schoolsData[index] });
+  });
+  app.delete("/api/schools/:id", authenticateToken, isStrictAdmin, (req, res) => {
+    const id = parseInt(req.params.id);
+    schoolsData = schoolsData.filter(s => s.id !== id);
     saveDb();
     res.json({ success: true });
   });

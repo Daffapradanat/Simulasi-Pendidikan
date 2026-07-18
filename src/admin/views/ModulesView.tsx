@@ -110,9 +110,9 @@ export default function ModulesView({
           <table className="admin-table">
             <thead>
               <tr>
-                <th style={{ width: '60px' }}>No</th>
-                <th>Detail Modul</th>
-                <th>Spesifikasi</th>
+                <th style={{ width: '60px' }}>No.</th>
+                <th>Judul Modul</th>
+                <th>Jenjang & Mapel</th>
                 <th>Status</th>
                 <th>Aksi</th>
               </tr>

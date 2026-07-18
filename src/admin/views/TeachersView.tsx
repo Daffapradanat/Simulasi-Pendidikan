@@ -15,7 +15,7 @@ const fetchAuth = (url: string | URL | Request, options: any = {}) => {
 export default function TeachersView({
   teachers, teacherSearch, setTeacherSearch, setShowTeacherModal,
   setEditingTeacher, setTeacherForm, handleRestoreTeacher, handleDeleteTeacher, exportTeacherExcel,
-  readOnly, categories, subjects
+  readOnly, categories, subjects, schools = []
 }: any) {
   
   const [currentPage, setCurrentPage] = useState(1);
@@ -61,7 +61,7 @@ export default function TeachersView({
             </button>
             {!readOnly && (<button className="btn btn-primary btn-sm" onClick={() => {
               setEditingTeacher(null);
-              setTeacherForm({ name: '', nip: '', email: '', category_ids: [], subject_ids: [] });
+              setTeacherForm({ name: '', nip: '', email: '', subject_ids: [], school_id: '' });
               setShowTeacherModal(true);
             }}>
               <i className="ti ti-plus"></i> Tambah Guru
@@ -75,8 +75,8 @@ export default function TeachersView({
                 <th style={{ width: '60px' }}>No.</th>
                 <th>NIP</th>
                 <th>Nama Guru</th>
+                <th>Asal Sekolah</th>
                 <th>Email</th>
-                <th>Jenjang</th>
                 <th>Mata Pelajaran</th>
                 <th>Status</th>
                 <th>Aksi</th>
@@ -102,16 +102,10 @@ export default function TeachersView({
                     <div style={{ fontWeight: 600 }}>{t.name}</div>
                   </td>
                   <td style={{ textDecoration: t.isDeleted ? 'line-through' : 'none' }}>
-                    <div style={{ color: 'var(--text-muted)' }}>{t.email || '-'}</div>
+                    {schools.find((s: any) => s.id === t.school_id)?.name || '-'}
                   </td>
                   <td style={{ textDecoration: t.isDeleted ? 'line-through' : 'none' }}>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
-                      {(t.category_ids || []).map((id: number) => {
-                         const cat = categories.find((c: any) => c.id === id);
-                         return cat ? <span key={'cat-'+id} className="badge" style={{ background: 'var(--surface-2)', color: 'var(--text)', fontSize: '11px', border: '1px solid var(--border)' }}>{cat.name}</span> : null;
-                      })}
-                      {(!t.category_ids?.length) && <span style={{ color: 'var(--text-muted)' }}>-</span>}
-                    </div>
+                    <div style={{ color: 'var(--text-muted)' }}>{t.email || '-'}</div>
                   </td>
                   <td style={{ textDecoration: t.isDeleted ? 'line-through' : 'none' }}>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
@@ -139,7 +133,7 @@ export default function TeachersView({
                     <>
                     <button className="btn btn-primary btn-sm" title="Edit" onClick={() => {
                       setEditingTeacher(t);
-                      setTeacherForm({ name: t.name, nip: t.nip || '', email: t.email || '', category_ids: t.category_ids || [], subject_ids: t.subject_ids || [] });
+                      setTeacherForm({ name: t.name, nip: t.nip || '', email: t.email || '', subject_ids: t.subject_ids || [], school_id: t.school_id || '' });
                       setShowTeacherModal(true);
                     }}>
                       <i className="ti ti-edit" style={{ fontSize: '18px' }}></i>
@@ -261,14 +255,10 @@ export default function TeachersView({
                   <div style={{ fontSize: '14px', color: 'var(--text-muted)', display: 'flex', gap: '12px', marginBottom: '8px' }}>
                     <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><i className="ti ti-id"></i> {viewingProfile.nip || '-'}</span>
                     
-                    {viewingProfile.category_ids?.length > 0 && (
-                      <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><i className="ti ti-tags"></i> {viewingProfile.category_ids.map((cid: number) => categories.find((c: any) => c.id === cid)?.name).filter(Boolean).join(', ')}</span>
-                    )}
                     {viewingProfile.subject_ids?.length > 0 && (
                       <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><i className="ti ti-book"></i> {viewingProfile.subject_ids.map((sid: number) => subjects.find((s: any) => s.id === sid)?.name).filter(Boolean).join(', ')}</span>
                     )}
-  
-                  </div>
+                    </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <span className="badge badge-primary">Guru</span>
                     {viewingProfile.isDeleted && <span className="badge" style={{ background: 'var(--danger-light)', color: 'var(--danger)' }}>Nonaktif</span>}
@@ -286,6 +276,15 @@ export default function TeachersView({
                     <div>
                       <div style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 600 }}>Email Address</div>
                       <div style={{ fontSize: '14px', fontWeight: 500 }}>{viewingProfile.email || '-'}</div>
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'var(--primary)', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <i className="ti ti-building" style={{ color: '#ffffff' }}></i>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 600 }}>Asal Sekolah</div>
+                      <div style={{ fontSize: '14px', fontWeight: 500 }}>{schools.find((s: any) => s.id === viewingProfile.school_id)?.name || '-'}</div>
                     </div>
                   </div>
                 </div>

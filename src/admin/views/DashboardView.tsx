@@ -7,9 +7,17 @@ export default function DashboardView({ modules, students, teachers, user, setVi
 
   useEffect(() => {
     fetch('/api/activities', { headers: { 'Authorization': `Bearer ${localStorage.getItem('simpend_token')}` } })
-      .then(res => res.json())
-      .then(data => setActivities(data || []))
-      .catch(e => console.error(e));
+      .then(res => {
+        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+        return res.json();
+      })
+      .then(data => {
+        setActivities(Array.isArray(data) ? data : []);
+      })
+      .catch(e => {
+        console.error('Failed to fetch data', e);
+        setActivities([]);
+      });
   }, [modules, students, teachers]);
 
   const getTimeAgo = (dateStr: string) => {

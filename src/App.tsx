@@ -48,6 +48,45 @@ export default function App() {
   const [completedModuleIds, setCompletedModuleIds] = useState<Set<number>>(new Set());
   const [reflections, setReflections] = useState<Record<number, string>>({});
   const [showAllDoneModal, setShowAllDoneModal] = useState(false);
+
+  useEffect(() => {
+    if (location.pathname.startsWith('/admin') || location.pathname.startsWith('/guru') || location.pathname.startsWith('/login')) return;
+
+    if (location.pathname === '/profile') {
+      setViewMode('profile');
+      setCurrentModuleId(null);
+    } else if (location.pathname.startsWith('/module/')) {
+      const parts = location.pathname.split('/');
+      const modId = parseInt(parts[2]);
+      if (modId) {
+        setViewMode('main');
+        setCurrentModuleId(modId);
+        const mod = appModules.find(m => m.id === modId);
+        if (mod) {
+          setSelectedCategoryId(mod.category_id || null);
+          setSelectedSubjectId(mod.subject_id || null);
+        }
+      }
+    } else if (location.pathname.startsWith('/category/')) {
+      const parts = location.pathname.split('/');
+      const catId = parseInt(parts[2]);
+      if (catId) {
+        setViewMode('main');
+        setCurrentModuleId(null);
+        setSelectedCategoryId(catId);
+        if (parts[3] === 'subject' && parts[4]) {
+          setSelectedSubjectId(parseInt(parts[4]));
+        } else {
+          setSelectedSubjectId(null);
+        }
+      }
+    } else if (location.pathname === '/') {
+      setViewMode('main');
+      setCurrentModuleId(null);
+      setSelectedCategoryId(null);
+      setSelectedSubjectId(null);
+    }
+  }, [location.pathname, appModules]);
   const [completedModulePopup, setCompletedModulePopup] = useState<Module | null>(null);
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
@@ -65,6 +104,30 @@ export default function App() {
     }, 3500);
   };
 
+
+  const filteredCategories = useMemo(() => {
+    return currentUser?.category_ids?.length 
+      ? appCategories.filter(c => currentUser.category_ids?.includes(c.id))
+      : appCategories;
+  }, [appCategories, currentUser?.category_ids]);
+
+  const filteredSubjects = useMemo(() => {
+    return currentUser?.subject_ids?.length 
+      ? appSubjects.filter(s => currentUser.subject_ids?.includes(s.id))
+      : appSubjects;
+  }, [appSubjects, currentUser?.subject_ids]);
+
+  useEffect(() => {
+    if (filteredCategories.length === 1 && location.pathname === '/') {
+      navigate(`/category/${filteredCategories[0].id}`);
+    }
+  }, [filteredCategories, location.pathname, navigate]);
+
+  useEffect(() => {
+    if (selectedCategoryId && filteredSubjects.length === 1 && location.pathname === `/category/${selectedCategoryId}`) {
+      navigate(`/category/${selectedCategoryId}/subject/${filteredSubjects[0].id}`);
+    }
+  }, [selectedCategoryId, filteredSubjects, location.pathname, navigate]);
 
   const computedModules = useMemo(() => {
     // Group modules by category_id and subject_id
@@ -363,7 +426,8 @@ export default function App() {
       showToast('Selesaikan modul sebelumnya terlebih dahulu.', 'error');
       return;
     }
-    setCurrentModuleId(id);
+    navigate(`/module/${id}`);
+    setLastModuleId(id);
     setActiveGameId(null);
   };
 
@@ -438,7 +502,7 @@ export default function App() {
           </motion.div>
         } />
 
-        <Route path="/admin" element={
+        <Route path="/admin/*" element={
           !currentUser ? <Navigate to="/" replace /> :
           (currentUser.role === 'admin' ? 
             <AdminDashboard 
@@ -451,7 +515,7 @@ export default function App() {
           )
         } />
         
-        <Route path="/guru" element={
+        <Route path="/guru/*" element={
           !currentUser ? <Navigate to="/" replace /> :
           (currentUser.role === 'guru' ? 
             <AdminDashboard 
@@ -472,9 +536,12 @@ export default function App() {
                 onLogout={() => setShowLogoutConfirm(true)} 
                 viewMode={viewMode}
                 onNavigate={(mode, resetModule) => {
-                  setViewMode(mode);
+                  if (mode === 'profile') {
+                    navigate('/profile');
+                  } else {
+                    navigate('/');
+                  }
                   if (resetModule) {
-                    setCurrentModuleId(null);
                     setActiveGameId(null);
                   }
                 }} 
@@ -485,17 +552,17 @@ export default function App() {
                 {viewMode === 'main' && !currentModuleId && !selectedCategoryId && (
                   <motion.div key="categories" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}>
                     <CategorySelectionView 
-                      categories={appCategories} 
-                      onSelectCategory={(id) => setSelectedCategoryId(id)} 
+                      categories={filteredCategories} 
+                      onSelectCategory={(id) => navigate(`/category/${id}`)} 
                     />
                   </motion.div>
                 )}
                 {viewMode === 'main' && !currentModuleId && selectedCategoryId && !selectedSubjectId && (
                   <motion.div key="subjects" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}>
                     <SubjectSelectionView 
-                      subjects={appSubjects} 
-                      onSelectSubject={(id) => setSelectedSubjectId(id)} 
-                      onBack={() => setSelectedCategoryId(null)}
+                      subjects={filteredSubjects} 
+                      onSelectSubject={(id) => navigate(`/category/${selectedCategoryId}/subject/${id}`)} 
+                      onBack={filteredCategories.length > 1 ? () => navigate('/') : undefined}
                     />
                   </motion.div>
                 )}
@@ -505,18 +572,17 @@ export default function App() {
                       modules={computedModules.filter(m => m.subject_id === selectedSubjectId && m.category_id === selectedCategoryId)} 
                       onOpenModule={handleOpenModule} 
                       lastModuleId={lastModuleId}
-                      onBack={() => setSelectedSubjectId(null)}
+                      onBack={filteredSubjects.length > 1 ? () => navigate(`/category/${selectedCategoryId}`) : undefined}
                     />
                   </motion.div>
                 )}
-
                 {viewMode === 'main' && currentModuleId && currentModule && (
                   <motion.div key="detail" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}>
                     <DetailView 
                       module={currentModule}
                       onBack={() => {
-                        setCurrentModuleId(null);
                         setActiveGameId(null);
+                        navigate(`/category/${selectedCategoryId}/subject/${selectedSubjectId}`);
                       }}
                       activeGameId={activeGameId}
                       playedGames={playedGames}

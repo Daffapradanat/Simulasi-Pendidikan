@@ -4,23 +4,16 @@ import { motion } from 'motion/react';
 export function QuestionsView({ questions = [], onComplete }: { questions: any[], onComplete: (reflection: string) => void }) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<number, number>>({});
-  const [hasChecked, setHasChecked] = useState(false);
   const [showResult, setShowResult] = useState(false);
   const [reflection, setReflection] = useState('');
 
   const handleSelect = (qIndex: number, oIndex: number) => {
-    if (hasChecked) return;
     setAnswers({ ...answers, [qIndex]: oIndex });
-  };
-
-  const handleCheck = () => {
-    setHasChecked(true);
   };
 
   const handleNext = () => {
     if (currentIndex < questions.length - 1) {
       setCurrentIndex(currentIndex + 1);
-      setHasChecked(false);
     } else {
       setShowResult(true);
     }
@@ -29,7 +22,6 @@ export function QuestionsView({ questions = [], onComplete }: { questions: any[]
   const handleRetry = () => {
     setCurrentIndex(0);
     setAnswers({});
-    setHasChecked(false);
     setShowResult(false);
   };
 
@@ -68,7 +60,6 @@ export function QuestionsView({ questions = [], onComplete }: { questions: any[]
             Tuliskan secara singkat pemahaman atau pengalaman menarik yang Anda dapatkan setelah mencoba simulasi ini.
           </p>
         </div>
-
         <div style={{ marginBottom: '24px' }}>
           <textarea 
             className="form-input" 
@@ -91,7 +82,6 @@ export function QuestionsView({ questions = [], onComplete }: { questions: any[]
             }}
           ></textarea>
         </div>
-
         <button 
           className="btn btn-primary" 
           onClick={() => onComplete(reflection)} 
@@ -145,6 +135,62 @@ export function QuestionsView({ questions = [], onComplete }: { questions: any[]
           <p style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text)', margin: 0 }}>
             Benar <span style={{ color: 'var(--primary)', fontSize: '16px', fontWeight: 700 }}>{correctCount}</span> dari <span style={{ fontWeight: 700 }}>{questions.length}</span> soal
           </p>
+        </div>
+
+        <div style={{ marginBottom: '32px' }}>
+          <h3 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text)', marginBottom: '16px' }}>Pembahasan Soal</h3>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            {questions.map((q, i) => {
+              const userAnswerIndex = answers[i];
+              const isCorrect = userAnswerIndex === q.correctAnswerIndex;
+              return (
+                <div key={i} style={{ 
+                  border: `1.5px solid ${isCorrect ? 'var(--success)' : 'var(--danger)'}`, 
+                  borderRadius: '12px', 
+                  padding: '16px',
+                  background: isCorrect ? 'rgba(16, 185, 129, 0.05)' : 'rgba(239, 68, 68, 0.05)'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+                    <div style={{ 
+                      width: '28px', height: '28px', borderRadius: '50%', flexShrink: 0,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      background: isCorrect ? 'var(--success)' : 'var(--danger)', color: 'white',
+                      fontSize: '14px', fontWeight: 700
+                    }}>{i + 1}</div>
+                    <div style={{ flex: 1 }}>
+                      <p style={{ margin: '0 0 12px 0', fontSize: '14px', fontWeight: 600, color: 'var(--text)', lineHeight: 1.5 }}>{q.text}</p>
+                      
+                      <div style={{ fontSize: '13px', marginBottom: '8px' }}>
+                        <span style={{ color: 'var(--text-muted)' }}>Jawaban Anda: </span>
+                        <strong style={{ color: isCorrect ? 'var(--success)' : 'var(--danger)' }}>
+                          {q.options[userAnswerIndex]}
+                        </strong>
+                      </div>
+
+                      {!isCorrect && (
+                        <div style={{ fontSize: '13px', marginBottom: '8px' }}>
+                          <span style={{ color: 'var(--text-muted)' }}>Jawaban Benar: </span>
+                          <strong style={{ color: 'var(--success)' }}>
+                            {q.options[q.correctAnswerIndex]}
+                          </strong>
+                        </div>
+                      )}
+
+                      {q.explanation && (
+                        <div style={{ 
+                          marginTop: '12px', padding: '12px', background: 'rgba(0,0,0,0.03)', 
+                          borderRadius: '8px', fontSize: '13px', color: 'var(--text-muted)',
+                          lineHeight: 1.5
+                        }}>
+                          <strong>Penjelasan:</strong> {q.explanation}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
 
         <div style={{ 
@@ -236,7 +282,6 @@ export function QuestionsView({ questions = [], onComplete }: { questions: any[]
         </span>
         <span className="badge badge-primary" style={{ fontSize: '11px', padding: '4px 8px' }}>Evaluasi</span>
       </div>
-
       <h3 style={{ fontSize: '17px', fontWeight: 700, marginBottom: '20px', lineHeight: 1.5, color: 'var(--text)' }}>
         {q.text}
       </h3>
@@ -244,14 +289,10 @@ export function QuestionsView({ questions = [], onComplete }: { questions: any[]
       <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '24px' }}>
         {q.options.map((opt: string, i: number) => {
           const isSelected = answers[currentIndex] === i;
-          const isCorrect = hasChecked && q.correctAnswerIndex === i;
-          const isWrong = hasChecked && isSelected && q.correctAnswerIndex !== i;
           
           let bgColor = 'transparent';
           let borderColor = 'var(--border)';
           let textColor = 'var(--text)';
-          let cursorStyle = 'pointer';
-          let hoverStyle = {};
           
           if (isSelected) {
             bgColor = 'rgba(59, 130, 246, 0.08)';
@@ -259,99 +300,48 @@ export function QuestionsView({ questions = [], onComplete }: { questions: any[]
             textColor = 'var(--primary-dark)';
           }
 
-          if (hasChecked) {
-             cursorStyle = 'default';
-             if (isCorrect) {
-                bgColor = 'rgba(16, 185, 129, 0.12)';
-                borderColor = 'var(--success)';
-                textColor = 'var(--success)';
-             } else if (isWrong) {
-                bgColor = 'rgba(239, 68, 68, 0.12)';
-                borderColor = 'var(--danger)';
-                textColor = 'var(--danger)';
-             } else if (isSelected) {
-                // selected but wrong, and not correct option
-                bgColor = '#F1F5F9';
-                borderColor = '#CBD5E1';
-                textColor = '#64748B';
-             } else {
-                bgColor = 'transparent';
-                borderColor = 'var(--border)';
-                textColor = 'var(--text-muted)';
-             }
-          }
-
           return (
             <div 
               key={i}
               onClick={() => handleSelect(currentIndex, i)}
-              style={{ 
-                 padding: '14px 16px', 
-                 border: `2px solid ${borderColor}`, 
-                 borderRadius: '10px', 
-                 cursor: cursorStyle,
+              style={{
+                 padding: '14px 16px',
+                 border: `2px solid ${borderColor}`,
+                 borderRadius: '10px',
+                 cursor: 'pointer',
                  background: bgColor,
                  color: textColor,
-                 fontWeight: isSelected || isCorrect ? 600 : 500,
+                 fontWeight: isSelected ? 600 : 500,
                  transition: 'all 0.2s ease',
                  display: 'flex',
                  alignItems: 'center',
                  justifyContent: 'space-between',
                  fontSize: '14px'
               }}
-              className={!hasChecked ? "hover-scale-subtle" : ""}
+              className="hover-scale-subtle"
             >
               <span style={{ flex: 1, paddingRight: '8px' }}>
                 <strong style={{ marginRight: '6px', opacity: 0.8 }}>{String.fromCharCode(65 + i)}.</strong> {opt}
               </span>
-              {isCorrect && <i className="ti ti-circle-check-filled" style={{ fontSize: '18px', color: 'var(--success)' }}></i>}
-              {isWrong && <i className="ti ti-circle-x-filled" style={{ fontSize: '18px', color: 'var(--danger)' }}></i>}
+              {isSelected && <i className="ti ti-circle-check-filled" style={{ fontSize: '18px', color: 'var(--primary)' }}></i>}
             </div>
           )
         })}
       </div>
       
-      {hasChecked && q.explanation && (
-        <motion.div 
-          initial={{ opacity: 0, y: 5 }}
-          animate={{ opacity: 1, y: 0 }}
-          style={{ 
-            padding: '14px 16px', 
-            background: '#F8FAFC', 
-            borderRadius: '10px', 
-            marginBottom: '24px', 
-            borderLeft: '4px solid var(--primary)',
-            fontSize: '13px'
-          }}
-        >
-           <h4 style={{ fontSize: '13px', fontWeight: 700, marginBottom: '4px', color: 'var(--text)' }}>Penjelasan:</h4>
-           <p style={{ margin: 0, color: 'var(--text-muted)', lineHeight: 1.5 }}>{q.explanation}</p>
-        </motion.div>
-      )}
-
       <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-        {!hasChecked ? (
-          <button 
-            className="btn btn-primary" 
-            disabled={answers[currentIndex] === undefined} 
-            onClick={handleCheck}
-            style={{ minWidth: '130px', height: '40px', fontWeight: 600 }}
-          >
-            Cek Jawaban
-          </button>
-        ) : (
-          <button 
-            className="btn btn-primary" 
-            onClick={handleNext}
-            style={{ minWidth: '130px', height: '40px', fontWeight: 600 }}
-          >
-            {currentIndex < questions.length - 1 ? (
-              <>Selanjutnya <i className="ti ti-arrow-right" style={{ marginLeft: '4px' }}></i></>
-            ) : (
-              'Lihat Hasil'
-            )}
-          </button>
-        )}
+        <button 
+          className="btn btn-primary" 
+          disabled={answers[currentIndex] === undefined} 
+          onClick={handleNext}
+          style={{ minWidth: '130px', height: '40px', fontWeight: 600 }}
+        >
+          {currentIndex < questions.length - 1 ? (
+            <>Selanjutnya <i className="ti ti-arrow-right" style={{ marginLeft: '4px' }}></i></>
+          ) : (
+            'Lihat Hasil'
+          )}
+        </button>
       </div>
     </motion.div>
   );
