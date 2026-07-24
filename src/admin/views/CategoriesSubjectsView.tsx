@@ -208,7 +208,8 @@ export default function CategoriesSubjectsView({
           )}
 
           <div style={{ overflowX: 'auto', background: 'white', borderRadius: '8px', border: '1px solid var(--border)' }}>
-            <table className="admin-table">
+            <div className="table-responsive">
+<table className="admin-table">
               <thead>
                 <tr>
                   <th style={{ width: '60px' }}>No.</th>
@@ -281,6 +282,7 @@ export default function CategoriesSubjectsView({
                 )}
               </tbody>
             </table>
+</div>
             
             {totalPagesCat > 1 && !reorderModeCat && (
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px', borderTop: '1px solid var(--border)' }}>
@@ -364,7 +366,8 @@ export default function CategoriesSubjectsView({
           )}
 
           <div style={{ overflowX: 'auto', background: 'white', borderRadius: '8px', border: '1px solid var(--border)' }}>
-            <table className="admin-table">
+            <div className="table-responsive">
+<table className="admin-table">
               <thead>
                 <tr>
                   <th style={{ width: '60px' }}>No.</th>
@@ -437,6 +440,7 @@ export default function CategoriesSubjectsView({
                 )}
               </tbody>
             </table>
+</div>
             
             {totalPagesSub > 1 && !reorderModeSub && (
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px', borderTop: '1px solid var(--border)' }}>

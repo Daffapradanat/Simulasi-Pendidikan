@@ -1,16 +1,7 @@
+import { ImportExportMenu } from '../components/ImportExportMenu';
 import React, { useState } from 'react';
 import * as XLSX from 'xlsx';
-
-const fetchAuth = (url: string | URL | Request, options: any = {}) => {
-  const token = localStorage.getItem('simpend_token');
-  if (token) {
-    options.headers = {
-      ...options.headers,
-      'Authorization': `Bearer ${token}`
-    };
-  }
-  return fetch(url, options);
-};
+import { fetchAuth } from '../../lib/fetchAuth';
 
 export default function TeachersView({
   teachers, teacherSearch, setTeacherSearch, setShowTeacherModal,
@@ -24,7 +15,7 @@ export default function TeachersView({
 
   const itemsPerPage = 8;
 
-  const filteredTeachers = teachers.filter(t => {
+  const filteredTeachers = teachers.filter((t: any) => {
     const matchesSearch = (t.name || '').toLowerCase().includes((teacherSearch || '').toLowerCase()); // removed t.subject search
     
     if (statusFilter === 'active') return matchesSearch && !t.isDeleted;
@@ -56,9 +47,7 @@ export default function TeachersView({
               <i className="ti ti-search" style={{ position: 'absolute', top: '50%', transform: 'translateY(-50%)', left: '12px', color: 'var(--text-muted)' }}></i>
               <input type="text" className="form-input" style={{ paddingLeft: '36px', height: '36px', margin: 0 }} placeholder="Cari guru/mapel..." value={teacherSearch} onChange={e => { setTeacherSearch(e.target.value); setCurrentPage(1); }} />
             </div>
-            <button className="btn btn-ghost btn-sm" onClick={exportTeacherExcel}>
-              <i className="ti ti-download"></i> Export Excel
-            </button>
+            <ImportExportMenu type="teachers" />
             {!readOnly && (<button className="btn btn-primary btn-sm" onClick={() => {
               setEditingTeacher(null);
               setTeacherForm({ name: '', nip: '', email: '', subject_ids: [], school_id: '' });
@@ -69,7 +58,8 @@ export default function TeachersView({
           </div>
         </div>
         <div style={{ overflowX: 'auto', background: 'white', borderRadius: '8px', border: '1px solid var(--border)' }}>
-          <table className="admin-table">
+          <div className="table-responsive">
+<table className="admin-table">
             <thead>
               <tr>
                 <th style={{ width: '60px' }}>No.</th>
@@ -91,7 +81,7 @@ export default function TeachersView({
                   </td>
                 </tr>
               ) : (
-                displayedTeachers.map((t, index) => (
+                displayedTeachers.map((t: any, index: number) => (
                 <tr key={t.id} style={{ ...(t.isDeleted ? { filter: 'grayscale(100%)', opacity: 0.5 } : {}) }}>
                   <td>{(currentPage - 1) * itemsPerPage + index + 1}</td>
                   <td>
@@ -156,6 +146,7 @@ export default function TeachersView({
               )))}
             </tbody>
           </table>
+</div>
           
           {totalPages > 1 && (
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px', borderTop: '1px solid var(--border)' }}>

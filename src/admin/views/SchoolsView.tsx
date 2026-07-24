@@ -1,18 +1,8 @@
 import React, { useState } from 'react';
 import { ConfirmModal } from '../../components/ConfirmModal';
 import { motion, AnimatePresence } from 'motion/react';
-import * as XLSX from 'xlsx';
-
-const fetchAuth = (url: string | URL | Request, options: any = {}) => {
-  const token = localStorage.getItem('simpend_token');
-  if (token) {
-    options.headers = {
-      ...options.headers,
-      'Authorization': `Bearer ${token}`
-    };
-  }
-  return fetch(url, options);
-};
+import { ImportExportMenu } from '../components/ImportExportMenu';
+import { fetchAuth } from '../../lib/fetchAuth';
 
 export default function SchoolsView({ schools, setSchools, categories }: any) {
   const [currentPage, setCurrentPage] = useState(1);
@@ -87,17 +77,7 @@ export default function SchoolsView({ schools, setSchools, categories }: any) {
     setSchoolToDelete(id);
   };
 
-  const exportToExcel = () => {
-    const dataToExport = schools.map((s: any, idx: number) => ({
-      'No.': idx + 1,
-      'Nama Sekolah': s.name,
-      'Jenjang': categories.find((c: any) => c.id === s.category_id)?.name || '-'
-    }));
-    const worksheet = XLSX.utils.json_to_sheet(dataToExport);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Sekolah");
-    XLSX.writeFile(workbook, "data_sekolah.xlsx");
-  };
+  
 
   return (
     <div className="admin-content">
@@ -112,9 +92,7 @@ export default function SchoolsView({ schools, setSchools, categories }: any) {
               <i className="ti ti-search" style={{ position: 'absolute', top: '50%', transform: 'translateY(-50%)', left: '12px', color: 'var(--text-muted)' }}></i>
               <input type="text" className="form-input" style={{ paddingLeft: '36px', height: '36px', margin: 0 }} placeholder="Cari nama sekolah..." value={schoolSearch} onChange={e => { setSchoolSearch(e.target.value); setCurrentPage(1); }} />
             </div>
-            <button className="btn btn-ghost btn-sm" onClick={exportToExcel}>
-              <i className="ti ti-download"></i> Export Excel
-            </button>
+            <ImportExportMenu type="schools" />
             <button className="btn btn-primary btn-sm" onClick={() => {
               setEditingSchool(null);
               setSchoolForm({ name: '', category_id: '' });
@@ -126,7 +104,8 @@ export default function SchoolsView({ schools, setSchools, categories }: any) {
         </div>
 
         <div style={{ overflowX: 'auto', background: 'white', borderRadius: '8px', border: '1px solid var(--border)' }}>
-          <table className="admin-table">
+          <div className="table-responsive">
+<table className="admin-table">
             <thead>
               <tr>
                 <th style={{ width: '60px' }}>No.</th>
@@ -167,6 +146,7 @@ export default function SchoolsView({ schools, setSchools, categories }: any) {
               )))}
             </tbody>
           </table>
+</div>
         </div>
 
         {totalPages > 1 && (

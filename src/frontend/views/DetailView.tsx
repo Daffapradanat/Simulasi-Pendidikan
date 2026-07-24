@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Module, User } from '../../types';
 import JSZip from 'jszip';
 import { MODULE_THUMBS } from '../../data';
+import { fetchAuth } from '../../lib/fetchAuth';
 
 // --- DETAIL VIEW ---
 export function DetailView({ 
@@ -65,7 +66,7 @@ export function DetailView({
                setDownloadingGame(true);
                setDownloadProgress('Mengunduh simulasi...');
                
-               fetch(game.path)
+               fetch(game.path || '')
                  .then(res => res.blob())
                  .then(blob => JSZip.loadAsync(blob))
                  .then(async (zip) => {
@@ -120,10 +121,10 @@ export function DetailView({
   }, [activeGameId, module.games]);
   
   useEffect(() => {
-    const token = localStorage.getItem('simpend_token');
-    fetch(`/api/modules/${module.id}/questions`, {
-      headers: { 'Authorization': `Bearer ${token}` }
-    }).then(r => r.json()).then(d => setQuestions(d.questions || []));
+    fetchAuth(`/api/modules/${module.id}/questions`)
+      .then(r => r.ok ? r.json() : { questions: [] })
+      .then(d => setQuestions(d.questions || []))
+      .catch(() => setQuestions([]));
   }, [module.id]);
   
   useEffect(() => {

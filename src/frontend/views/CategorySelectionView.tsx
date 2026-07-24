@@ -9,23 +9,22 @@ export function CategorySelectionView({ categories, onSelectCategory }: { catego
       transition: { staggerChildren: 0.1 }
     }
   };
-
   const itemVariants = {
     hidden: { opacity: 0, y: 20 },
-    show: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 300, damping: 24 } }
+    show: { opacity: 1, y: 0, transition: { type: 'spring' as const, stiffness: 300, damping: 24 } }
   };
 
   return (
-    <div className="main-content" style={{ maxWidth: '1200px', margin: '0 auto', paddingTop: '100px', paddingBottom: '60px' }}>
-      <motion.div 
+    <div className="main-wrapper">
+      <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center', marginBottom: '48px' }}
+        style={{ marginBottom: '40px' }}
       >
-        <div>
-          <h2 className="page-title" style={{ marginBottom: '12px', textAlign: 'center', fontSize: '32px' }}>Pilih Jenjang Pendidikan</h2>
+        <div style={{ textAlign: 'center' }}>
+          <h2 className="page-title" style={{ marginBottom: '12px', textAlign: 'center', fontSize: '32px' }}>Pilih Fase Pembelajaran</h2>
           <p className="page-desc" style={{ textAlign: 'center', maxWidth: '600px', margin: '0 auto', fontSize: '16px', color: 'var(--text-muted)' }}>
-            Langkah pertama menuju simulasi yang tepat. Silakan pilih jenjang pendidikan untuk memulai.
+            Silahkan pilih fase atau kategori pembelajaran yang sesuai dengan tingkat pendidikan Anda.
           </p>
         </div>
       </motion.div>
@@ -34,7 +33,7 @@ export function CategorySelectionView({ categories, onSelectCategory }: { catego
         variants={containerVariants}
         initial="hidden"
         animate="show"
-        style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '32px' }}
+        className="selection-grid"
       >
         {categories.map((cat, i) => {
           const colors = [
@@ -45,23 +44,12 @@ export function CategorySelectionView({ categories, onSelectCategory }: { catego
             { bg: 'linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%)', icon: '#ef4444', border: '#fecaca' }
           ];
           const color = colors[i % colors.length];
+
           return (
             <motion.div 
               variants={itemVariants}
               key={cat.id} 
-              style={{
-                cursor: 'pointer',
-                background: 'white',
-                borderRadius: '24px',
-                padding: '32px',
-                border: `1px solid #e2e8f0`,
-                boxShadow: '0 4px 20px rgba(0,0,0,0.03)',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '24px',
-                position: 'relative',
-                overflow: 'hidden'
-              }}
+              className="selection-card"
               onClick={() => onSelectCategory(cat.id)}
               whileHover={{ 
                 y: -6, 
@@ -70,19 +58,13 @@ export function CategorySelectionView({ categories, onSelectCategory }: { catego
               }}
               whileTap={{ scale: 0.98 }}
             >
-              <div style={{
-                width: '80px', height: '80px', borderRadius: '20px',
-                background: color.bg, color: color.icon,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: '36px', flexShrink: 0,
-                boxShadow: `inset 0 2px 4px rgba(255,255,255,0.5), 0 4px 12px ${color.icon}20`
-              }}>
+              <div className="selection-icon-wrap" style={{ background: color.bg, color: color.icon, boxShadow: `inset 0 2px 4px rgba(255,255,255,0.5), 0 4px 12px ${color.icon}20` }}>
                 <i className={`ti ${cat.icon || 'ti-school'}`}></i>
               </div>
               
               <div style={{ flex: 1, textAlign: 'left' }}>
-                <h3 style={{ fontSize: '22px', fontWeight: 700, color: 'var(--text)', marginBottom: '8px' }}>{cat.name}</h3>
-                <div style={{ display: 'inline-flex', alignItems: 'center', fontSize: '14px', color: color.icon, fontWeight: 600 }}>
+                <h3 className="selection-card-title">{cat.name}</h3>
+                <div className="selection-card-link" style={{ color: color.icon }}>
                   Mulai Belajar <i className="ti ti-arrow-right" style={{ marginLeft: '6px', fontSize: '16px' }}></i>
                 </div>
               </div>

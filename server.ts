@@ -1,4 +1,5 @@
 import express from "express";
+import http from "http";
 import bcrypt from "bcrypt";
 import path from "path";
 import sharp from "sharp";
@@ -6,6 +7,7 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import jwt from "jsonwebtoken";
 import multer from "multer";
+import * as XLSX from "xlsx";
 import { createServer as createViteServer } from "vite";
 import fs from "fs";
 import { configureSecurity } from "./serverSecurity";
@@ -334,7 +336,8 @@ const SECRET_KEY = process.env.JWT_SECRET || "simpend_secret_key_2025_fallback";
 async function startServer() {
   await initDB();
   const app = express();
-  app.use(compression({ level: 9, threshold: 0 }));
+  const httpServer = http.createServer(app);
+  app.use(compression({ level: 9, threshold: 0 }) as any);
   const PORT = 3000;
 
   // Security controls are moved to /serverSecurity.ts
@@ -448,7 +451,7 @@ const uploadBannerMemory = multer({
 
 
 app.post("/api/upload-image", authenticateToken, isAdmin, (req, res) => {
-  uploadBannerMemory.single('image')(req, res, async (err) => {
+  (uploadBannerMemory.single('image') as any)(req, res, async (err) => {
     if (err) {
        return res.status(400).json({ error: err.message });
     }
@@ -471,7 +474,7 @@ app.post("/api/upload-image", authenticateToken, isAdmin, (req, res) => {
   });
 });
 
-  app.post("/api/upload-avatar", uploadAvatar.single('avatar'), (req, res) => {
+  app.post("/api/upload-avatar", uploadAvatar.single('avatar') as any, (req, res) => {
     if (!req.file) return res.status(400).json({ error: "No file uploaded or invalid format" });
     res.json({ success: true, url: `/api/avatars/${req.file.filename}` });
   });
@@ -482,7 +485,7 @@ app.post("/api/upload-image", authenticateToken, isAdmin, (req, res) => {
     let foundUser = null;
 
     // Hardcoded Admin with bcrypt fallback (admin123)
-    if (email === 'admin' || email === 'admin@sch.id') {
+    if (email === 'admin' || email === 'admin@sch.id' || email === 'admin@sekolah.sch.id') {
        const defaultAdminHash = await bcrypt.hash('admin123', 10);
        // In real app, load admin from DB. Here we simulate it.
        const match = await bcrypt.compare(password, defaultAdminHash);
@@ -493,25 +496,16 @@ app.post("/api/upload-image", authenticateToken, isAdmin, (req, res) => {
 
     if (!foundUser) {
       const student = studentsData.find(s => !s.isDeleted && s.email === email);
-      if ((email === 'siswa' || email === 'siswa@murid.sekolah.sch.id') && password === 'siswa') {
-        const s = studentsData.find(s => s.email === 'siswa@murid.sekolah.sch.id') || studentsData.find(s => s.id === 1);
-        if (s) foundUser = { ...s, role: "siswa", name: s.name, email: 'siswa@murid.sekolah.sch.id' };
-        else foundUser = { id: 1, name: "Siswa Siswi", email: "siswa@murid.sekolah.sch.id", role: "siswa" };
-      } else if (student) {
-        // Assume default password 'siswa' is hashed, or if not present, assume 'siswa'
-        const match = student.password ? await bcrypt.compare(password, student.password) : (password === 'siswa');
+      if (student) {
+        const match = student.password ? await bcrypt.compare(password, student.password) : false;
         if (match) foundUser = { ...student, role: "siswa" };
       }
     }
 
     if (!foundUser) {
       const teacher = teachersData.find(t => !t.isDeleted && t.email === email);
-      if ((email === 'guru' || email === 'guru@sekolah.sch.id') && password === 'guru') {
-        const t = teachersData.find(t => t.email === 'guru@sekolah.sch.id') || teachersData.find(t => t.id === 2);
-        if (t) foundUser = { ...t, role: "guru", name: t.name, email: 'guru@sekolah.sch.id' };
-        else foundUser = { id: 2, name: "Guru Pengajar", email: "guru@sekolah.sch.id", role: "guru" };
-      } else if (teacher) {
-        const match = teacher.password ? await bcrypt.compare(password, teacher.password) : (password === 'guru');
+      if (teacher) {
+        const match = teacher.password ? await bcrypt.compare(password, teacher.password) : false;
         if (match) foundUser = { ...teacher, role: "guru" };
       }
     }
@@ -544,6 +538,15 @@ app.post("/api/upload-image", authenticateToken, isAdmin, (req, res) => {
     res.json({ success: true });
   });
 
+  
+  app.post("/api/auth/anomaly", (req, res) => {
+    const { email, attemptedRole, actualRole } = req.body;
+    console.warn(`[SECURITY ANOMALY] Unauthorized access attempt: email=${email}, attemptedRole=${attemptedRole}, actualRole=${actualRole}`);
+    logActivity('system', 'System', `Percobaan akses tidak sah: Email ${email} mencoba login sebagai ${attemptedRole} (Role asli: ${actualRole})`);
+    saveDb();
+    res.json({ success: true });
+  });
+
   app.get("/api/auth/me", (req, res) => {
     const token = req.cookies.token || req.headers.authorization?.split(' ')[1];
     if (!token) return res.status(401).json({ error: "Unauthorized" });
@@ -553,6 +556,7 @@ app.post("/api/upload-image", authenticateToken, isAdmin, (req, res) => {
       
       if (userObj.role === 'guru') {
          const t = teachersData.find(x => x.id === userObj.id);
+         if (!t || t.isDeleted) return res.status(401).json({ error: "Akun dinonaktifkan atau tidak ditemukan." });
          if (t) {
            userObj.category_ids = t.category_ids || [];
            userObj.subject_ids = t.subject_ids;
@@ -567,6 +571,7 @@ app.post("/api/upload-image", authenticateToken, isAdmin, (req, res) => {
          }
       } else if (userObj.role === 'siswa') {
          const s = studentsData.find(x => x.id === userObj.id);
+         if (!s || s.isDeleted) return res.status(401).json({ error: "Akun dinonaktifkan atau tidak ditemukan." });
          if (s) {
            userObj.avatar = s.avatar;
            userObj.school_id = s.school_id;
@@ -765,6 +770,166 @@ app.get('/api/modules/:id/questions', authenticateToken, (req, res) => {
     res.json({ success: true });
   });
 
+
+  // EXCEL EXPORT ROUTES
+  app.get("/api/schools/export", authenticateToken, isStrictAdmin, (req, res) => {
+    const data = schoolsData.map((s, i) => ({
+      'No': i + 1,
+      'ID Jenjang': s.category_id,
+      'Nama Sekolah': s.name
+    }));
+    const worksheet = XLSX.utils.json_to_sheet(data);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Sekolah");
+    const buffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+    res.setHeader('Content-Disposition', 'attachment; filename="Template_Sekolah.xlsx"');
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.send(buffer);
+  });
+
+  app.get("/api/students/export", authenticateToken, isStrictAdmin, (req, res) => {
+    const data = studentsData.map((s, i) => ({
+      'No': i + 1,
+      'Nama Lengkap': s.name,
+      'Email': s.email,
+      'Password': '',
+      'NISN': s.nisn || '',
+      'ID Sekolah': s.school_id || ''
+    }));
+    const worksheet = XLSX.utils.json_to_sheet(data);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Siswa");
+    const buffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+    res.setHeader('Content-Disposition', 'attachment; filename="Template_Siswa.xlsx"');
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.send(buffer);
+  });
+
+  app.get("/api/teachers/export", authenticateToken, isStrictAdmin, (req, res) => {
+    const data = teachersData.map((t, i) => ({
+      'No': i + 1,
+      'Nama Lengkap': t.name,
+      'Email': t.email,
+      'Password': '',
+      'NIP': t.nip || '',
+      'ID Jenjang (Koma dipisahkan)': (t.category_ids || []).join(','),
+      'ID Mapel (Koma dipisahkan)': (t.subject_ids || []).join(',')
+    }));
+    const worksheet = XLSX.utils.json_to_sheet(data);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Guru");
+    const buffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+    res.setHeader('Content-Disposition', 'attachment; filename="Template_Guru.xlsx"');
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.send(buffer);
+  });
+
+  // EXCEL IMPORT ROUTES
+  const uploadExcel = multer({ storage: multer.memoryStorage() });
+  app.post("/api/schools/import", authenticateToken, isStrictAdmin, uploadExcel.single('file') as any, (req, res) => {
+    if (!req.file) return res.status(400).json({ error: "File tidak ditemukan" });
+    try {
+      const workbook = XLSX.read(req.file.buffer, { type: 'buffer' });
+      const sheet = workbook.Sheets[workbook.SheetNames[0]];
+      const rows: any[] = XLSX.utils.sheet_to_json(sheet);
+      
+      if (rows.length === 0) return res.status(400).json({ error: "File Excel kosong" });
+      
+      const firstRow = rows[0];
+      if (!('ID Jenjang' in firstRow) || !('Nama Sekolah' in firstRow)) {
+        return res.status(400).json({ error: "Format Excel tidak sesuai template. Pastikan ada kolom 'ID Jenjang' dan 'Nama Sekolah'." });
+      }
+
+      for (const row of rows) {
+        if (row['Nama Sekolah'] && row['ID Jenjang']) {
+          schoolsData.push({
+            id: Date.now() + Math.floor(Math.random() * 1000),
+            name: row['Nama Sekolah'],
+            category_id: parseInt(row['ID Jenjang'], 10)
+          });
+        }
+      }
+      saveDb();
+      res.json({ success: true, message: `Berhasil mengimpor ${rows.length} sekolah` });
+    } catch (e) {
+      res.status(500).json({ error: "Gagal memproses file Excel" });
+    }
+  });
+
+  app.post("/api/students/import", authenticateToken, isStrictAdmin, uploadExcel.single('file') as any, async (req, res) => {
+    if (!req.file) return res.status(400).json({ error: "File tidak ditemukan" });
+    try {
+      const workbook = XLSX.read(req.file.buffer, { type: 'buffer' });
+      const sheet = workbook.Sheets[workbook.SheetNames[0]];
+      const rows: any[] = XLSX.utils.sheet_to_json(sheet);
+      
+      if (rows.length === 0) return res.status(400).json({ error: "File Excel kosong" });
+      
+      const firstRow = rows[0];
+      if (!('Nama Lengkap' in firstRow) || !('Email' in firstRow) || !('ID Sekolah' in firstRow)) {
+        return res.status(400).json({ error: "Format Excel tidak sesuai template. Pastikan ada kolom 'Nama Lengkap', 'Email', dan 'ID Sekolah'." });
+      }
+
+      for (const row of rows) {
+        if (row['Nama Lengkap'] && row['Email']) {
+          let hash = await bcrypt.hash(row['Password'] ? row['Password'].toString() : 'siswa', 10);
+          studentsData.push({
+            id: Date.now() + Math.floor(Math.random() * 1000),
+            name: row['Nama Lengkap'],
+            email: row['Email'],
+            password: hash,
+            nisn: row['NISN'] ? row['NISN'].toString() : '',
+            school_id: row['ID Sekolah'] ? parseInt(row['ID Sekolah'], 10) : null,
+            role: 'siswa',
+            progress: 0,
+            isDeleted: false
+          });
+        }
+      }
+      saveDb();
+      res.json({ success: true, message: `Berhasil mengimpor ${rows.length} siswa` });
+    } catch (e) {
+      res.status(500).json({ error: "Gagal memproses file Excel" });
+    }
+  });
+
+  app.post("/api/teachers/import", authenticateToken, isStrictAdmin, uploadExcel.single('file') as any, async (req, res) => {
+    if (!req.file) return res.status(400).json({ error: "File tidak ditemukan" });
+    try {
+      const workbook = XLSX.read(req.file.buffer, { type: 'buffer' });
+      const sheet = workbook.Sheets[workbook.SheetNames[0]];
+      const rows: any[] = XLSX.utils.sheet_to_json(sheet);
+      
+      if (rows.length === 0) return res.status(400).json({ error: "File Excel kosong" });
+      
+      const firstRow = rows[0];
+      if (!('Nama Lengkap' in firstRow) || !('Email' in firstRow)) {
+        return res.status(400).json({ error: "Format Excel tidak sesuai template. Pastikan ada kolom 'Nama Lengkap' dan 'Email'." });
+      }
+
+      for (const row of rows) {
+        if (row['Nama Lengkap'] && row['Email']) {
+          let hash = await bcrypt.hash(row['Password'] ? row['Password'].toString() : 'guru', 10);
+          teachersData.push({
+            id: Date.now() + Math.floor(Math.random() * 1000),
+            name: row['Nama Lengkap'],
+            email: row['Email'],
+            password: hash,
+            nip: row['NIP'] ? row['NIP'].toString() : '',
+            category_ids: row['ID Jenjang (Koma dipisahkan)'] ? row['ID Jenjang (Koma dipisahkan)'].toString().split(',').map((s: string) => parseInt(s.trim())) : [],
+            subject_ids: row['ID Mapel (Koma dipisahkan)'] ? row['ID Mapel (Koma dipisahkan)'].toString().split(',').map((s: string) => parseInt(s.trim())) : [],
+            role: 'guru',
+            isDeleted: false
+          });
+        }
+      }
+      saveDb();
+      res.json({ success: true, message: `Berhasil mengimpor ${rows.length} guru` });
+    } catch (e) {
+      res.status(500).json({ error: "Gagal memproses file Excel" });
+    }
+  });
+
   app.get("/api/schools", (req, res) => {
     res.json(schoolsData);
   });
@@ -849,7 +1014,7 @@ app.get('/api/modules/:id/questions', authenticateToken, (req, res) => {
     return null;
   }
 
-  app.post("/api/modules", authenticateToken, isAdmin, upload.array('gameFiles'), async (req, res) => {
+  app.post("/api/modules", authenticateToken, isAdmin, upload.array('gameFiles') as any, async (req, res) => {
     try {
       let { title, desc, level, category_id, subject_id, duration, material, gamesMeta, banner_url } = req.body;
       try { material = JSON.parse(material || '[]'); } catch(e) {}
@@ -898,9 +1063,9 @@ app.get('/api/modules/:id/questions', authenticateToken, (req, res) => {
     }
   });
 
-  app.put("/api/modules/:id", authenticateToken, isAdmin, upload.array('gameFiles'), async (req, res) => {
+  app.put("/api/modules/:id", authenticateToken, isAdmin, upload.array('gameFiles') as any, async (req, res) => {
     try {
-      const id = parseInt(req.params.id);
+      const id = parseInt(req.params.id as string);
       const index = modulesData.findIndex(m => m.id === id);
       if (index === -1) return res.status(404).json({ error: "Not found" });
 
@@ -1125,7 +1290,10 @@ app.get('/api/modules/:id/questions', authenticateToken, (req, res) => {
   // Vite Integration
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
-      server: { middlewareMode: true },
+      server: { 
+        middlewareMode: true,
+        hmr: { server: httpServer }
+      },
       appType: "spa",
     });
     app.use(vite.middlewares);
@@ -1143,7 +1311,7 @@ app.get('/api/modules/:id/questions', authenticateToken, (req, res) => {
     res.status(500).json({ success: false, error: "Internal Server Error" });
   });
 
-  app.listen(PORT, "0.0.0.0", () => {
+  httpServer.listen(PORT, "0.0.0.0", () => {
     console.log(`Server running on http://localhost:${PORT}`);
   });
 }

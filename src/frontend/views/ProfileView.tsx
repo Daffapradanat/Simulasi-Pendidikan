@@ -1,17 +1,7 @@
 
 import React, { useState } from 'react';
 import { Module, User, Subject } from '../../types';
-
-const fetchAuth = (url: string | URL | Request, options: any = {}) => {
-  const token = localStorage.getItem('simpend_token');
-  if (token) {
-    options.headers = {
-      ...options.headers,
-      'Authorization': `Bearer ${token}`
-    };
-  }
-  return fetch(url, options);
-};
+import { fetchAuth } from '../../lib/fetchAuth';
 
 // --- PROFILE VIEW ---
 export function ProfileView({ user, completedModuleIds, modules, subjects = [], setUser, reflections = {} }: { user: User, completedModuleIds: Set<number>, modules: Module[], subjects?: Subject[], setUser: (u: User) => void, reflections?: Record<number, string> }) {

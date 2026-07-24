@@ -1,21 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { fetchAuth } from '../../lib/fetchAuth';
 
 export default function DashboardView({ modules, students, teachers, user, setView }: { modules: any[], students: any[], teachers: any[], user: any, setView: (v: string) => void }) {
   const [activities, setActivities] = useState<any[]>([]);
   const [showAllActivities, setShowAllActivities] = useState(false);
 
   useEffect(() => {
-    fetch('/api/activities', { headers: { 'Authorization': `Bearer ${localStorage.getItem('simpend_token')}` } })
+    fetchAuth('/api/activities')
       .then(res => {
-        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+        if (!res.ok) return [];
         return res.json();
       })
       .then(data => {
         setActivities(Array.isArray(data) ? data : []);
       })
-      .catch(e => {
-        console.error('Failed to fetch data', e);
+      .catch(() => {
         setActivities([]);
       });
   }, [modules, students, teachers]);

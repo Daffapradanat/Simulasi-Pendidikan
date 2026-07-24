@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { ConfirmModal } from '../../components/ConfirmModal';
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
+import { fetchAuth } from '../../lib/fetchAuth';
 
 export default function ModulesAddEditView({ 
   editingModule, moduleForm, setModuleForm, setView, handleSaveModule, moduleGameFiles, setModuleGameFiles, isSaving, categories, subjects, moduleQuestions, setModuleQuestions
@@ -13,13 +14,12 @@ export default function ModulesAddEditView({
   const [bannerPreview, setBannerPreview] = useState('');
 
   useEffect(() => {
-    const token = localStorage.getItem('simpend_token');
-    fetch('/api/question_types', { headers: { 'Authorization': `Bearer ${token}` }})
-      .then(r => r.json())
+    fetchAuth('/api/question_types')
+      .then(r => r.ok ? r.json() : [])
       .then(data => {
         if (Array.isArray(data)) setQuestionTypes(data);
       })
-      .catch(console.error);
+      .catch(() => {});
   }, []);
 
   const handleAddQuestion = (code: string) => {
@@ -56,10 +56,8 @@ export default function ModulesAddEditView({
     const formData = new FormData();
     formData.append('image', file);
     try {
-      const token = localStorage.getItem('simpend_token');
-      const res = await fetch('/api/upload-image', {
+      const res = await fetchAuth('/api/upload-image', {
         method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` },
         body: formData
       });
       const data = await res.json();
@@ -192,7 +190,7 @@ export default function ModulesAddEditView({
                   <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: 500 }}>Istilah Kunci</label>
                   <p style={{ fontSize: '12px', color: 'var(--text-muted)', margin: '-4px 0 12px 0' }}>Tambahkan istilah dan definisi.</p>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                    {moduleForm.keyTerms.map((item, index) => (
+                    {moduleForm.keyTerms.map((item: { term: string; def: string }, index: number) => (
                       <div key={index} style={{ display: 'flex', gap: '12px' }}>
                         <input type="text" className="form-input" style={{ width: '30%', margin: 0 }} placeholder="Istilah" value={item.term} onChange={e => {
                           const newTerms = [...moduleForm.keyTerms];
@@ -248,7 +246,7 @@ export default function ModulesAddEditView({
                   <div style={{ position: 'relative', overflow: 'hidden', marginBottom: '16px' }}>
                     <input type="file" multiple accept=".zip" onChange={e => {
                       const files = Array.from(e.target.files || []) as File[];
-                      setModuleGameFiles(prev => [...prev, ...files.map(f => ({ file: f, title: f.name.replace('.zip', ''), desc: '' }))]);
+                      setModuleGameFiles((prev: any[]) => [...prev, ...files.map(f => ({ file: f, title: f.name.replace('.zip', ''), desc: '' }))]);
                       e.target.value = '';
                     }} style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', opacity: 0, cursor: 'pointer', zIndex: 10 }} />
                     <div style={{ padding: '32px', textAlign: 'center', background: 'white', border: '1px solid var(--border)', borderRadius: '8px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
@@ -260,7 +258,7 @@ export default function ModulesAddEditView({
 
                   {moduleGameFiles.length > 0 && (
                      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                       {moduleGameFiles.map((gf, i) => (
+                       {moduleGameFiles.map((gf: any, i: number) => (
                          <div key={i} style={{ display: 'flex', gap: '16px', background: 'white', padding: '16px', border: '1px solid var(--border)', borderRadius: '12px', alignItems: 'flex-start', boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }}>
                            <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'var(--primary-light)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', flexShrink: 0, marginTop: '12px' }}>
                              {i + 1}
@@ -268,7 +266,7 @@ export default function ModulesAddEditView({
                            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', flex: 1 }}>
                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--primary)' }}><i className="ti ti-file-zip" style={{ marginRight: '6px' }}></i>{gf.file ? gf.file.name : 'File Game Tersimpan'} {gf.file && gf.file.size ? `(${(gf.file.size / 1024 / 1024).toFixed(2)} MB)` : ''}</span>
-                               <button type="button" className="btn btn-danger btn-sm" style={{ padding: '4px 8px' }} onClick={() => setModuleGameFiles(prev => prev.filter((_, idx) => idx !== i))}>
+                               <button type="button" className="btn btn-danger btn-sm" style={{ padding: '4px 8px' }} onClick={() => setModuleGameFiles((prev: any[]) => prev.filter((_: any, idx: number) => idx !== i))}>
                                  <i className="ti ti-trash"></i>
                                </button>
                              </div>

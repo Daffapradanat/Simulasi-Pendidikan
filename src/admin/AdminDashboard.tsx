@@ -1,41 +1,49 @@
 import { motion, AnimatePresence } from 'motion/react';
-import { Module, Category, Subject } from './types';
+import { Module, Category, Subject } from '../types';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Sidebar } from './admin/components/Sidebar';
+import { Sidebar } from './components/Sidebar';
 import React, { useState, useEffect, Suspense, lazy } from "react";
-import { ConfirmModal } from "./components/ConfirmModal";
-const ProfileView = lazy(() => import('./admin/views/ProfileView'));
-const TeachersView = lazy(() => import('./admin/views/TeachersView'));
-const StudentsView = lazy(() => import('./admin/views/StudentsView'));
-const ModulesAddEditView = lazy(() => import('./admin/views/ModulesAddEditView'));
-const ModulesView = lazy(() => import('./admin/views/ModulesView'));
-const DashboardView = lazy(() => import('./admin/views/DashboardView'));
-const AuditView = lazy(() => import('./admin/views/AuditView'));
-const CategoriesSubjectsView = lazy(() => import('./admin/views/CategoriesSubjectsView'));
-const SchoolsView = lazy(() => import('./admin/views/SchoolsView'));
+import { ConfirmModal } from "../components/ConfirmModal";
+import { fetchAuth } from '../lib/fetchAuth';
+const ProfileView = lazy(() => import('./views/ProfileView'));
+const TeachersView = lazy(() => import('./views/TeachersView'));
+const StudentsView = lazy(() => import('./views/StudentsView'));
+const ModulesAddEditView = lazy(() => import('./views/ModulesAddEditView'));
+const ModulesView = lazy(() => import('./views/ModulesView'));
+const DashboardView = lazy(() => import('./views/DashboardView'));
+const AuditView = lazy(() => import('./views/AuditView'));
+const CategoriesSubjectsView = lazy(() => import('./views/CategoriesSubjectsView'));
+const SchoolsView = lazy(() => import('./views/SchoolsView'));
 
 
 // Types for Admin
 type AdminViewMode = 'dashboard' | 'modules' | 'modules_add_edit' | 'students' | 'teachers' | 'profile' | 'audit' | 'categories_subjects' | 'schools';
 
 export default function AdminDashboard({ user, onLogout, onNavigate, onUpdateUser }: { user: any, onLogout: () => void, onNavigate: (v: 'main' | 'profile') => void, onUpdateUser?: (u: any) => void }) {
-  const fetchAuth = (url: string, options: any = {}) => {
-    const token = localStorage.getItem('simpend_token');
-    if (token) {
-      options.headers = {
-        ...options.headers,
-        'Authorization': `Bearer ${token}`
-      };
-    }
-    return fetch(url, options);
-  };
-const navigate = useNavigate();
+  const navigate = useNavigate();
   const location = useLocation();
   const [view, setView] = useState<AdminViewMode>(() => {
     const path = location.pathname.split("/").pop() as AdminViewMode;
     const validPaths: AdminViewMode[] = ["dashboard", "modules", "modules_add_edit", "students", "teachers", "profile", "audit", "categories_subjects", "schools"];
     return validPaths.includes(path) ? path : "dashboard";
   });
+
+
+  useEffect(() => {
+    const checkSession = async () => {
+      try {
+        const res = await fetchAuth('/api/auth/me');
+        if (!res.ok) {
+          onLogout();
+        }
+      } catch (e) {
+        // ignore network errors
+      }
+    };
+    
+    const interval = setInterval(checkSession, 15000); // every 15s
+    return () => clearInterval(interval);
+  }, [onLogout]);
 
   useEffect(() => {
     const path = location.pathname.split("/").pop() as AdminViewMode;
@@ -115,12 +123,12 @@ const navigate = useNavigate();
       setLoading(true);
       try {
         const [modRes, stuRes, teachRes, catRes, subRes, schRes] = await Promise.all([
-          fetchAuth('/api/modules').then(r => { if (r.status === 401) { onLogout(); throw new Error('401'); } return r.json(); }),
-          fetchAuth('/api/students').then(r => { if (r.status === 401) { onLogout(); throw new Error('401'); } return r.json(); }),
-          fetchAuth('/api/teachers').then(r => { if (r.status === 401) { onLogout(); throw new Error('401'); } return r.json(); }),
-          fetchAuth('/api/categories').then(r => { if (r.status === 401) { onLogout(); throw new Error('401'); } return r.json(); }),
-          fetchAuth('/api/subjects').then(r => { if (r.status === 401) { onLogout(); throw new Error('401'); } return r.json(); }),
-          fetchAuth('/api/schools').then(r => { if (r.status === 401) { onLogout(); throw new Error('401'); } return r.json(); })
+          fetchAuth('/api/modules').then(r => r.ok ? r.json() : null),
+          fetchAuth('/api/students').then(r => r.ok ? r.json() : null),
+          fetchAuth('/api/teachers').then(r => r.ok ? r.json() : null),
+          fetchAuth('/api/categories').then(r => r.ok ? r.json() : null),
+          fetchAuth('/api/subjects').then(r => r.ok ? r.json() : null),
+          fetchAuth('/api/schools').then(r => r.ok ? r.json() : null)
         ]);
         
         if (Array.isArray(modRes)) setModules(modRes);
@@ -130,7 +138,7 @@ const navigate = useNavigate();
         if (Array.isArray(subRes)) setSubjects(subRes);
         if (Array.isArray(schRes)) setSchools(schRes);
       } catch (err) {
-        console.error("Failed to fetch data", err);
+        // Quiet error handling
       }
       setLoading(false);
     };
@@ -497,7 +505,8 @@ const navigate = useNavigate();
       case 'profile':
         return <ProfileView 
           user={user} isEditingProfile={isEditingProfile} setIsEditingProfile={setIsEditingProfile}
-          profileForm={profileForm} setProfileForm={setProfileForm} onUpdateUser={onUpdateUser}
+          profileForm={profileForm} setProfileForm={setProfileForm} onUpdateUser={onUpdateUser} onClearAll={() => setShowClearAllConfirm(true)}
+          
         />;
     }
   };
@@ -505,7 +514,7 @@ const navigate = useNavigate();
   return (
     <div className="admin-layout">
       {/* Sidebar Admin */}
-      <Sidebar user={user} view={view} setView={handleSetView} onLogout={() => setShowLogoutConfirm(true)} onNavigate={onNavigate as any} onClearAll={() => setShowClearAllConfirm(true)} />
+      <Sidebar user={user} view={view} setView={(v: any) => handleSetView(v as AdminViewMode)} onLogout={() => setShowLogoutConfirm(true)} onNavigate={onNavigate as any} onClearAll={() => setShowClearAllConfirm(true)} />
       <div className="admin-main">
         <AnimatePresence mode="wait">
           <motion.div key={view} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.2 }}>
@@ -611,7 +620,7 @@ const navigate = useNavigate();
                       }}>
                         <input type="checkbox" style={{ display: 'none' }} checked={isSelected} onChange={(e) => {
                           if (e.target.checked) setTeacherForm({...teacherForm, subject_ids: [...(teacherForm.subject_ids||[]), s.id]});
-                          else setTeacherForm({...teacherForm, subject_ids: (teacherForm.subject_ids||[]).filter(id => id !== s.id)});
+                          else setTeacherForm({...teacherForm, subject_ids: (teacherForm.subject_ids||[]).filter((id: number) => id !== s.id)});
                         }} /> {s.name}
                       </label>
                     )})}

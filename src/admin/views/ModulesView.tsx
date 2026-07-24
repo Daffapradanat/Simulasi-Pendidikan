@@ -2,17 +2,7 @@ import React, { useState } from 'react';
 import { ConfirmModal } from '../../components/ConfirmModal';
 import { Module } from '../../types';
 import * as XLSX from 'xlsx';
-
-const fetchAuth = (url: string | URL | Request, options: any = {}) => {
-  const token = localStorage.getItem('simpend_token');
-  if (token) {
-    options.headers = {
-      ...options.headers,
-      'Authorization': `Bearer ${token}`
-    };
-  }
-  return fetch(url, options);
-};
+import { fetchAuth } from '../../lib/fetchAuth';
 
 export default function ModulesView({ 
   modules, setView, setEditingModule, setModuleForm, 
@@ -24,7 +14,7 @@ export default function ModulesView({
   const [levelFilter, setLevelFilter] = useState('all');
   const itemsPerPage = 6;
 
-  const filteredModules = modules.filter(m => {
+  const filteredModules = modules.filter((m: any) => {
     const matchesSearch = (m.title || '').toLowerCase().includes((moduleSearch || '').toLowerCase());
     
     let matchesStatus = true;
@@ -108,7 +98,8 @@ export default function ModulesView({
           </div>
         </div>
         <div style={{ overflowX: 'auto', background: 'white', borderRadius: '8px', border: '1px solid var(--border)' }}>
-          <table className="admin-table">
+          <div className="table-responsive">
+<table className="admin-table">
             <thead>
               <tr>
                 <th style={{ width: '60px' }}>No.</th>
@@ -127,10 +118,10 @@ export default function ModulesView({
                   </td>
                 </tr>
               ) : (
-                displayedModules.map(mod => (
+                displayedModules.map((mod: any) => (
                 <tr key={mod.id} style={{ ...(mod.isDeleted ? { filter: 'grayscale(100%)', opacity: 0.5 } : {}) }}>
                   <td>
-                    <div style={{ fontWeight: 600 }}>{modules.findIndex(m => m.id === mod.id) + 1}</div>
+                    <div style={{ fontWeight: 600 }}>{modules.findIndex((m: any) => m.id === mod.id) + 1}</div>
                     {mod.isDeleted && <span className="badge" style={{ background: 'var(--border)', color: 'var(--text-muted)', marginTop: '6px', display: 'inline-block' }}>Dihapus</span>}
                   </td>
                   <td style={{ textDecoration: mod.isDeleted ? 'line-through' : 'none' }}>
@@ -165,10 +156,10 @@ export default function ModulesView({
                         setEditingModule(mod);
                         // Fetch questions
                         if (setModuleQuestions) {
-                           const token = localStorage.getItem('simpend_token');
-                           fetch(`/api/modules/${mod.id}/questions`, {
-                             headers: { 'Authorization': `Bearer ${token}` }
-                           }).then(res => res.json()).then(d => setModuleQuestions(d.questions || []));
+                           fetchAuth(`/api/modules/${mod.id}/questions`)
+                             .then(res => res.ok ? res.json() : { questions: [] })
+                             .then(d => setModuleQuestions(d.questions || []))
+                             .catch(() => setModuleQuestions([]));
                         }
                         setModuleForm({ 
                           title: mod.title, 
@@ -200,6 +191,7 @@ export default function ModulesView({
               )))}
             </tbody>
           </table>
+</div>
           
           {totalPages > 1 && (
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px', borderTop: '1px solid var(--border)' }}>

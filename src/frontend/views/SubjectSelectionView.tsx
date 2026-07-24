@@ -54,15 +54,16 @@ export function SubjectSelectionView({ subjects, onSelectSubject, onBack }: { su
 
   const itemVariants = {
     hidden: { opacity: 0, y: 20 },
-    show: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 300, damping: 24 } }
+    show: { opacity: 1, y: 0, transition: { type: 'spring' as const, stiffness: 300, damping: 24 } }
   };
 
+
   return (
-    <div className="main-content" style={{ maxWidth: '1200px', margin: '0 auto', paddingTop: '100px', paddingBottom: '60px' }}>
-      <motion.div 
+    <div className="main-wrapper">
+      <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        style={{ display: 'flex', alignItems: 'center', marginBottom: '48px', position: 'relative', justifyContent: 'center' }}
+        style={{ position: 'relative', marginBottom: '40px' }}
       >
         {onBack && (
           <button className="btn btn-ghost" onClick={onBack} style={{ position: 'absolute', left: 0, top: '50%', transform: 'translateY(-50%)' }}>
@@ -81,7 +82,7 @@ export function SubjectSelectionView({ subjects, onSelectSubject, onBack }: { su
         variants={containerVariants}
         initial="hidden"
         animate="show"
-        style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '32px' }}
+        className="selection-grid"
       >
         {subjects.map(subject => {
           const style = getSubjectStyles(subject);
@@ -90,19 +91,7 @@ export function SubjectSelectionView({ subjects, onSelectSubject, onBack }: { su
             <motion.div 
               variants={itemVariants}
               key={subject.id} 
-              style={{
-                cursor: 'pointer',
-                background: 'white',
-                borderRadius: '24px',
-                padding: '32px',
-                border: `1px solid #e2e8f0`,
-                boxShadow: '0 4px 20px rgba(0,0,0,0.03)',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '24px',
-                position: 'relative',
-                overflow: 'hidden'
-              }}
+              className="selection-card"
               onClick={() => onSelectSubject(subject.id)}
               whileHover={{ 
                 y: -6, 
@@ -111,19 +100,13 @@ export function SubjectSelectionView({ subjects, onSelectSubject, onBack }: { su
               }}
               whileTap={{ scale: 0.98 }}
             >
-              <div style={{
-                width: '80px', height: '80px', borderRadius: '20px',
-                background: style.bg, color: style.color,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: '36px', flexShrink: 0,
-                boxShadow: `inset 0 2px 4px rgba(255,255,255,0.5), 0 4px 12px ${style.color}20`
-              }}>
+              <div className="selection-icon-wrap" style={{ background: style.bg, color: style.color, boxShadow: `inset 0 2px 4px rgba(255,255,255,0.5), 0 4px 12px ${style.color}20` }}>
                 <i className={`ti ${icon}`}></i>
               </div>
               
               <div style={{ flex: 1, textAlign: 'left' }}>
-                <h3 style={{ fontSize: '22px', fontWeight: 700, color: 'var(--text)', marginBottom: '8px' }}>{subject.name}</h3>
-                <div style={{ display: 'inline-flex', alignItems: 'center', fontSize: '14px', color: style.color, fontWeight: 600 }}>
+                <h3 className="selection-card-title">{subject.name}</h3>
+                <div className="selection-card-link" style={{ color: style.color }}>
                   Buka Modul <i className="ti ti-arrow-right" style={{ marginLeft: '6px', fontSize: '16px' }}></i>
                 </div>
               </div>
@@ -131,7 +114,7 @@ export function SubjectSelectionView({ subjects, onSelectSubject, onBack }: { su
           );
         })}
         {subjects.length === 0 && (
-           <motion.div 
+           <motion.div
              initial={{ opacity: 0 }} animate={{ opacity: 1 }}
              style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '64px', background: 'white', borderRadius: '24px', border: '1px dashed var(--border)' }}
            >

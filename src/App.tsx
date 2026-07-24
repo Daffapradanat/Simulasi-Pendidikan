@@ -10,23 +10,10 @@ import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-
 
 import React, { useState, useEffect, useMemo, Suspense } from 'react';
 import { Navbar } from './frontend/components/Navbar';
-import AdminDashboard from './AdminDashboard';
-
-const fetchAuth = async (url: string | URL | Request, options: any = {}) => {
-  const token = localStorage.getItem('simpend_token');
-  if (token) {
-    options.headers = {
-      ...options.headers,
-      'Authorization': `Bearer ${token}`
-    };
-  }
-  const res = await fetch(url, options);
-  if (res.status === 401) {
-     // Trigger logout on 401 Unauthorized
-     window.dispatchEvent(new Event('auth_unauthorized'));
-  }
-  return res;
-};
+import AdminDashboard from './admin/AdminDashboard';
+import { fetchAuth } from './lib/fetchAuth';
+import { ErrorView } from './frontend/views/ErrorView';
+import { syncProgressWithServer } from './lib/syncProgress';
 
 
 // --- MAIN APP COMPONENT ---
@@ -182,20 +169,55 @@ export default function App() {
   }, [showAllDoneModal, showLogoutConfirm, completedModulePopup]);
 
   useEffect(() => {
-    // Check auto-login if remember me was checked, or current session
+    const handleUnauthorized = () => {
+      localStorage.removeItem('simpend_token');
+      localStorage.removeItem('simpend_current_user');
+      localStorage.removeItem('simpend_auto_login');
+      setCurrentUser(null);
+    };
+    window.addEventListener('auth_unauthorized', handleUnauthorized);
+    return () => window.removeEventListener('auth_unauthorized', handleUnauthorized);
+  }, []);
+
+  useEffect(() => {
+    const token = localStorage.getItem('simpend_token');
     let savedUser = localStorage.getItem('simpend_auto_login');
     if (!savedUser) {
       savedUser = localStorage.getItem('simpend_current_user');
     }
-    if (savedUser) {
+
+    if (token) {
+      fetchAuth('/api/auth/me')
+        .then(res => {
+          if (!res.ok) throw new Error('401');
+          return res.json();
+        })
+        .then(data => {
+          if (data && data.user) {
+            setCurrentUser(data.user);
+            localStorage.setItem('simpend_current_user', JSON.stringify(data.user));
+            refreshUserData(data.user);
+          } else {
+            throw new Error('Invalid user');
+          }
+        })
+        .catch(() => {
+          localStorage.removeItem('simpend_token');
+          localStorage.removeItem('simpend_current_user');
+          localStorage.removeItem('simpend_auto_login');
+          setCurrentUser(null);
+          setIsProgressLoaded(true);
+        });
+    } else if (savedUser) {
       try {
         const parsed = JSON.parse(savedUser);
         setCurrentUser(parsed);
         refreshUserData(parsed);
-      } catch(e) {
+      } catch (e) {
         setIsProgressLoaded(true);
       }
     } else {
+      setCurrentUser(null);
       setIsProgressLoaded(true);
     }
     fetchModules();
@@ -337,6 +359,17 @@ export default function App() {
       let user = data.user || data.foundUser;
       if (data.token) { localStorage.setItem('simpend_token', data.token); } // if returned differently
       if (!user) user = data; // fallback
+
+      if (user.role && user.role !== mode) {
+        if (mode === 'admin' || mode === 'guru') {
+          fetchAuth('/api/auth/anomaly', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, attemptedRole: mode, actualRole: user.role })
+          }).catch(console.error);
+        }
+        throw new Error('Access Denied: Peran akun Anda tidak sesuai dengan portal login ini.');
+      }
       
       setLoginAttempts(0);
       setLoginBlockTime(null);
@@ -415,6 +448,34 @@ export default function App() {
   };
 
   const currentModule = currentModuleId ? computedModules.find(m => m.id === currentModuleId) : null;
+
+
+  useEffect(() => {
+    const handleOnline = async () => {
+      showToast('Koneksi internet kembali tersambung!', 'success');
+      if (currentUser && currentUser.id) {
+        const pending = localStorage.getItem(`simpend_pending_sync_${currentUser.id}`);
+        if (pending) {
+          try {
+            const data = JSON.parse(pending);
+            const success = await syncProgressWithServer(currentUser.id, data.playedGames, data.completedModuleIds, data.reflections);
+            if (success) {
+              showToast('Progress yang tertunda berhasil disinkronkan ke server.', 'success');
+            }
+          } catch(e) {}
+        }
+      }
+    };
+    const handleOffline = () => showToast('Koneksi internet terputus! Anda sedang offline.', 'error');
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, [currentUser]);
 
   // Track last viewed module
   useEffect(() => {
@@ -606,6 +667,8 @@ export default function App() {
               </AnimatePresence>
             </>
         } />
+        <Route path="/error/:code" element={<ErrorView />} />
+        <Route path="*" element={<ErrorView code={404} />} />
       </Routes>
       </Suspense>
 

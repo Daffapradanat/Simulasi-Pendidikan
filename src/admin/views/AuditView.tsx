@@ -16,7 +16,8 @@ export default function AuditView({ modules }: { modules: Module[] }) {
       </div>
 
       <div style={{ overflowX: 'auto', background: 'white', borderRadius: '8px', border: '1px solid var(--border)' }}>
-        <table className="admin-table">
+        <div className="table-responsive">
+<table className="admin-table">
           <thead>
             <tr>
               <th style={{ width: '60px' }}>No.</th>
@@ -76,6 +77,7 @@ export default function AuditView({ modules }: { modules: Module[] }) {
           </tbody>
         
         </table>
+</div>
         {totalPages > 1 && (
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px', borderTop: '1px solid var(--border)' }}>
             <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>

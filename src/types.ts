@@ -31,7 +31,7 @@ export type Module = {
   questionCount?: number;
 };
 
-export type User = { id?: number; name: string; username?: string; email: string; role: string };
+export type User = { id?: number; name: string; username?: string; email: string; role: string; category_ids?: number[]; subject_ids?: number[] };
 
 export type Toast = {
   id: number;
