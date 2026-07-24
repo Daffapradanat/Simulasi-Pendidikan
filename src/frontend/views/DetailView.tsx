@@ -180,20 +180,8 @@ export function DetailView({
                 </div>
               )}
               
-              <div className="material-block" style={{ marginBottom: '28px' }}>
-                <div className="material-subtitle"><i className="ti ti-file-text" style={{ color: 'var(--primary)' }}></i> Penjelasan Materi</div>
-                {module.material && typeof module.material === 'object' && !Array.isArray(module.material) && module.material.theory ? (
-                  <div className="material-theory" style={{ background: 'var(--white)', border: '1px solid var(--border)', padding: '24px', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }} dangerouslySetInnerHTML={{ __html: module.material.theory }} />
-                ) : (
-                  <div style={{ background: 'var(--surface)', padding: '24px', borderRadius: '12px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '14px' }}>
-                    <i className="ti ti-note" style={{ fontSize: '24px', display: 'block', marginBottom: '8px', color: 'var(--text-light)' }}></i>
-                    Belum ada penjelasan materi yang ditambahkan.
-                  </div>
-                )}
-              </div>
-              
               {(module.material && typeof module.material === 'object' && !Array.isArray(module.material) && module.material.keyTerms && module.material.keyTerms.length > 0) && (
-                <div className="material-block" style={{ marginBottom: 0 }}>
+                <div className="material-block" style={{ marginBottom: '28px' }}>
                   <div className="material-subtitle"><i className="ti ti-vocabulary" style={{ color: 'var(--primary)' }}></i> Istilah Kunci</div>
                   <div className="material-terms" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '12px' }}>
                     {module.material.keyTerms.map((term, i) => (
@@ -205,6 +193,18 @@ export function DetailView({
                   </div>
                 </div>
               )}
+
+              <div className="material-block" style={{ marginBottom: 0 }}>
+                <div className="material-subtitle"><i className="ti ti-file-text" style={{ color: 'var(--primary)' }}></i> Penjelasan Materi</div>
+                {module.material && typeof module.material === 'object' && !Array.isArray(module.material) && module.material.theory ? (
+                  <div className="material-theory" style={{ background: 'var(--white)', border: '1px solid var(--border)', padding: '24px', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }} dangerouslySetInnerHTML={{ __html: module.material.theory }} />
+                ) : (
+                  <div style={{ background: 'var(--surface)', padding: '24px', borderRadius: '12px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '14px' }}>
+                    <i className="ti ti-note" style={{ fontSize: '24px', display: 'block', marginBottom: '8px', color: 'var(--text-light)' }}></i>
+                    Belum ada penjelasan materi yang ditambahkan.
+                  </div>
+                )}
+              </div>
             </div>
             
             <div className="section-card">
@@ -322,7 +322,7 @@ export function DetailView({
                   <i className="ti ti-circle-check" style={{ color: 'var(--primary)', fontSize: '20px' }}></i>
                   <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '16px', color: 'var(--text)' }}>Evaluasi & Penyelesaian</span>
                 </div>
-                <span className="step-chip" style={{ background: 'var(--primary-light)', color: 'var(--primary)', padding: '4px 10px', borderRadius: '100px', fontSize: '12px', fontWeight: 700 }}>Langkah 3</span>
+                <span className="step-chip" style={{ background: 'var(--primary)', color: '#fff', border: 'none' }}>Langkah 3</span>
               </div>
               
               <div style={{ padding: '24px' }}>
@@ -454,19 +454,25 @@ export function DetailView({
             <div className="sidebar-card">
               <div className="sidebar-card-title"><i className="ti ti-list-check"></i> Alur Belajar</div>
               <div className="step-guide">
-                <div className="step-guide-item">
-                  <div className="step-guide-num">1</div>
+                <div className={`step-guide-item ${!allPlayed && !isModuleCompleted ? 'active' : ''}`}>
+                  <div className="step-guide-num" style={{ background: 'var(--primary)', color: 'white' }}>
+                    <i className="ti ti-check"></i>
+                  </div>
                   <div className="step-guide-text">Baca dan pahami materi pembelajaran</div>
                 </div>
-                <div className="step-guide-connector"></div>
+                <div className="step-guide-connector" style={{ background: 'var(--primary)' }}></div>
                 <div className="step-guide-item">
-                  <div className="step-guide-num">2</div>
-                  <div className="step-guide-text">Mainkan <strong>semua</strong> game simulasi</div>
+                  <div className="step-guide-num" style={{ background: allPlayed ? 'var(--primary)' : 'var(--primary-light)', color: allPlayed ? 'white' : 'var(--primary)' }}>
+                    {allPlayed ? <i className="ti ti-check"></i> : '2'}
+                  </div>
+                  <div className="step-guide-text" style={{ color: allPlayed ? 'var(--text-muted)' : 'var(--text)' }}>Mainkan <strong>semua</strong> game simulasi</div>
                 </div>
-                <div className="step-guide-connector"></div>
+                <div className="step-guide-connector" style={{ background: allPlayed ? 'var(--primary)' : 'var(--border-dark)' }}></div>
                 <div className="step-guide-item">
-                  <div className="step-guide-num">3</div>
-                  <div className="step-guide-text">Klik <strong>Tandai Selesai</strong> untuk lanjut</div>
+                  <div className="step-guide-num" style={{ background: isModuleCompleted ? 'var(--primary)' : (allPlayed ? 'var(--primary-light)' : 'var(--surface-2)'), color: isModuleCompleted ? 'white' : (allPlayed ? 'var(--primary)' : 'var(--text-muted)') }}>
+                    {isModuleCompleted ? <i className="ti ti-check"></i> : '3'}
+                  </div>
+                  <div className="step-guide-text" style={{ color: isModuleCompleted ? 'var(--text-muted)' : (allPlayed ? 'var(--text)' : 'var(--text-muted)') }}>Evaluasi & <strong>Selesaikan Modul</strong></div>
                 </div>
               </div>
             </div>

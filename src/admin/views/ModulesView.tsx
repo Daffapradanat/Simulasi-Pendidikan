@@ -170,7 +170,8 @@ export default function ModulesView({
                           duration: mod.duration || '', 
                           objectives: mod.material?.objectives?.join('\n') || '',
                           theory: mod.material?.theory || '',
-                          keyTerms: mod.material?.keyTerms || []
+                          keyTerms: mod.material?.keyTerms || [],
+                          banner_url: mod.banner_url || ''
                         });
                         setModuleGameFiles((mod.games || []).map((g: any) => ({ file: null, title: g.title, desc: g.desc, id: g.id, path: g.path })));
                         setView('modules_add_edit');

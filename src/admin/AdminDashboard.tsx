@@ -41,8 +41,7 @@ export default function AdminDashboard({ user, onLogout, onNavigate, onUpdateUse
       }
     };
     
-    const interval = setInterval(checkSession, 15000); // every 15s
-    return () => clearInterval(interval);
+    checkSession();
   }, [onLogout]);
 
   useEffect(() => {

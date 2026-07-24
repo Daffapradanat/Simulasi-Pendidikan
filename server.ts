@@ -1051,7 +1051,7 @@ app.get('/api/modules/:id/questions', authenticateToken, (req, res) => {
         subject_id: parseInt(subject_id) || null,
         duration, material, 
         games: gamesMeta, gameCount: gamesMeta?.length || 0,
-        status: 'locked'
+        status: 'locked', banner_url
       };
       modulesData.push(newModule);
       logActivity('module', 'Admin', `Menambahkan modul baru "${title}"`);
@@ -1069,7 +1069,7 @@ app.get('/api/modules/:id/questions', authenticateToken, (req, res) => {
       const index = modulesData.findIndex(m => m.id === id);
       if (index === -1) return res.status(404).json({ error: "Not found" });
 
-      let { title, desc, level, category_id, subject_id, duration, material, gamesMeta } = req.body;
+      let { title, desc, level, category_id, subject_id, duration, material, gamesMeta, banner_url } = req.body;
       try { material = JSON.parse(material || '[]'); } catch(e) {}
       try { gamesMeta = JSON.parse(gamesMeta || '[]'); } catch(e) {}
 
@@ -1097,12 +1097,25 @@ app.get('/api/modules/:id/questions', authenticateToken, (req, res) => {
         }
       }
 
+      const oldBannerUrl = modulesData[index].banner_url;
+      if (oldBannerUrl && oldBannerUrl !== banner_url) {
+        const oldFilename = oldBannerUrl.split('/').pop();
+        if (oldFilename) {
+          const oldFilepath = path.join(BANNERS_DIR, oldFilename);
+          try {
+            if (fs.existsSync(oldFilepath)) fs.unlinkSync(oldFilepath);
+          } catch(err) {
+            console.error('Failed to delete old banner:', err);
+          }
+        }
+      }
+
       modulesData[index] = { 
         ...modulesData[index], 
         title, desc, level, 
         category_id: parseInt(category_id) || null,
         subject_id: parseInt(subject_id) || null,
-        duration, material, games: gamesMeta, gameCount: gamesMeta?.length || 0
+        duration, material, games: gamesMeta, gameCount: gamesMeta?.length || 0, banner_url
       };
       logActivity('module', 'Admin', `Mengubah modul "${title}"`);
       saveDb();
@@ -1125,6 +1138,15 @@ app.get('/api/modules/:id/questions', authenticateToken, (req, res) => {
              try { fs.rmSync(gameDir, { recursive: true, force: true }); } catch (e) {}
           }
         });
+      }
+      if (module.banner_url) {
+        const oldFilename = module.banner_url.split('/').pop();
+        if (oldFilename) {
+          const oldFilepath = path.join(BANNERS_DIR, oldFilename);
+          try {
+            if (fs.existsSync(oldFilepath)) fs.unlinkSync(oldFilepath);
+          } catch(err) {}
+        }
       }
       logActivity('module', 'Admin', `Menghapus modul "${module.title}" secara permanen`);
       modulesData.splice(index, 1);
@@ -1291,8 +1313,7 @@ app.get('/api/modules/:id/questions', authenticateToken, (req, res) => {
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
       server: { 
-        middlewareMode: true,
-        hmr: { server: httpServer }
+        middlewareMode: true
       },
       appType: "spa",
     });

@@ -18,6 +18,7 @@ import { syncProgressWithServer } from './lib/syncProgress';
 
 // --- MAIN APP COMPONENT ---
 export default function App() {
+  console.log("App render", Date.now());
   const navigate = useNavigate();
   const location = useLocation();
   const [viewMode, setViewMode] = useState<'main' | 'profile'>('main');
@@ -111,13 +112,13 @@ export default function App() {
 
   useEffect(() => {
     if (filteredCategories.length === 1 && location.pathname === '/') {
-      navigate(`/category/${filteredCategories[0].id}`);
+      navigate(`/category/${filteredCategories[0].id}`, { replace: true });
     }
   }, [filteredCategories, location.pathname, navigate]);
 
   useEffect(() => {
     if (selectedCategoryId && filteredSubjects.length === 1 && location.pathname === `/category/${selectedCategoryId}`) {
-      navigate(`/category/${selectedCategoryId}/subject/${filteredSubjects[0].id}`);
+      navigate(`/category/${selectedCategoryId}/subject/${filteredSubjects[0].id}`, { replace: true });
     }
   }, [selectedCategoryId, filteredSubjects, location.pathname, navigate]);
 
@@ -223,35 +224,9 @@ export default function App() {
     fetchModules();
   }, []);
 
-  // Polling for new modules
   useEffect(() => {
-    // Only poll if not currently playing a module
-    if (currentModuleId !== null) return;
-    
-    let interval: NodeJS.Timeout;
-    
-    const startPolling = () => {
-      interval = setInterval(() => {
-        if (document.visibilityState === 'visible') {
-          fetchModules();
-        }
-      }, 15000); // 15 seconds saves resources
-    };
-    
-    startPolling();
-    
-    const handleVisChange = () => {
-      if (document.visibilityState === 'visible') {
-        fetchModules(); // Fetch immediately when tab becomes active
-      }
-    };
-    
-    document.addEventListener('visibilitychange', handleVisChange);
-    
-    return () => {
-      clearInterval(interval);
-      document.removeEventListener('visibilitychange', handleVisChange);
-    };
+    // Only fetch once on mount
+    // visibility polling removed to prevent auto-refresh issues
   }, [currentModuleId]);
 
   const refreshUserData = async (user: User) => {
@@ -289,21 +264,26 @@ export default function App() {
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data)) {
-          setAppModules(data.filter(m => !m.isDeleted));
+          const newData = data.filter(m => !m.isDeleted);
+          setAppModules(prev => JSON.stringify(prev) === JSON.stringify(newData) ? prev : newData);
         }
       })
       .catch(() => {});
       
     fetchAuth('/api/categories')
       .then(res => res.json())
-      .then(data => { if (Array.isArray(data)) setAppCategories(data); })
+      .then(data => { 
+        if (Array.isArray(data)) {
+          setAppCategories(prev => JSON.stringify(prev) === JSON.stringify(data) ? prev : data);
+        }
+      })
       .catch(() => {});
       
     fetchAuth('/api/subjects')
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data)) {
-          setAppSubjects(data);
+          setAppSubjects(prev => JSON.stringify(prev) === JSON.stringify(data) ? prev : data);
         }
       })
       .catch(() => {});
@@ -542,6 +522,14 @@ export default function App() {
     setActiveGameId(null);
     setCurrentModuleId(null); // Return to module list immediately
   };
+
+  if (!isProgressLoaded) {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', background: 'var(--surface-2)' }}>
+        <div className="loading-spinner"></div>
+      </div>
+    );
+  }
 
   return (
     <>

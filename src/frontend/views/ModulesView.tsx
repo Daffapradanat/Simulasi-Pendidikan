@@ -11,6 +11,7 @@ const getFallbackThumb = (id: number) => {
     { bg: '#451a03', g1: '#f59e0b', g2: '#d97706' }
   ];
   const t = themes[id % themes.length];
+  
   return `<svg viewBox="0 0 280 140" xmlns="http://www.w3.org/2000/svg">
     <rect width="280" height="140" fill="${t.bg}"/>
     <rect x="0" y="0" width="280" height="140" fill="url(#g${id})" opacity="0.6"/>

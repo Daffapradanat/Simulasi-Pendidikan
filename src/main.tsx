@@ -15,7 +15,18 @@ if (process.env.NODE_ENV === 'production' || window.location.hostname !== 'local
 
 // Register service worker
 import { registerSW } from 'virtual:pwa-register';
-registerSW({ immediate: true });
+
+if (import.meta.env.DEV) {
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.getRegistrations().then((registrations) => {
+      for (const registration of registrations) {
+        registration.unregister();
+      }
+    });
+  }
+} else {
+  registerSW({ immediate: true });
+}
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
