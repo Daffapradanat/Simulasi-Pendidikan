@@ -1313,7 +1313,11 @@ app.get('/api/modules/:id/questions', authenticateToken, (req, res) => {
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
       server: { 
-        middlewareMode: true
+        middlewareMode: true,
+        hmr: {
+          server: httpServer,
+          clientPort: 443
+        }
       },
       appType: "spa",
     });
