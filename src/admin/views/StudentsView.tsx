@@ -27,6 +27,10 @@ export default function StudentsView({
     if (statusFilter === 'active') return matchesSearch && !s.isDeleted;
     if (statusFilter === 'deleted') return matchesSearch && s.isDeleted;
     return matchesSearch;
+  }).sort((a: any, b: any) => {
+    if (a.isDeleted && !b.isDeleted) return 1;
+    if (!a.isDeleted && b.isDeleted) return -1;
+    return 0;
   });
 
   const totalPages = Math.ceil(filteredStudents.length / itemsPerPage);
@@ -133,12 +137,12 @@ export default function StudentsView({
 
                   <td>
                     <div style={{ display: 'flex', gap: '8px' }}>
-                    <button className="btn btn-ghost btn-sm" title="Lihat Profil" onClick={() => setViewingProfile(s)}>
+                    <button className="btn btn-ghost btn-sm" title="Lihat Profil" onClick={() => setViewingProfile(s)} disabled={s.isDeleted}>
                       <i className="ti ti-user-circle" style={{ fontSize: '18px' }}></i>
                     </button>
                     {!readOnly && (
                     <>
-                    <button className="btn btn-primary btn-sm" title="Edit" onClick={() => {
+                    <button className="btn btn-primary btn-sm" title="Edit" disabled={s.isDeleted} onClick={() => {
                       setEditingStudent(s);
                       setStudentForm({ name: s.name, email: s.email, nisn: s.nisn || '', school_id: s.school_id || '' });
                       setShowStudentModal(true);
@@ -246,7 +250,11 @@ export default function StudentsView({
                              method: 'PUT',
                              headers: { 'Content-Type': 'application/json' },
                              body: JSON.stringify({ avatar: data.url })
-                           });
+                           }).sort((a: any, b: any) => {
+    if (a.isDeleted && !b.isDeleted) return 1;
+    if (!a.isDeleted && b.isDeleted) return -1;
+    return 0;
+  });
                            setViewingProfile({...viewingProfile, avatar: data.url});
                            // Also we might need to trigger a re-fetch of students list. 
                            // For simplicity, we just mutate the current view.

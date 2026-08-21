@@ -26,6 +26,10 @@ export default function ModulesView({
     if (levelFilter !== 'all') matchesLevel = m.category_id?.toString() === levelFilter || m.level === levelFilter;
     
     return matchesSearch && matchesStatus && matchesLevel;
+  }).sort((a: any, b: any) => {
+    if (a.isDeleted && !b.isDeleted) return 1;
+    if (!a.isDeleted && b.isDeleted) return -1;
+    return 0;
   });
 
   const totalPages = Math.ceil(filteredModules.length / itemsPerPage);
@@ -162,7 +166,7 @@ export default function ModulesView({
                   <td>
                     <div style={{ display: 'flex', gap: '8px' }}>
                     <button 
-                      className="btn btn-primary btn-sm" 
+                      className="btn btn-primary btn-sm" disabled={mod.isDeleted} 
                       onClick={() => {
                         setEditingModule(mod);
                         // Fetch questions
@@ -183,7 +187,11 @@ export default function ModulesView({
                           theory: mod.material?.theory || '',
                           keyTerms: mod.material?.keyTerms || [],
                           banner_url: mod.banner_url || ''
-                        });
+                        }).sort((a: any, b: any) => {
+    if (a.isDeleted && !b.isDeleted) return 1;
+    if (!a.isDeleted && b.isDeleted) return -1;
+    return 0;
+  });
                         setModuleGameFiles((mod.games || []).map((g: any) => ({ file: null, title: g.title, desc: g.desc, id: g.id, path: g.path })));
                         setView('modules_add_edit');
                       }}

@@ -100,17 +100,6 @@ export default function ProfileView({
           </div>
         )}
 
-        
-        {user.role === 'admin' && onClearAll && !isEditingProfile && (
-          <div className="section-card" style={{ flex: 1, border: '1px solid rgba(239, 68, 68, 0.2)' }}>
-             <div className="section-card-title" style={{ color: '#ef4444' }}><i className="ti ti-alert-triangle"></i> Zona Berbahaya</div>
-             <p style={{ color: 'var(--text-muted)', fontSize: '14px', marginBottom: '16px' }}>Tindakan ini tidak dapat dibatalkan. Semua data modul, pertanyaan, siswa, dan aktivitas akan dihapus selamanya.</p>
-             <button className="btn btn-danger" style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.2)', width: '100%', justifyContent: 'center' }} onClick={onClearAll}>
-               <i className="ti ti-trash"></i> Hapus Semua Data
-             </button>
-          </div>
-        )}
-        
         {isEditingProfile && (
           <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.2 }} className="section-card" style={{ flex: 1 }}>
             <div className="section-card-title"><i className="ti ti-settings"></i> Pengaturan Akun</div>

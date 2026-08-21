@@ -22,6 +22,10 @@ export default function TeachersView({
     if (statusFilter === 'active') return matchesSearch && !t.isDeleted;
     if (statusFilter === 'deleted') return matchesSearch && t.isDeleted;
     return matchesSearch;
+  }).sort((a: any, b: any) => {
+    if (a.isDeleted && !b.isDeleted) return 1;
+    if (!a.isDeleted && b.isDeleted) return -1;
+    return 0;
   });
 
   const totalPages = Math.ceil(filteredTeachers.length / itemsPerPage);
@@ -127,12 +131,12 @@ export default function TeachersView({
 
                   <td>
                     <div style={{ display: 'flex', gap: '8px' }}>
-                    <button className="btn btn-ghost btn-sm" title="Lihat Profil" onClick={() => setViewingProfile(t)}>
+                    <button className="btn btn-ghost btn-sm" title="Lihat Profil" onClick={() => setViewingProfile(t)} disabled={t.isDeleted}>
                       <i className="ti ti-user-circle" style={{ fontSize: '18px' }}></i>
                     </button>
                     {!readOnly && (
                     <>
-                    <button className="btn btn-primary btn-sm" title="Edit" onClick={() => {
+                    <button className="btn btn-primary btn-sm" title="Edit" disabled={t.isDeleted} onClick={() => {
                       setEditingTeacher(t);
                       setTeacherForm({ name: t.name, nip: t.nip || '', email: t.email || '', subject_ids: t.subject_ids || [], school_id: t.school_id || '' });
                       setShowTeacherModal(true);
@@ -240,7 +244,11 @@ export default function TeachersView({
                              method: 'PUT',
                              headers: { 'Content-Type': 'application/json' },
                              body: JSON.stringify({ avatar: data.url })
-                           });
+                           }).sort((a: any, b: any) => {
+    if (a.isDeleted && !b.isDeleted) return 1;
+    if (!a.isDeleted && b.isDeleted) return -1;
+    return 0;
+  });
                            setViewingProfile({...viewingProfile, avatar: data.url});
                            const tIdx = teachers.findIndex((t:any) => t.id === viewingProfile.id);
                            if (tIdx !== -1) teachers[tIdx].avatar = data.url;

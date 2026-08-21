@@ -859,6 +859,7 @@ app.get('/api/modules/:id/questions', authenticateToken, (req, res) => {
       'Nama Lengkap': s.name,
       'Email': s.email,
       'Password': '',
+      'Konfirmasi Password': '',
       'NISN': s.nisn || '',
       'ID Sekolah': s.school_id || ''
     }));
@@ -877,6 +878,7 @@ app.get('/api/modules/:id/questions', authenticateToken, (req, res) => {
       'Nama Lengkap': t.name,
       'Email': t.email,
       'Password': '',
+      'Konfirmasi Password': '',
       'NIP': t.nip || '',
       'ID Jenjang (Koma dipisahkan)': (t.category_ids || []).join(','),
       'ID Mapel (Koma dipisahkan)': (t.subject_ids || []).join(',')
@@ -940,6 +942,9 @@ app.get('/api/modules/:id/questions', authenticateToken, (req, res) => {
         if (!row['Password']) {
           return res.status(400).json({ error: "Kolom 'Password' wajib diisi untuk semua siswa dalam file Excel." });
         }
+        if (row["Password"] !== row["Konfirmasi Password"]) {
+          return res.status(400).json({ error: "Kolom Password dan Konfirmasi Password tidak cocok." });
+        }
         if (!row['Email'] || !isEmailUnique(row['Email'].toString())) {
           return res.status(400).json({ error: `Email '${row['Email']}' sudah digunakan atau kosong.` });
         }
@@ -988,6 +993,9 @@ app.get('/api/modules/:id/questions', authenticateToken, (req, res) => {
       for (const row of rows) {
         if (!row['Password']) {
           return res.status(400).json({ error: "Kolom 'Password' wajib diisi untuk semua guru dalam file Excel." });
+        }
+        if (row["Password"] !== row["Konfirmasi Password"]) {
+          return res.status(400).json({ error: "Kolom Password dan Konfirmasi Password tidak cocok." });
         }
         if (!row['Email'] || !isEmailUnique(row['Email'].toString())) {
           return res.status(400).json({ error: `Email '${row['Email']}' sudah digunakan atau kosong.` });

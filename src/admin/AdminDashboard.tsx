@@ -399,26 +399,6 @@ export default function AdminDashboard({ user, onLogout, onNavigate, onUpdateUse
     }
   };
 
-  const executeClearAll = async () => {
-    try {
-      const res = await fetchAuth('/api/admin/clear_all', { method: 'POST' });
-      if (res.ok) {
-        setModules([]);
-        setStudents([]);
-        setTeachers([]);
-        setCategories([]);
-        setSchools([]);
-        setSubjects([]);
-        setShowClearAllConfirm(false);
-      } else {
-        const txt = await res.text();
-        toast.error(`Gagal menghapus data: ${txt}`);
-      }
-    } catch (err: any) {
-      toast.error(`Terjadi kesalahan: ${err.message}`);
-    }
-  };
-
   const exportToExcel = () => {
     const data = students.map(s => ({
       ID: s.id,
@@ -547,7 +527,7 @@ export default function AdminDashboard({ user, onLogout, onNavigate, onUpdateUse
       case 'profile':
         return <ProfileView 
           user={user} isEditingProfile={isEditingProfile} setIsEditingProfile={setIsEditingProfile}
-          profileForm={profileForm} setProfileForm={setProfileForm} onUpdateUser={onUpdateUser} onClearAll={() => setShowClearAllConfirm(true)}
+          profileForm={profileForm} setProfileForm={setProfileForm} onUpdateUser={onUpdateUser} 
           
         />;
     }
@@ -556,7 +536,7 @@ export default function AdminDashboard({ user, onLogout, onNavigate, onUpdateUse
   return (
     <div className="admin-layout">
       {/* Sidebar Admin */}
-      <Sidebar user={user} view={view} setView={(v: any) => handleSetView(v as AdminViewMode)} onLogout={() => setShowLogoutConfirm(true)} onNavigate={onNavigate as any} onClearAll={() => setShowClearAllConfirm(true)} />
+      <Sidebar user={user} view={view} setView={(v: any) => handleSetView(v as AdminViewMode)} onLogout={() => setShowLogoutConfirm(true)} onNavigate={onNavigate as any}  />
       <div className="admin-main">
         <AnimatePresence mode="wait">
           <motion.div key={view} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.2 }}>
@@ -567,20 +547,6 @@ export default function AdminDashboard({ user, onLogout, onNavigate, onUpdateUse
         </AnimatePresence>
       </div>
 
-      {/* Clear All Confirmation Modal */}
-      <AnimatePresence>
-        <ConfirmModal
-          isOpen={showClearAllConfirm}
-          title="HAPUS SEMUA DATA SISTEM"
-          message="Peringatan Kritis: Apakah Anda yakin ingin menghapus seluruh data di sistem? Tindakan ini akan menghapus semua modul, kategori, subjek, sekolah, guru, siswa, dan riwayat aktivitas secara permanen. Hanya akun Administrator Utama Anda yang akan dipertahankan. Tindakan ini tidak dapat dibatalkan!"
-          confirmText="Ya, Hapus Semua Data"
-          isDanger={true}
-          onConfirm={executeClearAll}
-          onCancel={() => setShowClearAllConfirm(false)}
-        />
-      </AnimatePresence>
-
-      {/* Logout Warning Modal */}
       <AnimatePresence>
         <ConfirmModal
           isOpen={showLogoutConfirm}
@@ -619,7 +585,7 @@ export default function AdminDashboard({ user, onLogout, onNavigate, onUpdateUse
             <motion.div 
               initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
               className="modal-content"
-              style={{ background: 'var(--surface)', padding: '32px', borderRadius: '16px', maxWidth: '500px', width: '100%', boxShadow: '0 10px 40px rgba(0,0,0,0.3)', margin: '20px' }}
+              style={{ background: 'var(--surface)', padding: '32px', borderRadius: '16px', maxWidth: '500px', width: '100%', boxShadow: '0 10px 40px rgba(0,0,0,0.3)', margin: '20px', maxHeight: '90vh', overflowY: 'auto' }}
             >
               <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '20px', marginBottom: '20px' }}>{editingTeacher ? 'Edit Guru' : 'Tambah Guru'}</h2>
               <form onSubmit={handleSaveTeacher}>
@@ -711,7 +677,7 @@ export default function AdminDashboard({ user, onLogout, onNavigate, onUpdateUse
             <motion.div 
               initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
               className="modal-content"
-              style={{ background: 'var(--surface)', padding: '32px', borderRadius: '16px', maxWidth: '500px', width: '100%', boxShadow: '0 10px 40px rgba(0,0,0,0.3)', margin: '20px' }}
+              style={{ background: 'var(--surface)', padding: '32px', borderRadius: '16px', maxWidth: '500px', width: '100%', boxShadow: '0 10px 40px rgba(0,0,0,0.3)', margin: '20px', maxHeight: '90vh', overflowY: 'auto' }}
             >
               <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '20px', marginBottom: '20px' }}>{editingStudent ? 'Edit Siswa' : 'Tambah Siswa'}</h2>
               <form onSubmit={handleSaveStudent}>
