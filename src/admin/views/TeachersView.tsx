@@ -244,11 +244,7 @@ export default function TeachersView({
                              method: 'PUT',
                              headers: { 'Content-Type': 'application/json' },
                              body: JSON.stringify({ avatar: data.url })
-                           }).sort((a: any, b: any) => {
-    if (a.isDeleted && !b.isDeleted) return 1;
-    if (!a.isDeleted && b.isDeleted) return -1;
-    return 0;
-  });
+                           }).then(() => {});
                            setViewingProfile({...viewingProfile, avatar: data.url});
                            const tIdx = teachers.findIndex((t:any) => t.id === viewingProfile.id);
                            if (tIdx !== -1) teachers[tIdx].avatar = data.url;

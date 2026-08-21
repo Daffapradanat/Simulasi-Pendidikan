@@ -250,11 +250,7 @@ export default function StudentsView({
                              method: 'PUT',
                              headers: { 'Content-Type': 'application/json' },
                              body: JSON.stringify({ avatar: data.url })
-                           }).sort((a: any, b: any) => {
-    if (a.isDeleted && !b.isDeleted) return 1;
-    if (!a.isDeleted && b.isDeleted) return -1;
-    return 0;
-  });
+                           }).then(() => {});
                            setViewingProfile({...viewingProfile, avatar: data.url});
                            // Also we might need to trigger a re-fetch of students list. 
                            // For simplicity, we just mutate the current view.
