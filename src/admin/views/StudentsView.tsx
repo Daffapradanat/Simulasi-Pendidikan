@@ -1,3 +1,4 @@
+import { toast } from '../../components/Toast';
 import { ImportExportMenu } from '../components/ImportExportMenu';
 import React, { useState } from 'react';
 import * as XLSX from 'xlsx';
@@ -78,7 +79,17 @@ export default function StudentsView({
               </tr>
             </thead>
             <tbody>
-              {displayedStudents.length === 0 ? (
+              {students.length === 0 ? (
+                <tr>
+                  <td colSpan={8} style={{ textAlign: "center", padding: "48px 32px", color: "var(--text-muted)" }}>
+                    <div style={{ width: "64px", height: "64px", borderRadius: "50%", background: "var(--surface)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px", boxShadow: "0 4px 12px rgba(0,0,0,0.05)" }}>
+                      <i className="ti ti-user-plus" style={{ fontSize: "28px", color: "var(--primary)" }}></i>
+                    </div>
+                    <h3 style={{ fontSize: "16px", fontWeight: 600, color: "var(--text)", margin: "0 0 8px" }}>Belum Ada Data Siswa</h3>
+                    <p style={{ margin: 0, fontSize: "14px" }}>Silakan tambah data siswa secara manual atau import via Excel.</p>
+                  </td>
+                </tr>
+              ) : displayedStudents.length === 0 ? (
                 <tr>
                   <td colSpan={8} style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)' }}>
                     <i className="ti ti-users" style={{ fontSize: '32px', display: 'block', margin: '0 auto 8px', color: 'var(--border)' }}></i>
@@ -220,7 +231,7 @@ export default function StudentsView({
                   <input type="file" id="upload-avatar" style={{ display: 'none' }} accept="image/*" onChange={async (e) => {
                     const file = e.target.files?.[0];
                     if (!file) return;
-              if (file.size > 5 * 1024 * 1024) { alert('Maksimal ukuran gambar adalah 5MB.'); e.target.value = ''; return; }
+              if (file.size > 5 * 1024 * 1024) { toast.error('Maksimal ukuran gambar adalah 5MB.'); e.target.value = ''; return; }
                     
                     const formData = new FormData();
                     formData.append('avatar', file);

@@ -1,3 +1,4 @@
+import { toast } from '../../components/Toast';
 import React, { useState } from 'react';
 import { ConfirmModal } from '../../components/ConfirmModal';
 import { motion, AnimatePresence } from 'motion/react';
@@ -54,7 +55,7 @@ export default function SchoolsView({ schools, setSchools, categories }: any) {
       setEditingSchool(null);
       setSchoolForm({ name: '', category_id: '' });
     } catch (err: any) {
-      alert(`Error saving school: ${err.message}`);
+      toast.error(`Error saving school: ${err.message}`);
     }
   };
 
@@ -67,7 +68,7 @@ export default function SchoolsView({ schools, setSchools, categories }: any) {
       if (!res.ok) throw new Error(data.error || 'Failed to delete');
       setSchools(schools.filter((s: any) => s.id !== id));
     } catch (err: any) {
-      alert(`Error deleting school: ${err.message}`);
+      toast.error(`Error deleting school: ${err.message}`);
     } finally {
       setSchoolToDelete(null);
     }
@@ -115,7 +116,17 @@ export default function SchoolsView({ schools, setSchools, categories }: any) {
               </tr>
             </thead>
             <tbody>
-              {displayedSchools.length === 0 ? (
+              {schools.length === 0 ? (
+                <tr>
+                  <td colSpan={4} style={{ textAlign: "center", padding: "48px 32px", color: "var(--text-muted)" }}>
+                    <div style={{ width: "64px", height: "64px", borderRadius: "50%", background: "var(--surface)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px", boxShadow: "0 4px 12px rgba(0,0,0,0.05)" }}>
+                      <i className="ti ti-building" style={{ fontSize: "28px", color: "var(--primary)" }}></i>
+                    </div>
+                    <h3 style={{ fontSize: "16px", fontWeight: 600, color: "var(--text)", margin: "0 0 8px" }}>Belum Ada Data Sekolah</h3>
+                    <p style={{ margin: 0, fontSize: "14px" }}>Silakan tambah data sekolah untuk memulai.</p>
+                  </td>
+                </tr>
+              ) : displayedSchools.length === 0 ? (
                 <tr>
                   <td colSpan={4} style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)' }}>
                     <i className="ti ti-building" style={{ fontSize: '32px', display: 'block', margin: '0 auto 8px', color: 'var(--border)' }}></i>

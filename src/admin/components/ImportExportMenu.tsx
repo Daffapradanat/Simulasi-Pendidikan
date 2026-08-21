@@ -1,3 +1,4 @@
+import { toast } from '../../components/Toast';
 import React, { useState, useRef, useEffect } from 'react';
 import { fetchAuth } from '../../lib/fetchAuth';
 
@@ -30,11 +31,11 @@ export function ImportExportMenu({ type, onImportSuccess }: { type: 'schools' | 
         a.remove();
         window.URL.revokeObjectURL(url);
       } else {
-        alert("Gagal mengekspor data");
+        toast.error("Gagal mengekspor data");
       }
     } catch (e) {
       console.error(e);
-      alert("Terjadi kesalahan sistem saat ekspor");
+      toast.error("Terjadi kesalahan sistem saat ekspor");
     }
   };
 
@@ -50,18 +51,18 @@ export function ImportExportMenu({ type, onImportSuccess }: { type: 'schools' | 
       const res = await fetchAuth(`/api/${type}/import`, { method: 'POST', body: formData });
       const data = await res.json();
       if (res.ok) {
-        alert(data.message);
+        toast.error(data.message);
         if (onImportSuccess) {
           onImportSuccess();
         } else {
           window.location.reload();
         }
       } else {
-        alert(data.error || "Gagal mengimpor data");
+        toast.error(data.error || "Gagal mengimpor data");
       }
     } catch (e) {
       console.error(e);
-      alert("Terjadi kesalahan sistem saat impor");
+      toast.error("Terjadi kesalahan sistem saat impor");
     }
     e.target.value = '';
   };

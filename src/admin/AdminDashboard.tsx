@@ -1,3 +1,4 @@
+import { toast } from '../components/Toast';
 import { motion, AnimatePresence } from 'motion/react';
 import { Module, Category, Subject } from '../types';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -104,6 +105,12 @@ export default function AdminDashboard({ user, onLogout, onNavigate, onUpdateUse
   const [showTeacherModal, setShowTeacherModal] = useState(false);
   const [editingTeacher, setEditingTeacher] = useState<any | null>(null);
   const [editingStudent, setEditingStudent] = useState<any | null>(null);
+
+  // Password visibility states
+  const [showTeacherPw, setShowTeacherPw] = useState(false);
+  const [showTeacherConfirmPw, setShowTeacherConfirmPw] = useState(false);
+  const [showStudentPw, setShowStudentPw] = useState(false);
+  const [showStudentConfirmPw, setShowStudentConfirmPw] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState<{type: 'module'|'student'|'teacher'|'category'|'subject', id: number} | null>(null);
   const [showClearAllConfirm, setShowClearAllConfirm] = useState(false);
 
@@ -149,6 +156,8 @@ export default function AdminDashboard({ user, onLogout, onNavigate, onUpdateUse
   };
 
   const [isSavingModule, setIsSavingModule] = useState(false);
+  const [isSavingStudent, setIsSavingStudent] = useState(false);
+  const [isSavingTeacher, setIsSavingTeacher] = useState(false);
 
   const handleSaveModule = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -222,7 +231,7 @@ export default function AdminDashboard({ user, onLogout, onNavigate, onUpdateUse
       setModuleGameFiles([]);
                 setModuleQuestions([]);
     } catch (err: any) {
-      alert(`Error saving module: ${err.message}`);
+      toast.error(`Error saving module: ${err.message}`);
       console.error(err);
     } finally {
       setIsSavingModule(false);
@@ -235,6 +244,13 @@ export default function AdminDashboard({ user, onLogout, onNavigate, onUpdateUse
 
   const handleSaveStudent = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSavingStudent) return;
+    setIsSavingStudent(true);
+    if (studentForm.password !== studentForm.confirm_password) {
+      toast.error("Password dan Konfirmasi Password tidak cocok!");
+      setIsSavingStudent(false);
+      return;
+    }
     try {
       if (editingStudent) {
         const res = await fetchAuth(`/api/students/${editingStudent.id}`, {
@@ -242,8 +258,8 @@ export default function AdminDashboard({ user, onLogout, onNavigate, onUpdateUse
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(studentForm)
         });
-        if (!res.ok) throw new Error(await res.text());
         const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Gagal menyimpan data siswa");
         setStudents(students.map(s => s.id === editingStudent.id ? data.student : s));
       } else {
         const res = await fetchAuth('/api/students', {
@@ -251,16 +267,20 @@ export default function AdminDashboard({ user, onLogout, onNavigate, onUpdateUse
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(studentForm)
         });
-        if (!res.ok) throw new Error(await res.text());
         const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Gagal menambah siswa");
         setStudents([...students, data.student]);
       }
       setShowStudentModal(false);
+      setShowStudentPw(false);
+      setShowStudentConfirmPw(false);
       setEditingStudent(null);
-      setStudentForm({ name: '', email: '', nisn: '', school_id: '' });
+      setStudentForm({ name: '', email: '', nisn: '', school_id: '', password: '', confirm_password: '' });
     } catch (err: any) {
-      alert(`Error saving student: ${err.message}`);
+      toast.error(`Error: ${err.message}`);
       console.error(err);
+    } finally {
+      setIsSavingStudent(false);
     }
   };
 
@@ -270,6 +290,13 @@ export default function AdminDashboard({ user, onLogout, onNavigate, onUpdateUse
 
   const handleSaveTeacher = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSavingTeacher) return;
+    setIsSavingTeacher(true);
+    if (teacherForm.password !== teacherForm.confirm_password) {
+      toast.error("Password dan Konfirmasi Password tidak cocok!");
+      setIsSavingTeacher(false);
+      return;
+    }
     try {
       if (editingTeacher) {
         const res = await fetchAuth(`/api/teachers/${editingTeacher.id}`, {
@@ -278,6 +305,7 @@ export default function AdminDashboard({ user, onLogout, onNavigate, onUpdateUse
           body: JSON.stringify(teacherForm)
         });
         const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Gagal menyimpan data guru");
         setTeachers(teachers.map(t => t.id === editingTeacher.id ? data.teacher : t));
       } else {
         const res = await fetchAuth('/api/teachers', {
@@ -286,17 +314,23 @@ export default function AdminDashboard({ user, onLogout, onNavigate, onUpdateUse
           body: JSON.stringify(teacherForm)
         });
         const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Gagal menambah guru");
         setTeachers([...teachers, data.teacher]);
       }
       setShowTeacherModal(false);
+      setShowTeacherPw(false);
+      setShowTeacherConfirmPw(false);
       setEditingTeacher(null);
-      setTeacherForm({ name: '', nip: '', email: '', subject_ids: [], school_id: '' });
+      setTeacherForm({ name: '', nip: '', email: '', subject_ids: [], school_id: '', password: '', confirm_password: '' });
     } catch (err: any) {
-          console.error(err);
-          if (err.message === '401') {
-             onLogout();
-          }
-        }
+      toast.error(`Error: ${err.message}`);
+      console.error(err);
+      if (err.message === '401') {
+         onLogout();
+      }
+    } finally {
+      setIsSavingTeacher(false);
+    }
   };
 
   const handleDeleteTeacher = (id: number) => {
@@ -305,27 +339,36 @@ export default function AdminDashboard({ user, onLogout, onNavigate, onUpdateUse
 
   const handleRestoreModule = async (id: number) => {
     try {
-      await fetchAuth(`/api/modules/${id}/restore`, { method: 'PUT' });
+      const res = await fetchAuth(`/api/modules/${id}/restore`, { method: 'PUT' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Gagal memulihkan');
       setModules(modules.map(m => m.id === id ? { ...m, isDeleted: false } : m));
-    } catch (err) {
+    } catch (err: any) {
+      toast.error(`Error: ${err.message}`);
       console.error(err);
     }
   };
 
   const handleRestoreStudent = async (id: number) => {
     try {
-      await fetchAuth(`/api/students/${id}/restore`, { method: 'PUT' });
+      const res = await fetchAuth(`/api/students/${id}/restore`, { method: 'PUT' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Gagal memulihkan');
       setStudents(students.map(s => s.id === id ? { ...s, isDeleted: false } : s));
-    } catch (err) {
+    } catch (err: any) {
+      toast.error(`Error: ${err.message}`);
       console.error(err);
     }
   };
 
   const handleRestoreTeacher = async (id: number) => {
     try {
-      await fetchAuth(`/api/teachers/${id}/restore`, { method: 'PUT' });
+      const res = await fetchAuth(`/api/teachers/${id}/restore`, { method: 'PUT' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Gagal memulihkan');
       setTeachers(teachers.map(t => t.id === id ? { ...t, isDeleted: false } : t));
-    } catch (err) {
+    } catch (err: any) {
+      toast.error(`Error: ${err.message}`);
       console.error(err);
     }
   };
@@ -369,10 +412,10 @@ export default function AdminDashboard({ user, onLogout, onNavigate, onUpdateUse
         setShowClearAllConfirm(false);
       } else {
         const txt = await res.text();
-        alert(`Gagal menghapus data: ${txt}`);
+        toast.error(`Gagal menghapus data: ${txt}`);
       }
     } catch (err: any) {
-      alert(`Terjadi kesalahan: ${err.message}`);
+      toast.error(`Terjadi kesalahan: ${err.message}`);
     }
   };
 
@@ -593,6 +636,24 @@ export default function AdminDashboard({ user, onLogout, onNavigate, onUpdateUse
                   <input type="email" className="form-input" required value={teacherForm.email} onChange={e => setTeacherForm({...teacherForm, email: e.target.value})} placeholder="Masukkan email..." />
                 </div>
                 <div style={{ marginBottom: '16px' }}>
+                  <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: 500 }}>Password {editingTeacher && <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>(Kosongkan jika tidak ingin mengubah)</span>}</label>
+                  <div style={{ position: 'relative' }}>
+                    <input type={showTeacherPw ? "text" : "password"} style={{ paddingRight: '40px' }} className="form-input" required={!editingTeacher} value={teacherForm.password || ''} onChange={e => setTeacherForm({...teacherForm, password: e.target.value})} placeholder={editingTeacher ? "Kosongkan untuk tetap menggunakan password lama" : "Masukkan password baru..."} minLength={4} />
+                    <button type="button" onClick={() => setShowTeacherPw(!showTeacherPw)} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}>
+                      <i className={showTeacherPw ? "ti ti-eye-off" : "ti ti-eye"}></i>
+                    </button>
+                  </div>
+                </div>
+                <div style={{ marginBottom: '16px' }}>
+                  <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: 500 }}>Konfirmasi Password {editingTeacher && <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>(Kosongkan jika tidak ingin mengubah)</span>}</label>
+                  <div style={{ position: 'relative' }}>
+                    <input type={showTeacherConfirmPw ? "text" : "password"} style={{ paddingRight: '40px' }} className="form-input" required={!editingTeacher || !!teacherForm.password} value={teacherForm.confirm_password || ''} onChange={e => setTeacherForm({...teacherForm, confirm_password: e.target.value})} placeholder="Konfirmasi password..." minLength={4} />
+                    <button type="button" onClick={() => setShowTeacherConfirmPw(!showTeacherConfirmPw)} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}>
+                      <i className={showTeacherConfirmPw ? "ti ti-eye-off" : "ti ti-eye"}></i>
+                    </button>
+                  </div>
+                </div>
+                <div style={{ marginBottom: '16px' }}>
                   <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: 500 }}>Asal Sekolah</label>
                   <select 
                     className="form-input" 
@@ -626,8 +687,12 @@ export default function AdminDashboard({ user, onLogout, onNavigate, onUpdateUse
                   </div>
                 </div>
                 <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
-                  <button type="button" className="btn btn-ghost" onClick={() => setShowTeacherModal(false)}>Batal</button>
-                  <button type="submit" className="btn btn-primary">{editingTeacher ? 'Simpan' : 'Tambah Guru'}</button>
+                  <button type="button" className="btn btn-ghost" onClick={() => {
+                    setShowTeacherModal(false);
+                    setShowTeacherPw(false);
+                    setShowTeacherConfirmPw(false);
+                  }}>Batal</button>
+                  <button type="submit" className="btn btn-primary" disabled={isSavingTeacher}>{isSavingTeacher ? 'Menyimpan...' : (editingTeacher ? 'Simpan' : 'Tambah Guru')}</button>
                 </div>
               </form>
             </motion.div>
@@ -676,9 +741,31 @@ export default function AdminDashboard({ user, onLogout, onNavigate, onUpdateUse
                   <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: 500 }}>Email</label>
                   <input type="email" className="form-input" required value={studentForm.email} onChange={e => setStudentForm({...studentForm, email: e.target.value})} placeholder="siswa@sekolah.sch.id" />
                 </div>
+                <div style={{ marginBottom: '16px' }}>
+                  <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: 500 }}>Password {editingStudent && <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>(Kosongkan jika tidak ingin mengubah)</span>}</label>
+                  <div style={{ position: 'relative' }}>
+                    <input type={showStudentPw ? "text" : "password"} style={{ paddingRight: '40px' }} className="form-input" required={!editingStudent} value={studentForm.password || ''} onChange={e => setStudentForm({...studentForm, password: e.target.value})} placeholder={editingStudent ? "Kosongkan untuk tetap menggunakan password lama" : "Masukkan password baru..."} minLength={4} />
+                    <button type="button" onClick={() => setShowStudentPw(!showStudentPw)} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}>
+                      <i className={showStudentPw ? "ti ti-eye-off" : "ti ti-eye"}></i>
+                    </button>
+                  </div>
+                </div>
+                <div style={{ marginBottom: '24px' }}>
+                  <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: 500 }}>Konfirmasi Password {editingStudent && <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>(Kosongkan jika tidak ingin mengubah)</span>}</label>
+                  <div style={{ position: 'relative' }}>
+                    <input type={showStudentConfirmPw ? "text" : "password"} style={{ paddingRight: '40px' }} className="form-input" required={!editingStudent || !!studentForm.password} value={studentForm.confirm_password || ''} onChange={e => setStudentForm({...studentForm, confirm_password: e.target.value})} placeholder="Konfirmasi password..." minLength={4} />
+                    <button type="button" onClick={() => setShowStudentConfirmPw(!showStudentConfirmPw)} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}>
+                      <i className={showStudentConfirmPw ? "ti ti-eye-off" : "ti ti-eye"}></i>
+                    </button>
+                  </div>
+                </div>
                 <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
-                  <button type="button" className="btn btn-ghost" onClick={() => setShowStudentModal(false)}>Batal</button>
-                  <button type="submit" className="btn btn-primary">{editingStudent ? 'Simpan' : 'Simpan Siswa'}</button>
+                  <button type="button" className="btn btn-ghost" onClick={() => {
+                    setShowStudentModal(false);
+                    setShowStudentPw(false);
+                    setShowStudentConfirmPw(false);
+                  }}>Batal</button>
+                  <button type="submit" className="btn btn-primary" disabled={isSavingStudent}>{isSavingStudent ? 'Menyimpan...' : (editingStudent ? 'Simpan' : 'Simpan Siswa')}</button>
                 </div>
               </form>
             </motion.div>

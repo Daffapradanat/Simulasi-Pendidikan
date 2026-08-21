@@ -1,3 +1,4 @@
+import { toast } from '../../components/Toast';
 import React, { useState } from 'react';
 import { ConfirmModal } from '../../components/ConfirmModal';
 import { motion } from 'motion/react';
@@ -7,6 +8,7 @@ export default function ProfileView({
   user, isEditingProfile, setIsEditingProfile, profileForm, setProfileForm, onUpdateUser, onClearAll
 }: any) {
   const [showCompleteAllConfirm, setShowCompleteAllConfirm] = useState(false);
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
   return (
     <div className="admin-content" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -36,7 +38,7 @@ export default function ProfileView({
               <input type="file" id="upload-my-avatar-admin" style={{ display: 'none' }} accept="image/*" onChange={async (e) => {
                 const file = e.target.files?.[0];
                 if (!file) return;
-                if (file.size > 5 * 1024 * 1024) { alert('Maksimal ukuran gambar adalah 5MB.'); e.target.value = ''; return; }
+                if (file.size > 5 * 1024 * 1024) { toast.error('Maksimal ukuran gambar adalah 5MB.'); e.target.value = ''; return; }
                 const formData = new FormData();
                 formData.append('avatar', file);
                 
@@ -114,14 +116,16 @@ export default function ProfileView({
             <div className="section-card-title"><i className="ti ti-settings"></i> Pengaturan Akun</div>
             <form onSubmit={async e => {
               e.preventDefault();
+              if (isSavingProfile) return;
+              setIsSavingProfile(true);
               try {
                 const res = await fetchAuth('/api/auth/profile', {
                   method: 'PUT',
                   headers: { 'Content-Type': 'application/json' },
                   body: JSON.stringify({ ...user, ...profileForm })
                 });
+                const data = await res.json();
                 if (res.ok) {
-                  const data = await res.json();
                   if (onUpdateUser) {
                     onUpdateUser(data.user);
                   } else {
@@ -130,10 +134,13 @@ export default function ProfileView({
                   }
                   setIsEditingProfile(false);
                 } else {
-                  console.error('Failed to update profile');
+                  toast.error(data.error || 'Failed to update profile');
                 }
-              } catch (e) {
+              } catch (e: any) {
                 console.error(e);
+                toast.error(`Error: ${e.message}`);
+              } finally {
+                setIsSavingProfile(false);
               }
             }} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
               <div className="form-group" style={{ marginBottom: 0 }}>
@@ -159,7 +166,7 @@ export default function ProfileView({
                 <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '6px' }}><i className="ti ti-info-circle"></i> Peran ditetapkan oleh sistem dan tidak dapat diubah.</p>
               </div>
               <div style={{ display: 'flex', gap: '12px', marginTop: '12px' }}>
-                <button type="submit" className="btn btn-primary btn-full">Simpan Perubahan</button>
+                <button type="submit" className="btn btn-primary btn-full" disabled={isSavingProfile}>{isSavingProfile ? 'Menyimpan...' : 'Simpan Perubahan'}</button>
                 <button type="button" className="btn btn-ghost btn-full" onClick={() => {
                   setProfileForm({ name: user.name, email: user.email, role: user.role });
                   setIsEditingProfile(false);

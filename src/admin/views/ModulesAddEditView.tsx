@@ -1,3 +1,4 @@
+import { toast } from '../../components/Toast';
 import React, { useState, useRef, useEffect } from 'react';
 import { ConfirmModal } from '../../components/ConfirmModal';
 import ReactQuill from 'react-quill-new';
@@ -40,11 +41,11 @@ export default function ModulesAddEditView({
     const handleBannerUpload = async (file: File) => {
     const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg'];
     if (!allowedTypes.includes(file.type)) {
-      alert('Format file tidak didukung. Harap gunakan PNG, JPG, atau JPEG.');
+      toast.error('Format file tidak didukung. Harap gunakan PNG, JPG, atau JPEG.');
       return;
     }
     if (file.size > 10 * 1024 * 1024) {
-      alert('Ukuran file terlalu besar. Maksimal 10MB.');
+      toast.error('Ukuran file terlalu besar. Maksimal 10MB.');
       return;
     }
     
@@ -64,11 +65,11 @@ export default function ModulesAddEditView({
       if (res.ok && data.success) {
         setModuleForm({...moduleForm, banner_url: data.url});
       } else {
-        alert(data.error || 'Gagal mengupload gambar');
+        toast.error(data.error || 'Gagal mengupload gambar');
         setBannerPreview(''); // revert
       }
     } catch (err) {
-      alert('Gagal mengupload gambar');
+      toast.error('Gagal mengupload gambar');
       setBannerPreview(''); // revert
     } finally {
       setIsUploadingBanner(false);

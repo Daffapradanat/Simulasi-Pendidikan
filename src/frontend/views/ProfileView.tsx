@@ -1,3 +1,4 @@
+import { toast } from '../../components/Toast';
 
 import React, { useState } from 'react';
 import { Module, User, Subject } from '../../types';
@@ -44,7 +45,7 @@ export function ProfileView({ user, completedModuleIds, modules, subjects = [], 
             <input type="file" id="upload-my-avatar" style={{ display: 'none' }} accept="image/*" onChange={async (e) => {
               const file = e.target.files?.[0];
               if (!file) return;
-              if (file.size > 5 * 1024 * 1024) { alert('Maksimal ukuran gambar adalah 5MB.'); e.target.value = ''; return; }
+              if (file.size > 5 * 1024 * 1024) { toast.error('Maksimal ukuran gambar adalah 5MB.'); e.target.value = ''; return; }
               const formData = new FormData();
               formData.append('avatar', file);
               
@@ -216,7 +217,7 @@ export function ProfileView({ user, completedModuleIds, modules, subjects = [], 
                      if (data.success) {
                        setUser({ ...user, name: editForm.name, email: editForm.email });
                        setIsEditing(false);
-                       alert('Profil berhasil diperbarui.');
+                       toast.success('Profil berhasil diperbarui.');
                      }
                    }
                  } catch (err) {

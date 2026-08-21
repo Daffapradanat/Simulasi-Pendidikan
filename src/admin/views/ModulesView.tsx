@@ -1,3 +1,4 @@
+import { toast } from '../../components/Toast';
 import React, { useState } from 'react';
 import { ConfirmModal } from '../../components/ConfirmModal';
 import { Module } from '../../types';
@@ -35,10 +36,10 @@ export default function ModulesView({
       try {
         const res = await fetchAuth("/api/admin/clear_all", { method: "POST" });
         if (res.ok) {
-          alert("Semua modul dan file berhasil dikosongkan!");
+          toast.success("Semua modul dan file berhasil dikosongkan!");
           window.location.reload();
         } else {
-          alert("Gagal mengosongkan modul.");
+          toast.error("Gagal mengosongkan modul.");
         }
       } catch (err) {
         console.error(err);
@@ -110,7 +111,17 @@ export default function ModulesView({
               </tr>
             </thead>
             <tbody>
-              {displayedModules.length === 0 ? (
+              {modules.length === 0 ? (
+                <tr>
+                  <td colSpan={5} style={{ textAlign: "center", padding: "48px 32px", color: "var(--text-muted)" }}>
+                    <div style={{ width: "64px", height: "64px", borderRadius: "50%", background: "var(--surface)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px", boxShadow: "0 4px 12px rgba(0,0,0,0.05)" }}>
+                      <i className="ti ti-book-2" style={{ fontSize: "28px", color: "var(--primary)" }}></i>
+                    </div>
+                    <h3 style={{ fontSize: "16px", fontWeight: 600, color: "var(--text)", margin: "0 0 8px" }}>Belum Ada Modul Pembelajaran</h3>
+                    <p style={{ margin: 0, fontSize: "14px" }}>Modul yang ditambahkan akan muncul di sini.</p>
+                  </td>
+                </tr>
+              ) : displayedModules.length === 0 ? (
                 <tr>
                   <td colSpan={5} style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)' }}>
                     <i className="ti ti-box" style={{ fontSize: '32px', display: 'block', margin: '0 auto 8px', color: 'var(--border)' }}></i>

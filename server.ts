@@ -84,6 +84,7 @@ let categoriesData: any[] = [];
 let schoolsData: any[] = [];
 let subjectsData: any[] = [];
 let questionsData: any[] = [];
+let adminProfile: any = { id: 3, name: "Administrator", email: "admin@sch.id", role: "admin", password: "", avatar: "" };
 
 async function initDB() {
   db = await open({
@@ -100,6 +101,7 @@ async function initDB() {
     CREATE TABLE IF NOT EXISTS categories (id INTEGER PRIMARY KEY, data TEXT);
     CREATE TABLE IF NOT EXISTS schools (id INTEGER PRIMARY KEY, data TEXT);
     CREATE TABLE IF NOT EXISTS subjects (id INTEGER PRIMARY KEY, data TEXT);
+    CREATE TABLE IF NOT EXISTS admin_profile (id INTEGER PRIMARY KEY, data TEXT);
     CREATE TABLE IF NOT EXISTS question_types (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       code TEXT UNIQUE NOT NULL,
@@ -196,8 +198,44 @@ async function initDB() {
     subjectsData = [...seedSubjects];
   }
   if (schoolsData.length === 0) {
-    schoolsData = [...seedSchools];
+  try {
+    const adminRows = await db.all("SELECT data FROM admin_profile");
+    if (adminRows.length > 0) {
+      adminProfile = JSON.parse(adminRows[0].data);
+    } else {
+      adminProfile.password = await bcrypt.hash("admin123", 10);
+      await db.run("INSERT INTO admin_profile (id, data) VALUES (?, ?)", [3, JSON.stringify(adminProfile)]);
+    }
+  } catch (e) {
+    console.error("Error loading admin_profile", e);
   }
+
+    schoolsData = [...seedSchools];
+  try {
+    const adminRows = await db.all("SELECT data FROM admin_profile");
+    if (adminRows.length > 0) {
+      adminProfile = JSON.parse(adminRows[0].data);
+    } else {
+      adminProfile.password = await bcrypt.hash("admin123", 10);
+      await db.run("INSERT INTO admin_profile (id, data) VALUES (?, ?)", [3, JSON.stringify(adminProfile)]);
+    }
+  } catch (e) {
+    console.error("Error loading admin_profile", e);
+  }
+
+  }
+  try {
+    const adminRows = await db.all("SELECT data FROM admin_profile");
+    if (adminRows.length > 0) {
+      adminProfile = JSON.parse(adminRows[0].data);
+    } else {
+      adminProfile.password = await bcrypt.hash("admin123", 10);
+      await db.run("INSERT INTO admin_profile (id, data) VALUES (?, ?)", [3, JSON.stringify(adminProfile)]);
+    }
+  } catch (e) {
+    console.error("Error loading admin_profile", e);
+  }
+
 
   // Migrate existing asalSekolah to school_id if needed
   let schoolIdCounter = Math.max(0, ...schoolsData.map(s => s.id)) + 1;
@@ -257,6 +295,9 @@ async function doSaveDb() {
   if (!db) return;
   await db.exec("BEGIN TRANSACTION");
   try {
+    await db.run("DELETE FROM admin_profile");
+    await db.run("INSERT INTO admin_profile (id, data) VALUES (?, ?)", [3, JSON.stringify(adminProfile)]);
+
     await db.run("DELETE FROM modules");
     for (const m of modulesData) {
       await db.run("INSERT INTO modules (id, data) VALUES (?, ?)", [m.id, JSON.stringify(m)]);
@@ -479,18 +520,33 @@ app.post("/api/upload-image", authenticateToken, isAdmin, (req, res) => {
     res.json({ success: true, url: `/api/avatars/${req.file.filename}` });
   });
 
+  function isEmailUnique(email: string, excludeId?: number, excludeRole?: string) {
+    if (adminProfile.email === email && !(excludeRole === 'admin' && adminProfile.id === excludeId)) return false;
+    if (['admin', 'admin@sch.id', 'admin@sekolah.sch.id'].includes(email) && !(excludeRole === 'admin')) return false;
+    if (studentsData.some(s => !s.isDeleted && s.email === email && !(excludeRole === 'siswa' && s.id === excludeId))) return false;
+    if (teachersData.some(t => !t.isDeleted && t.email === email && !(excludeRole === 'guru' && t.id === excludeId))) return false;
+    return true;
+  }
+
+  function isNisnUnique(nisn: string, excludeId?: number) {
+    if (!nisn) return true;
+    return !studentsData.some(s => !s.isDeleted && s.nisn === nisn && s.id !== excludeId);
+  }
+
+  function isNipUnique(nip: string, excludeId?: number) {
+    if (!nip) return true;
+    return !teachersData.some(t => !t.isDeleted && t.nip === nip && t.id !== excludeId);
+  }
+
   app.post("/api/auth/login", async (req, res) => {
     const { email, password } = req.body;
 
     let foundUser = null;
 
-    // Hardcoded Admin with bcrypt fallback (admin123)
-    if (email === 'admin' || email === 'admin@sch.id' || email === 'admin@sekolah.sch.id') {
-       const defaultAdminHash = await bcrypt.hash('admin123', 10);
-       // In real app, load admin from DB. Here we simulate it.
-       const match = await bcrypt.compare(password, defaultAdminHash);
+    if (email === adminProfile.email || email === 'admin' || email === 'admin@sch.id' || email === 'admin@sekolah.sch.id') {
+       const match = await bcrypt.compare(password, adminProfile.password);
        if (match) {
-         foundUser = { id: 3, name: "Administrator", email: "admin@sch.id", role: "admin" };
+         foundUser = { ...adminProfile, role: "admin" };
        }
     }
 
@@ -623,15 +679,20 @@ app.post("/api/upload-image", authenticateToken, isAdmin, (req, res) => {
     res.json({ success: true, progress: userProgressData[id] });
   });
 
-app.put("/api/auth/profile", authenticateToken, (req, res) => {
+app.put("/api/auth/profile", authenticateToken, async (req, res) => {
     const { id, name, email, role, password } = req.body;
     let found = false;
     let newAvatar = undefined;
+    
+    if (!isEmailUnique(email, id, role)) {
+      return res.status(400).json({ error: "Email sudah digunakan oleh pengguna lain!" });
+    }
+
     if (role === 'siswa') {
       const idx = studentsData.findIndex(s => s.id === id);
       if (idx !== -1) { 
         studentsData[idx] = { ...studentsData[idx], name, email }; 
-        if (password) studentsData[idx].password = password;
+        if (password) studentsData[idx].password = await bcrypt.hash(password, 10);
         newAvatar = studentsData[idx].avatar; 
         found = true; 
       }
@@ -639,10 +700,15 @@ app.put("/api/auth/profile", authenticateToken, (req, res) => {
       const idx = teachersData.findIndex(t => t.id === id);
       if (idx !== -1) { 
         teachersData[idx] = { ...teachersData[idx], name, email }; 
-        if (password) teachersData[idx].password = password;
+        if (password) teachersData[idx].password = await bcrypt.hash(password, 10);
         newAvatar = teachersData[idx].avatar; 
         found = true; 
       }
+    } else if (role === 'admin' && id === adminProfile.id) {
+      adminProfile = { ...adminProfile, name, email };
+      if (password) adminProfile.password = await bcrypt.hash(password, 10);
+      newAvatar = adminProfile.avatar;
+      found = true;
     }
 
     if (found) {
@@ -871,8 +937,20 @@ app.get('/api/modules/:id/questions', authenticateToken, (req, res) => {
       }
 
       for (const row of rows) {
+        if (!row['Password']) {
+          return res.status(400).json({ error: "Kolom 'Password' wajib diisi untuk semua siswa dalam file Excel." });
+        }
+        if (!row['Email'] || !isEmailUnique(row['Email'].toString())) {
+          return res.status(400).json({ error: `Email '${row['Email']}' sudah digunakan atau kosong.` });
+        }
+        if (row['NISN'] && !isNisnUnique(row['NISN'].toString())) {
+          return res.status(400).json({ error: `NISN '${row['NISN']}' sudah terdaftar.` });
+        }
+      }
+
+      for (const row of rows) {
         if (row['Nama Lengkap'] && row['Email']) {
-          let hash = await bcrypt.hash(row['Password'] ? row['Password'].toString() : 'siswa', 10);
+          let hash = await bcrypt.hash(row['Password'].toString(), 10);
           studentsData.push({
             id: Date.now() + Math.floor(Math.random() * 1000),
             name: row['Nama Lengkap'],
@@ -908,8 +986,20 @@ app.get('/api/modules/:id/questions', authenticateToken, (req, res) => {
       }
 
       for (const row of rows) {
+        if (!row['Password']) {
+          return res.status(400).json({ error: "Kolom 'Password' wajib diisi untuk semua guru dalam file Excel." });
+        }
+        if (!row['Email'] || !isEmailUnique(row['Email'].toString())) {
+          return res.status(400).json({ error: `Email '${row['Email']}' sudah digunakan atau kosong.` });
+        }
+        if (row['NIP'] && !isNipUnique(row['NIP'].toString())) {
+          return res.status(400).json({ error: `NIP '${row['NIP']}' sudah terdaftar.` });
+        }
+      }
+
+      for (const row of rows) {
         if (row['Nama Lengkap'] && row['Email']) {
-          let hash = await bcrypt.hash(row['Password'] ? row['Password'].toString() : 'guru', 10);
+          let hash = await bcrypt.hash(row['Password'].toString(), 10);
           teachersData.push({
             id: Date.now() + Math.floor(Math.random() * 1000),
             name: row['Nama Lengkap'],
@@ -1170,19 +1260,42 @@ app.get('/api/modules/:id/questions', authenticateToken, (req, res) => {
     res.json(teachersData);
   });
   app.post("/api/teachers", authenticateToken, isStrictAdmin, async (req, res) => {
+    if (!req.body.name || !req.body.email || !req.body.nip || !req.body.password) {
+      return res.status(400).json({ error: "Nama, Email, NIP, dan Password wajib diisi!" });
+    }
+    if (!isEmailUnique(req.body.email)) {
+      return res.status(400).json({ error: "Email sudah digunakan oleh pengguna lain!" });
+    }
+    if (!isNipUnique(req.body.nip)) {
+      return res.status(400).json({ error: "NIP sudah terdaftar!" });
+    }
     const newTeacher = { id: Date.now(), ...req.body };
-    if (!newTeacher.password) newTeacher.password = await bcrypt.hash('guru', 10);
-    else newTeacher.password = await bcrypt.hash(newTeacher.password, 10);
+    newTeacher.password = await bcrypt.hash(newTeacher.password, 10);
     teachersData.push(newTeacher);
     logActivity('teacher', 'Admin', `Mendaftarkan guru "${newTeacher.name}"`);
     saveDb();
     res.json({ success: true, teacher: newTeacher });
   });
-  app.put("/api/teachers/:id", authenticateToken, isStrictAdmin, (req, res) => {
+  app.put("/api/teachers/:id", authenticateToken, isStrictAdmin, async (req, res) => {
     const id = parseInt(req.params.id);
     const index = teachersData.findIndex(t => t.id === id);
     if (index === -1) return res.status(404).json({ error: "Not found" });
-    teachersData[index] = { ...teachersData[index], ...req.body };
+    
+    if (req.body.email && !isEmailUnique(req.body.email, id, 'guru')) {
+      return res.status(400).json({ error: "Email sudah digunakan oleh pengguna lain!" });
+    }
+    if (req.body.nip && !isNipUnique(req.body.nip, id)) {
+      return res.status(400).json({ error: "NIP sudah terdaftar!" });
+    }
+
+    const updateData = { ...req.body };
+    if (updateData.password) {
+      updateData.password = await bcrypt.hash(updateData.password, 10);
+    } else {
+      delete updateData.password;
+    }
+
+    teachersData[index] = { ...teachersData[index], ...updateData };
     logActivity('teacher', 'Admin', `Memperbarui data guru "${teachersData[index].name}"`);
     saveDb();
     res.json({ success: true, teacher: teachersData[index] });
@@ -1202,6 +1315,13 @@ app.get('/api/modules/:id/questions', authenticateToken, (req, res) => {
     const id = parseInt(req.params.id);
     const index = teachersData.findIndex(t => t.id === id);
     if (index !== -1) {
+      const teacher = teachersData[index];
+      if (!isEmailUnique(teacher.email, id, 'guru')) {
+        return res.status(400).json({ error: "Gagal memulihkan: Email ini sudah digunakan oleh pengguna aktif lain!" });
+      }
+      if (teacher.nip && !isNipUnique(teacher.nip, id)) {
+        return res.status(400).json({ error: "Gagal memulihkan: NIP ini sudah terdaftar pada pengguna aktif lain!" });
+      }
       teachersData[index].isDeleted = false;
       logActivity('teacher', 'Admin', `Mengaktifkan guru "${teachersData[index].name}"`);
       saveDb();
@@ -1239,19 +1359,43 @@ app.get('/api/modules/:id/questions', authenticateToken, (req, res) => {
   });
 
   app.post("/api/students", authenticateToken, isStrictAdmin, async (req, res) => {
+    if (!req.body.name || !req.body.email || !req.body.nisn || !req.body.password) {
+      return res.status(400).json({ error: "Nama, Email, NISN, dan Password wajib diisi!" });
+    }
+    if (!isEmailUnique(req.body.email)) {
+      return res.status(400).json({ error: "Email sudah digunakan oleh pengguna lain!" });
+    }
+    if (!isNisnUnique(req.body.nisn)) {
+      return res.status(400).json({ error: "NISN sudah terdaftar!" });
+    }
     const newStudent = { id: Date.now(), progress: 0, ...req.body };
-    if (!newStudent.password) newStudent.password = await bcrypt.hash('siswa', 10);
-    else newStudent.password = await bcrypt.hash(newStudent.password, 10);
+    newStudent.password = await bcrypt.hash(newStudent.password, 10);
     studentsData.push(newStudent);
     logActivity('student', 'Admin', `Mendaftarkan siswa "${newStudent.name}"`);
     saveDb();
     res.json({ success: true, student: newStudent });
   });
-  app.put("/api/students/:id", authenticateToken, isStrictAdmin, (req, res) => {
+
+  app.put("/api/students/:id", authenticateToken, isStrictAdmin, async (req, res) => {
     const id = parseInt(req.params.id);
     const index = studentsData.findIndex(s => s.id === id);
     if (index === -1) return res.status(404).json({ error: "Not found" });
-    studentsData[index] = { ...studentsData[index], ...req.body };
+    
+    if (req.body.email && !isEmailUnique(req.body.email, id, 'siswa')) {
+      return res.status(400).json({ error: "Email sudah digunakan oleh pengguna lain!" });
+    }
+    if (req.body.nisn && !isNisnUnique(req.body.nisn, id)) {
+      return res.status(400).json({ error: "NISN sudah terdaftar!" });
+    }
+
+    const updateData = { ...req.body };
+    if (updateData.password) {
+      updateData.password = await bcrypt.hash(updateData.password, 10);
+    } else {
+      delete updateData.password;
+    }
+
+    studentsData[index] = { ...studentsData[index], ...updateData };
     logActivity('student', 'Admin', `Memperbarui data siswa "${studentsData[index].name}"`);
     saveDb();
     res.json({ success: true, student: studentsData[index] });
@@ -1271,6 +1415,13 @@ app.get('/api/modules/:id/questions', authenticateToken, (req, res) => {
     const id = parseInt(req.params.id);
     const index = studentsData.findIndex(s => s.id === id);
     if (index !== -1) {
+      const student = studentsData[index];
+      if (!isEmailUnique(student.email, id, 'siswa')) {
+        return res.status(400).json({ error: "Gagal memulihkan: Email ini sudah digunakan oleh pengguna aktif lain!" });
+      }
+      if (student.nisn && !isNisnUnique(student.nisn, id)) {
+        return res.status(400).json({ error: "Gagal memulihkan: NISN ini sudah terdaftar pada pengguna aktif lain!" });
+      }
       studentsData[index].isDeleted = false;
       logActivity('student', 'Admin', `Mengaktifkan siswa "${studentsData[index].name}"`);
       saveDb();

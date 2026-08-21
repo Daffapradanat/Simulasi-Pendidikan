@@ -1,3 +1,4 @@
+import { ToastContainer, toast } from "./components/Toast";
 import { LoginView } from './frontend/views/LoginView';
 import { ModulesView } from './frontend/views/ModulesView';
 import { DetailView } from './frontend/views/DetailView';
@@ -90,11 +91,9 @@ export default function App() {
   const [loginBlockTime, setLoginBlockTime] = useState<number | null>(null);
 
   const showToast = (msg: string, type: 'success' | 'error' | 'info' = 'info') => {
-    const id = Date.now() + Math.random();
-    setToasts(prev => [...prev, { id, msg, type }]);
-    setTimeout(() => {
-      setToasts(prev => prev.filter(t => t.id !== id));
-    }, 3500);
+    if (type === "success") toast.success(msg);
+    else if (type === "error") toast.error(msg);
+    else toast.info(msg);
   };
 
 
@@ -653,6 +652,7 @@ export default function App() {
                   </motion.div>
                 )}
               </AnimatePresence>
+      <ToastContainer />
             </>
         } />
         <Route path="/error/:code" element={<ErrorView />} />
@@ -715,6 +715,7 @@ export default function App() {
           </motion.div>
         )}
       </AnimatePresence>
+      <ToastContainer />
 
       <AnimatePresence>
         {showLogoutConfirm && (
@@ -748,17 +749,8 @@ export default function App() {
           </motion.div>
         )}
       </AnimatePresence>
+      <ToastContainer />
 
-      <div className="toast-container" id="toast-container">
-        {toasts.map(t => (
-          <div key={t.id} className={`toast ${t.type}`} style={{ animation: 'slideIn 0.3s ease' }}>
-            {t.type === 'success' && <i className="ti ti-circle-check"></i>}
-            {t.type === 'error' && <i className="ti ti-circle-x"></i>}
-            {t.type === 'info' && <i className="ti ti-info-circle"></i>}
-            <span>{t.msg}</span>
-          </div>
-        ))}
-      </div>
     </>
   );
 }
