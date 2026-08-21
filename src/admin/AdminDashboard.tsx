@@ -260,7 +260,7 @@ export default function AdminDashboard({ user, onLogout, onNavigate, onUpdateUse
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || "Gagal menyimpan data siswa");
-        setStudents(students.map(s => s.id === editingStudent.id ? data.student : s));
+        setStudents(students.map(s => s.id === editingStudent.id ? { ...s, ...data.student } : s));
       } else {
         const res = await fetchAuth('/api/students', {
           method: 'POST',
@@ -306,7 +306,7 @@ export default function AdminDashboard({ user, onLogout, onNavigate, onUpdateUse
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || "Gagal menyimpan data guru");
-        setTeachers(teachers.map(t => t.id === editingTeacher.id ? data.teacher : t));
+        setTeachers(teachers.map(t => t.id === editingTeacher.id ? { ...t, ...data.teacher } : t));
       } else {
         const res = await fetchAuth('/api/teachers', {
           method: 'POST',
