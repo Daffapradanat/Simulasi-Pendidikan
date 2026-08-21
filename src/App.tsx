@@ -174,6 +174,15 @@ export default function App() {
       localStorage.removeItem('simpend_current_user');
       localStorage.removeItem('simpend_auto_login');
       setCurrentUser(null);
+      
+      const currentPath = window.location.pathname;
+      if (currentPath.startsWith('/admin') && currentPath !== '/admin/login') {
+        window.location.href = '/admin/login';
+      } else if (currentPath.startsWith('/guru') && currentPath !== '/guru/login') {
+        window.location.href = '/guru/login';
+      } else if (currentPath !== '/login' && !currentPath.startsWith('/admin') && !currentPath.startsWith('/guru')) {
+        window.location.href = '/login';
+      }
     };
     window.addEventListener('auth_unauthorized', handleUnauthorized);
     return () => window.removeEventListener('auth_unauthorized', handleUnauthorized);
@@ -401,6 +410,11 @@ export default function App() {
   };
 
   const handleLogout = async () => {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+    } catch (e) {
+      // ignore
+    }
     const role = currentUser?.role;
     localStorage.removeItem('simpend_token');
     localStorage.removeItem('simpend_auto_login');
@@ -411,7 +425,6 @@ export default function App() {
     setActiveGameId(null);
     setPlayedGames(new Set());
     setCompletedModuleIds(new Set());
-    setIsProgressLoaded(false);
     setViewMode('main');
     showToast('Berhasil keluar.', 'info');
 
@@ -556,7 +569,7 @@ export default function App() {
         } />
 
         <Route path="/admin/*" element={
-          !currentUser ? <Navigate to="/" replace /> :
+          !currentUser ? <Navigate to="/admin/login" replace /> :
           (currentUser.role === 'admin' ? 
             <AdminDashboard 
               user={currentUser} 
@@ -569,7 +582,7 @@ export default function App() {
         } />
         
         <Route path="/guru/*" element={
-          !currentUser ? <Navigate to="/" replace /> :
+          !currentUser ? <Navigate to="/guru/login" replace /> :
           (currentUser.role === 'guru' ? 
             <AdminDashboard 
               user={currentUser} 
