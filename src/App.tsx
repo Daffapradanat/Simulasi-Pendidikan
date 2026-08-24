@@ -9,7 +9,7 @@ import { User, Toast, Module } from './types';
 import { motion, AnimatePresence } from 'motion/react';
 import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 
-import React, { useState, useEffect, useMemo, Suspense } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, Suspense } from 'react';
 import { Navbar } from './frontend/components/Navbar';
 import AdminDashboard from './admin/AdminDashboard';
 import { fetchAuth } from './lib/fetchAuth';
@@ -177,16 +177,16 @@ export default function App() {
       
       const currentPath = window.location.pathname;
       if (currentPath.startsWith('/admin') && currentPath !== '/admin/login') {
-        window.location.href = '/admin/login';
+        navigate('/admin/login', { replace: true });
       } else if (currentPath.startsWith('/guru') && currentPath !== '/guru/login') {
-        window.location.href = '/guru/login';
+        navigate('/guru/login', { replace: true });
       } else if (currentPath !== '/login' && !currentPath.startsWith('/admin') && !currentPath.startsWith('/guru')) {
-        window.location.href = '/login';
+        navigate('/login', { replace: true });
       }
     };
     window.addEventListener('auth_unauthorized', handleUnauthorized);
     return () => window.removeEventListener('auth_unauthorized', handleUnauthorized);
-  }, []);
+  }, [navigate]);
 
   useEffect(() => {
     const token = localStorage.getItem('simpend_token');
@@ -409,7 +409,7 @@ export default function App() {
     }
   };
 
-  const handleLogout = async () => {
+  const handleLogout = useCallback(async () => {
     try {
       await fetch('/api/auth/logout', { method: 'POST' });
     } catch (e) {
@@ -437,7 +437,7 @@ export default function App() {
         navigate('/login', { replace: true });
       }
     }, 0);
-  };
+  }, [currentUser?.role, navigate]);
 
   const currentModule = currentModuleId ? computedModules.find(m => m.id === currentModuleId) : null;
 

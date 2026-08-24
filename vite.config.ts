@@ -60,7 +60,16 @@ export default defineConfig(() => {
     },
     server: {
       watch: {
-        ignored: ['**/public/games/**', '**/database.json', '**/uploads/**', 'database.json']
+        ignored: [
+          '**/public/games/**',
+          '**/database.json',
+          '**/database.sqlite*',
+          '**/*.sqlite*',
+          '**/uploads/**',
+          'database.json',
+          'database.sqlite*',
+          '*.sqlite*'
+        ]
       },
     },
   };

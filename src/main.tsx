@@ -16,15 +16,7 @@ if (process.env.NODE_ENV === 'production' || window.location.hostname !== 'local
 // Register service worker
 import { registerSW } from 'virtual:pwa-register';
 
-if (import.meta.env.DEV) {
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.getRegistrations().then((registrations) => {
-      for (const registration of registrations) {
-        registration.unregister();
-      }
-    });
-  }
-} else {
+if (!import.meta.env.DEV) {
   registerSW({ immediate: true });
 }
 
@@ -37,7 +29,7 @@ createRoot(document.getElementById('root')!).render(
 );
 
 // Register game service worker for local offline playing
-if ('serviceWorker' in navigator) {
+if ('serviceWorker' in navigator && !import.meta.env.DEV) {
   navigator.serviceWorker.register('/game-sw.js', { scope: '/local-game-play/' })
     .then(reg => console.log('Game SW registered', reg.scope))
     .catch(err => console.error('Game SW failed', err));

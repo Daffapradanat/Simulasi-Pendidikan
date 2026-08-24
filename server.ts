@@ -1471,13 +1471,7 @@ app.get('/api/modules/:id/questions', authenticateToken, (req, res) => {
   // Vite Integration
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
-      server: { 
-        middlewareMode: true,
-        hmr: {
-          server: httpServer,
-          clientPort: 443
-        }
-      },
+      server: { middlewareMode: true },
       appType: "spa",
     });
     app.use(vite.middlewares);
