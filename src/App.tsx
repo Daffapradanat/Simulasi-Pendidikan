@@ -104,10 +104,8 @@ export default function App() {
   }, [appCategories, currentUser?.category_ids]);
 
   const filteredSubjects = useMemo(() => {
-    return currentUser?.subject_ids?.length 
-      ? appSubjects.filter(s => currentUser.subject_ids?.includes(s.id))
-      : appSubjects;
-  }, [appSubjects, currentUser?.subject_ids]);
+    return appSubjects;
+  }, [appSubjects]);
 
   useEffect(() => {
     if (filteredCategories.length === 1 && location.pathname === '/') {

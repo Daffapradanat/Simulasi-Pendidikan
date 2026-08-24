@@ -69,14 +69,8 @@ export default function AdminDashboard({ user, onLogout, onNavigate, onUpdateUse
   const [subjects, setSubjects] = useState<Subject[]>([]);
   
   const displayedModules = React.useMemo(() => {
-    if (user?.role === 'guru') {
-      const guruCatIds = user.category_ids || [];
-      const guruSubIds = user.subject_ids || [];
-      if (guruCatIds.length === 0 && guruSubIds.length === 0) return modules; // If no spec, see nothing
-      return modules.filter(m => guruCatIds.includes(m.category_id) || guruSubIds.includes(m.subject_id));
-    }
     return modules;
-  }, [modules, user]);
+  }, [modules]);
   
   // States for CRUD
   const [loading, setLoading] = useState(true);
@@ -422,7 +416,7 @@ export default function AdminDashboard({ user, onLogout, onNavigate, onUpdateUse
       ID: t.id,
       NIP: t.nip || '-',
       'Nama Guru': t.name,
-      'Spesialisasi Mata Pelajaran': (t.subject_ids || []).map((id: number) => subjects.find(s => s.id === id)?.name).filter(Boolean).join(', '),
+      'Email': t.email || '-',
       'Status': t.isDeleted ? 'Nonaktif' : 'Aktif'
     }));
     import('xlsx').then(XLSX => {
@@ -537,6 +531,7 @@ export default function AdminDashboard({ user, onLogout, onNavigate, onUpdateUse
     <div className="admin-layout">
       {/* Sidebar Admin */}
       <Sidebar user={user} view={view} setView={(v: any) => handleSetView(v as AdminViewMode)} onLogout={() => setShowLogoutConfirm(true)} onNavigate={onNavigate as any}  />
+      
       <div className="admin-main">
         <AnimatePresence mode="wait">
           <motion.div key={view} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.2 }}>
@@ -619,7 +614,7 @@ export default function AdminDashboard({ user, onLogout, onNavigate, onUpdateUse
                     </button>
                   </div>
                 </div>
-                <div style={{ marginBottom: '16px' }}>
+                <div style={{ marginBottom: '24px' }}>
                   <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: 500 }}>Asal Sekolah</label>
                   <select 
                     className="form-input" 
@@ -631,26 +626,6 @@ export default function AdminDashboard({ user, onLogout, onNavigate, onUpdateUse
                       <option key={s.id} value={s.id}>{s.name}</option>
                     ))}
                   </select>
-                </div>
-                <div style={{ marginBottom: '24px' }}>
-                  <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: 500 }}>Mata Pelajaran (Spesialisasi)</label>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                    {subjects.map(s => {
-                      const isSelected = (teacherForm.subject_ids || []).includes(s.id);
-                      return (
-                      <label key={s.id} style={{ 
-                         display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '13px', cursor: 'pointer',
-                         padding: '6px 12px', borderRadius: '100px', border: isSelected ? '1px solid var(--primary)' : '1px solid var(--border)',
-                         background: isSelected ? 'var(--primary)' : 'transparent', color: isSelected ? '#ffffff' : 'var(--text)',
-                         fontWeight: isSelected ? 600 : 500, transition: 'all 0.2s'
-                      }}>
-                        <input type="checkbox" style={{ display: 'none' }} checked={isSelected} onChange={(e) => {
-                          if (e.target.checked) setTeacherForm({...teacherForm, subject_ids: [...(teacherForm.subject_ids||[]), s.id]});
-                          else setTeacherForm({...teacherForm, subject_ids: (teacherForm.subject_ids||[]).filter((id: number) => id !== s.id)});
-                        }} /> {s.name}
-                      </label>
-                    )})}
-                  </div>
                 </div>
                 <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
                   <button type="button" className="btn btn-ghost" onClick={() => {

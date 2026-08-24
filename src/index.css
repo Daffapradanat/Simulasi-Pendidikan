@@ -1729,6 +1729,10 @@ select.form-input {
   background: var(--surface);
 }
 
+.admin-mobile-header {
+  display: none;
+}
+
 .admin-sidebar {
   width: 260px;
   background: var(--white);

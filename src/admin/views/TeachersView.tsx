@@ -72,7 +72,6 @@ export default function TeachersView({
                 <th>Nama Guru</th>
                 <th>Asal Sekolah</th>
                 <th>Email</th>
-                <th>Mata Pelajaran</th>
                 <th>Status</th>
                 <th>Aksi</th>
               </tr>
@@ -80,7 +79,7 @@ export default function TeachersView({
             <tbody>
               {teachers.length === 0 ? (
                 <tr>
-                  <td colSpan={8} style={{ textAlign: "center", padding: "48px 32px", color: "var(--text-muted)" }}>
+                  <td colSpan={7} style={{ textAlign: "center", padding: "48px 32px", color: "var(--text-muted)" }}>
                     <div style={{ width: "64px", height: "64px", borderRadius: "50%", background: "var(--surface)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px", boxShadow: "0 4px 12px rgba(0,0,0,0.05)" }}>
                       <i className="ti ti-user-check" style={{ fontSize: "28px", color: "var(--primary)" }}></i>
                     </div>
@@ -90,7 +89,7 @@ export default function TeachersView({
                 </tr>
               ) : displayedTeachers.length === 0 ? (
                 <tr>
-                  <td colSpan={8} style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)' }}>
+                  <td colSpan={7} style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)' }}>
                     <i className="ti ti-user-check" style={{ fontSize: '32px', display: 'block', margin: '0 auto 8px', color: 'var(--border)' }}></i>
                     Tidak ada guru yang sesuai
                   </td>
@@ -111,15 +110,6 @@ export default function TeachersView({
                   </td>
                   <td style={{ textDecoration: t.isDeleted ? 'line-through' : 'none' }}>
                     <div style={{ color: 'var(--text-muted)' }}>{t.email || '-'}</div>
-                  </td>
-                  <td style={{ textDecoration: t.isDeleted ? 'line-through' : 'none' }}>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
-                      {(t.subject_ids || []).map((id: number) => {
-                         const sub = subjects.find((s: any) => s.id === id);
-                         return sub ? <span key={'sub-'+id} className="badge badge-primary" style={{ fontSize: '11px' }}>{sub.name}</span> : null;
-                      })}
-                      {(!t.subject_ids?.length) && <span style={{ color: 'var(--text-muted)' }}>-</span>}
-                    </div>
                   </td>
                   <td>
                     {t.isDeleted ? (
@@ -260,11 +250,7 @@ export default function TeachersView({
                   <h2 style={{ margin: '0 0 4px 0', fontSize: '24px', fontWeight: 800 }}>{viewingProfile.name}</h2>
                   <div style={{ fontSize: '14px', color: 'var(--text-muted)', display: 'flex', gap: '12px', marginBottom: '8px' }}>
                     <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><i className="ti ti-id"></i> {viewingProfile.nip || '-'}</span>
-                    
-                    {viewingProfile.subject_ids?.length > 0 && (
-                      <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><i className="ti ti-book"></i> {viewingProfile.subject_ids.map((sid: number) => subjects.find((s: any) => s.id === sid)?.name).filter(Boolean).join(', ')}</span>
-                    )}
-                    </div>
+                  </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <span className="badge badge-primary">Guru</span>
                     {viewingProfile.isDeleted && <span className="badge" style={{ background: 'var(--danger-light)', color: 'var(--danger)' }}>Nonaktif</span>}

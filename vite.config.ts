@@ -40,14 +40,14 @@ export default defineConfig(() => {
           theme_color: '#1a56db',
           icons: [
             {
-              src: '/Pusmendik.jpg',
+              src: '/tutwurihandayani_Icon.png',
               sizes: '192x192',
-              type: 'image/jpeg'
+              type: 'image/png'
             },
             {
-              src: '/Pusmendik.jpg',
+              src: '/tutwurihandayani_Icon.png',
               sizes: '512x512',
-              type: 'image/jpeg'
+              type: 'image/png'
             }
           ]
         }
