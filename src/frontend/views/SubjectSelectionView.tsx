@@ -86,7 +86,8 @@ export function SubjectSelectionView({ subjects, onSelectSubject, onBack }: { su
       >
         {subjects.map(subject => {
           const style = getSubjectStyles(subject);
-          const icon = subject.icon || style.icon;
+          const rawIcon = subject.icon || style.icon || 'ti-book';
+          const iconClass = rawIcon.startsWith('ti ti-') ? rawIcon : rawIcon.startsWith('ti-') ? `ti ${rawIcon}` : `ti ti-${rawIcon}`;
           return (
             <motion.div 
               variants={itemVariants}
@@ -101,7 +102,7 @@ export function SubjectSelectionView({ subjects, onSelectSubject, onBack }: { su
               whileTap={{ scale: 0.98 }}
             >
               <div className="selection-icon-wrap" style={{ background: style.bg, color: style.color, boxShadow: `inset 0 2px 4px rgba(255,255,255,0.5), 0 4px 12px ${style.color}20` }}>
-                <i className={`ti ${icon}`}></i>
+                <i className={iconClass}></i>
               </div>
               
               <div style={{ flex: 1, textAlign: 'left' }}>

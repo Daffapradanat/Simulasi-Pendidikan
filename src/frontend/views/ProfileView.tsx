@@ -61,10 +61,12 @@ export function ProfileView({ user, completedModuleIds, modules, subjects = [], 
                        body: JSON.stringify({ avatar: data.url, role: user.role })
                      });
                      setUser({...user, avatar: data.url} as User);
+                     toast.success('Foto profil berhasil diperbarui!');
                   }
                 }
-              } catch (error) {
+              } catch (error: any) {
                 console.error("Failed to upload avatar", error);
+                toast.error(`Gagal upload avatar: ${error.message || 'Terjadi kesalahan'}`);
               }
             }} />
           </div>

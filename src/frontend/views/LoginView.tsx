@@ -17,21 +17,24 @@ export function LoginView({ onLogin, defaultMode = 'siswa' }: { onLogin: (e: str
   const [resetSuccess, setResetSuccess] = useState('');
 
   const submit = () => {
-    if (!email || !pass) {
+    const cleanEmail = email.trim();
+    const cleanPass = pass.trim();
+
+    if (!cleanEmail || !cleanPass) {
       setError('Username/Email dan password wajib diisi.');
       return;
     }
 
-    if (email.includes('@')) {
+    if (cleanEmail.includes('@')) {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(email)) {
+      if (!emailRegex.test(cleanEmail)) {
         setError('Format email tidak valid.');
         return;
       }
     }
 
     setError('');
-    onLogin(email, pass, rememberMe);
+    onLogin(cleanEmail, cleanPass, rememberMe);
   };
   
   const handleSendOtp = () => {

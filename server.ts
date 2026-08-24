@@ -541,33 +541,109 @@ app.post("/api/upload-image", authenticateToken, isAdmin, (req, res) => {
   app.post("/api/auth/login", async (req, res) => {
     const { email, password } = req.body;
 
-    let foundUser = null;
+    if (!email || !password) {
+      return res.status(400).json({ success: false, error: "Username/Email dan password wajib diisi." });
+    }
 
-    if (email === adminProfile.email || email === 'admin' || email === 'admin@sch.id' || email === 'admin@sekolah.sch.id') {
-       const match = await bcrypt.compare(password, adminProfile.password);
+    const rawIdentifier = (email || '').toString().trim();
+    const identifierLower = rawIdentifier.toLowerCase();
+    const rawPassword = (password || '').toString().trim();
+
+    let foundUser = null;
+    let isAccountDeleted = false;
+
+    // Helper to safely check password
+    const checkPassword = async (storedPassword?: string) => {
+      if (!storedPassword) return false;
+      try {
+        const isBcrypt = await bcrypt.compare(rawPassword, storedPassword);
+        if (isBcrypt) return true;
+      } catch (e) {}
+      return storedPassword === rawPassword;
+    };
+
+    // 1. Check Admin
+    const adminEmail = (adminProfile.email || '').toLowerCase();
+    const adminUsername = (adminProfile.username || '').toLowerCase();
+    const adminName = (adminProfile.name || '').toLowerCase();
+    if (
+      identifierLower === adminEmail ||
+      identifierLower === adminUsername ||
+      identifierLower === adminName ||
+      identifierLower === 'admin' ||
+      identifierLower === 'admin@sch.id' ||
+      identifierLower === 'admin@sekolah.sch.id' ||
+      identifierLower === 'administrator'
+    ) {
+       const match = await checkPassword(adminProfile.password);
        if (match) {
          foundUser = { ...adminProfile, role: "admin" };
        }
     }
 
+    // 2. Check Student (Matches: email, NISN, username, or name - case-insensitive)
     if (!foundUser) {
-      const student = studentsData.find(s => !s.isDeleted && s.email === email);
+      // Find candidate student
+      const student = studentsData.find(s => {
+        const sEmail = (s.email || '').toString().trim().toLowerCase();
+        const sNisn = (s.nisn || '').toString().trim();
+        const sUsername = (s.username || '').toString().trim().toLowerCase();
+        const sName = (s.name || '').toString().trim().toLowerCase();
+        
+        return (
+          (sEmail && sEmail === identifierLower) ||
+          (sNisn && sNisn === rawIdentifier) ||
+          (sUsername && sUsername === identifierLower) ||
+          (sName && sName === identifierLower)
+        );
+      });
+
       if (student) {
-        const match = student.password ? await bcrypt.compare(password, student.password) : false;
-        if (match) foundUser = { ...student, role: "siswa" };
+        if (student.isDeleted) {
+          isAccountDeleted = true;
+        } else {
+          const match = await checkPassword(student.password);
+          if (match) {
+            foundUser = { ...student, role: "siswa" };
+          }
+        }
       }
     }
 
-    if (!foundUser) {
-      const teacher = teachersData.find(t => !t.isDeleted && t.email === email);
+    // 3. Check Teacher (Matches: email, NIP, username, or name - case-insensitive)
+    if (!foundUser && !isAccountDeleted) {
+      const teacher = teachersData.find(t => {
+        const tEmail = (t.email || '').toString().trim().toLowerCase();
+        const tNip = (t.nip || '').toString().trim();
+        const tUsername = (t.username || '').toString().trim().toLowerCase();
+        const tName = (t.name || '').toString().trim().toLowerCase();
+        
+        return (
+          (tEmail && tEmail === identifierLower) ||
+          (tNip && tNip === rawIdentifier) ||
+          (tUsername && tUsername === identifierLower) ||
+          (tName && tName === identifierLower)
+        );
+      });
+
       if (teacher) {
-        const match = teacher.password ? await bcrypt.compare(password, teacher.password) : false;
-        if (match) foundUser = { ...teacher, role: "guru" };
+        if (teacher.isDeleted) {
+          isAccountDeleted = true;
+        } else {
+          const match = await checkPassword(teacher.password);
+          if (match) {
+            foundUser = { ...teacher, role: "guru" };
+          }
+        }
       }
     }
 
+    if (isAccountDeleted) {
+      return res.status(403).json({ success: false, error: "Akun Anda telah dinonaktifkan. Silakan hubungi administrator sekolah." });
+    }
+
     if (!foundUser) {
-      return res.status(401).json({ success: false, error: "Email atau password salah." });
+      return res.status(401).json({ success: false, error: "Username/Email atau password salah." });
     }
 
     let category_ids = foundUser.category_ids || [];
@@ -578,12 +654,12 @@ app.post("/api/upload-image", authenticateToken, isAdmin, (req, res) => {
       }
     }
 
-    const user = { id: foundUser.id, name: foundUser.name, email: foundUser.email, role: foundUser.role, category_ids, subject_ids: foundUser.subject_ids, avatar: foundUser.avatar, school_id: foundUser.school_id };
+    const user = { id: foundUser.id, name: foundUser.name, email: foundUser.email, role: foundUser.role, category_ids, subject_ids: foundUser.subject_ids, avatar: foundUser.avatar, school_id: foundUser.school_id, nisn: foundUser.nisn, nip: foundUser.nip };
 
     const token = jwt.sign({ id: user.id, email: user.email, role: user.role, name: user.name, school_id: user.school_id }, SECRET_KEY, { expiresIn: '1d' });
     res.cookie('token', token, { 
       httpOnly: true, 
-      secure: true,
+      secure: true, 
       sameSite: 'none' 
     });
     res.json({ success: true, user, token });

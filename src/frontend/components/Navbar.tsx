@@ -20,7 +20,7 @@ export function Navbar({ user, onLogout, viewMode, inDetail, onNavigate }: { use
              {inDetail && <span className={`navbar-link ${viewMode === 'main' && inDetail ? 'active' : ''}`} onClick={() => onNavigate('main', false)} style={{ cursor: 'pointer' }}><i className="ti ti-layout-list" aria-hidden="true"></i> Sedang Dipelajari</span>}
              <span className={`navbar-link ${viewMode === 'profile' ? 'active' : ''}`} onClick={() => onNavigate('profile')} style={{ cursor: 'pointer' }}><i className="ti ti-user" aria-hidden="true"></i> Profil</span>
              {(user.role === 'admin' || user.role === 'guru') && (
-               <span className="navbar-link" onClick={() => navigate('/admin')} style={{ cursor: 'pointer' }}><i className="ti ti-dashboard" aria-hidden="true"></i> Dashboard</span>
+               <span className="navbar-link" onClick={() => navigate('/admin')} style={{ cursor: 'pointer' }}><i className="ti ti-layout-dashboard" aria-hidden="true"></i> Dashboard</span>
              )}
           </div>
         )}
@@ -50,7 +50,7 @@ export function Navbar({ user, onLogout, viewMode, inDetail, onNavigate }: { use
           {inDetail && <span className="navbar-link" onClick={() => { setMobileNavOpen(false); onNavigate('main', false); }}><i className="ti ti-layout-list" aria-hidden="true"></i> Sedang Dipelajari</span>}
           <span className="navbar-link" onClick={() => { setMobileNavOpen(false); onNavigate('profile'); }}><i className="ti ti-user" aria-hidden="true"></i> Profil</span>
           {(user.role === 'admin' || user.role === 'guru') && (
-             <span className="navbar-link" onClick={() => { setMobileNavOpen(false); navigate('/admin'); }}><i className="ti ti-dashboard" aria-hidden="true"></i> Dashboard</span>
+             <span className="navbar-link" onClick={() => { setMobileNavOpen(false); navigate('/admin'); }}><i className="ti ti-layout-dashboard" aria-hidden="true"></i> Dashboard</span>
           )}
           <span className="navbar-link" onClick={() => { setMobileNavOpen(false); onLogout(); }}><i className="ti ti-logout" aria-hidden="true"></i> Keluar</span>
         </div>

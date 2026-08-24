@@ -235,7 +235,7 @@ export default function StudentsView({
                   <input type="file" id="upload-avatar" style={{ display: 'none' }} accept="image/*" onChange={async (e) => {
                     const file = e.target.files?.[0];
                     if (!file) return;
-              if (file.size > 5 * 1024 * 1024) { toast.error('Maksimal ukuran gambar adalah 5MB.'); e.target.value = ''; return; }
+                    if (file.size > 5 * 1024 * 1024) { toast.error('Maksimal ukuran gambar adalah 5MB.'); e.target.value = ''; return; }
                     
                     const formData = new FormData();
                     formData.append('avatar', file);
@@ -252,14 +252,14 @@ export default function StudentsView({
                              body: JSON.stringify({ avatar: data.url })
                            }).then(() => {});
                            setViewingProfile({...viewingProfile, avatar: data.url});
-                           // Also we might need to trigger a re-fetch of students list. 
-                           // For simplicity, we just mutate the current view.
                            const sIdx = students.findIndex((s:any) => s.id === viewingProfile.id);
                            if (sIdx !== -1) students[sIdx].avatar = data.url;
+                           toast.success('Foto profil siswa berhasil diperbarui!');
                         }
                       }
-                    } catch (error) {
+                    } catch (error: any) {
                       console.error("Failed to upload avatar", error);
+                      toast.error(`Gagal upload avatar: ${error.message || 'Terjadi kesalahan'}`);
                     }
                   }} />
                 </div>

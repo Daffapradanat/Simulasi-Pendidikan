@@ -47,15 +47,17 @@ export default function SchoolsView({ schools, setSchools, categories }: any) {
       
       if (editingSchool) {
         setSchools(schools.map((s: any) => s.id === editingSchool.id ? data.school : s));
+        toast.success('Data sekolah berhasil diperbarui!');
       } else {
         setSchools([...schools, data.school]);
+        toast.success('Sekolah baru berhasil ditambahkan!');
       }
       
       setShowSchoolModal(false);
       setEditingSchool(null);
       setSchoolForm({ name: '', category_id: '' });
     } catch (err: any) {
-      toast.error(`Error saving school: ${err.message}`);
+      toast.error(`Error: ${err.message || 'Gagal menyimpan data sekolah'}`);
     }
   };
 
@@ -65,8 +67,9 @@ export default function SchoolsView({ schools, setSchools, categories }: any) {
     try {
       const res = await fetchAuth(`/api/schools/${id}`, { method: 'DELETE' });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to delete');
+      if (!res.ok) throw new Error(data.error || 'Gagal menghapus');
       setSchools(schools.filter((s: any) => s.id !== id));
+      toast.success('Data sekolah berhasil dihapus!');
     } catch (err: any) {
       toast.error(`Error deleting school: ${err.message}`);
     } finally {

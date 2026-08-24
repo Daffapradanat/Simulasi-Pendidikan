@@ -58,10 +58,12 @@ export default function ProfileView({
                        } else {
                          user.avatar = data.url;
                        }
+                       toast.success('Foto profil berhasil diperbarui!');
                     }
                   }
-                } catch (error) {
+                } catch (error: any) {
                   console.error("Failed to upload avatar", error);
+                  toast.error(`Gagal upload avatar: ${error.message || 'Terjadi kesalahan'}`);
                 }
               }} />
             </div>
@@ -122,6 +124,7 @@ export default function ProfileView({
                     user.email = data.user.email;
                   }
                   setIsEditingProfile(false);
+                  toast.success('Profil berhasil diperbarui!');
                 } else {
                   toast.error(data.error || 'Failed to update profile');
                 }
@@ -165,6 +168,27 @@ export default function ProfileView({
           </motion.div>
         )}
       </div>
+
+      <ConfirmModal
+        isOpen={showCompleteAllConfirm}
+        title="Selesaikan Semua Modul?"
+        message="Fungsi ini akan menandai semua materi dan evaluasi sebagai selesai untuk akun Anda. Apakah Anda yakin?"
+        confirmText="Ya, Selesaikan"
+        cancelText="Batal"
+        onConfirm={async () => {
+          try {
+            if (onClearAll) {
+              await onClearAll();
+            }
+            toast.success('Semua modul berhasil ditandai selesai!');
+          } catch (err: any) {
+            toast.error('Gagal menyelesaikan modul: ' + err.message);
+          } finally {
+            setShowCompleteAllConfirm(false);
+          }
+        }}
+        onCancel={() => setShowCompleteAllConfirm(false)}
+      />
     </div>
   );
 }

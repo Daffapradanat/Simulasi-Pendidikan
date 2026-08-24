@@ -218,12 +218,15 @@ export default function AdminDashboard({ user, onLogout, onNavigate, onUpdateUse
            headers: { 'Content-Type': 'application/json' },
            body: JSON.stringify({ questions: moduleQuestions })
         });
+        toast.success('Modul berhasil diperbarui!');
+      } else {
+        toast.success('Modul baru berhasil ditambahkan!');
       }
       setView('modules');
       setEditingModule(null);
       setModuleForm({ title: '', desc: '', level: categories.length > 0 ? categories[0].name : '', duration: '', category_id: 1, subject_id: 1, objectives: '', theory: '', keyTerms: [], banner_url: '' });
       setModuleGameFiles([]);
-                setModuleQuestions([]);
+      setModuleQuestions([]);
     } catch (err: any) {
       toast.error(`Error saving module: ${err.message}`);
       console.error(err);
@@ -255,6 +258,7 @@ export default function AdminDashboard({ user, onLogout, onNavigate, onUpdateUse
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || "Gagal menyimpan data siswa");
         setStudents(students.map(s => s.id === editingStudent.id ? { ...s, ...data.student } : s));
+        toast.success('Data siswa berhasil diperbarui!');
       } else {
         const res = await fetchAuth('/api/students', {
           method: 'POST',
@@ -264,6 +268,7 @@ export default function AdminDashboard({ user, onLogout, onNavigate, onUpdateUse
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || "Gagal menambah siswa");
         setStudents([...students, data.student]);
+        toast.success('Siswa baru berhasil ditambahkan!');
       }
       setShowStudentModal(false);
       setShowStudentPw(false);
@@ -301,6 +306,7 @@ export default function AdminDashboard({ user, onLogout, onNavigate, onUpdateUse
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || "Gagal menyimpan data guru");
         setTeachers(teachers.map(t => t.id === editingTeacher.id ? { ...t, ...data.teacher } : t));
+        toast.success('Data guru berhasil diperbarui!');
       } else {
         const res = await fetchAuth('/api/teachers', {
           method: 'POST',
@@ -310,6 +316,7 @@ export default function AdminDashboard({ user, onLogout, onNavigate, onUpdateUse
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || "Gagal menambah guru");
         setTeachers([...teachers, data.teacher]);
+        toast.success('Guru baru berhasil ditambahkan!');
       }
       setShowTeacherModal(false);
       setShowTeacherPw(false);
@@ -337,6 +344,7 @@ export default function AdminDashboard({ user, onLogout, onNavigate, onUpdateUse
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Gagal memulihkan');
       setModules(modules.map(m => m.id === id ? { ...m, isDeleted: false } : m));
+      toast.success('Modul berhasil dipulihkan!');
     } catch (err: any) {
       toast.error(`Error: ${err.message}`);
       console.error(err);
@@ -349,6 +357,7 @@ export default function AdminDashboard({ user, onLogout, onNavigate, onUpdateUse
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Gagal memulihkan');
       setStudents(students.map(s => s.id === id ? { ...s, isDeleted: false } : s));
+      toast.success('Akun siswa berhasil dipulihkan!');
     } catch (err: any) {
       toast.error(`Error: ${err.message}`);
       console.error(err);
@@ -361,6 +370,7 @@ export default function AdminDashboard({ user, onLogout, onNavigate, onUpdateUse
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Gagal memulihkan');
       setTeachers(teachers.map(t => t.id === id ? { ...t, isDeleted: false } : t));
+      toast.success('Akun guru berhasil dipulihkan!');
     } catch (err: any) {
       toast.error(`Error: ${err.message}`);
       console.error(err);
@@ -372,24 +382,35 @@ export default function AdminDashboard({ user, onLogout, onNavigate, onUpdateUse
     const { type, id } = confirmDelete;
     try {
       if (type === 'module') {
-        await fetchAuth(`/api/modules/${id}`, { method: 'DELETE' });
+        const res = await fetchAuth(`/api/modules/${id}`, { method: 'DELETE' });
+        if (!res.ok) throw new Error('Gagal menghapus modul');
         setModules(modules.filter(m => m.id !== id));
+        toast.success('Modul berhasil dihapus!');
       } else if (type === 'student') {
-        await fetchAuth(`/api/students/${id}`, { method: 'DELETE' });
+        const res = await fetchAuth(`/api/students/${id}`, { method: 'DELETE' });
+        if (!res.ok) throw new Error('Gagal menonaktifkan siswa');
         setStudents(students.map(s => s.id === id ? { ...s, isDeleted: true } : s));
+        toast.success('Akun siswa berhasil dinonaktifkan!');
       } else if (type === 'teacher') {
-        await fetchAuth(`/api/teachers/${id}`, { method: 'DELETE' });
+        const res = await fetchAuth(`/api/teachers/${id}`, { method: 'DELETE' });
+        if (!res.ok) throw new Error('Gagal menonaktifkan guru');
         setTeachers(teachers.map(t => t.id === id ? { ...t, isDeleted: true } : t));
+        toast.success('Akun guru berhasil dinonaktifkan!');
       } else if (type === 'category') {
-        await fetchAuth(`/api/categories/${id}`, { method: 'DELETE' });
+        const res = await fetchAuth(`/api/categories/${id}`, { method: 'DELETE' });
+        if (!res.ok) throw new Error('Gagal menghapus jenjang');
         setCategories(categories.filter(c => c.id !== id));
+        toast.success('Kategori jenjang berhasil dihapus!');
       } else if (type === 'subject') {
-        await fetchAuth(`/api/subjects/${id}`, { method: 'DELETE' });
+        const res = await fetchAuth(`/api/subjects/${id}`, { method: 'DELETE' });
+        if (!res.ok) throw new Error('Gagal menghapus mata pelajaran');
         setSubjects(subjects.filter(c => c.id !== id));
+        toast.success('Mata pelajaran berhasil dihapus!');
       }
       setConfirmDelete(null);
-    } catch (err) {
+    } catch (err: any) {
       console.error("Failed to delete", err);
+      toast.error(`Gagal menghapus: ${err.message || 'Terjadi kesalahan'}`);
     }
   };
 
@@ -456,39 +477,73 @@ export default function AdminDashboard({ user, onLogout, onNavigate, onUpdateUse
           categories={categories}
           subjects={subjects}
           onAddCategory={async (name, icon) => {
-            const res = await fetchAuth('/api/categories', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, icon }) });
-            const data = await res.json();
-            setCategories([...categories, data.category]);
+            try {
+              const res = await fetchAuth('/api/categories', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, icon }) });
+              const data = await res.json();
+              if (!res.ok) throw new Error(data.error || 'Gagal menambahkan kategori');
+              setCategories([...categories, data.category]);
+              toast.success('Kategori jenjang berhasil ditambahkan!');
+            } catch (e: any) {
+              toast.error(e.message || 'Gagal menambahkan kategori');
+            }
           }}
           onEditCategory={async (id, name, icon) => {
-            const res = await fetchAuth(`/api/categories/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, icon }) });
-            const data = await res.json();
-            setCategories(categories.map(c => c.id === id ? data.category : c));
+            try {
+              const res = await fetchAuth(`/api/categories/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, icon }) });
+              const data = await res.json();
+              if (!res.ok) throw new Error(data.error || 'Gagal memperbarui kategori');
+              setCategories(categories.map(c => c.id === id ? data.category : c));
+              toast.success('Kategori jenjang berhasil diperbarui!');
+            } catch (e: any) {
+              toast.error(e.message || 'Gagal memperbarui kategori');
+            }
           }}
           onDeleteCategory={(id) => setConfirmDelete({ type: 'category', id })}
           onReorderCategories={async (orderIds) => {
-            const res = await fetchAuth('/api/categories/reorder', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ orderIds }) });
-            if (res.ok) {
-              const data = await res.json();
-              setCategories(data.categories);
+            try {
+              const res = await fetchAuth('/api/categories/reorder', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ orderIds }) });
+              if (res.ok) {
+                const data = await res.json();
+                setCategories(data.categories);
+                toast.success('Urutan kategori berhasil disimpan!');
+              }
+            } catch (e: any) {
+              toast.error('Gagal menyimpan urutan kategori');
             }
           }}
           onAddSubject={async (name, icon) => {
-            const res = await fetchAuth('/api/subjects', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, icon }) });
-            const data = await res.json();
-            setSubjects([...subjects, data.subject]);
+            try {
+              const res = await fetchAuth('/api/subjects', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, icon }) });
+              const data = await res.json();
+              if (!res.ok) throw new Error(data.error || 'Gagal menambahkan mata pelajaran');
+              setSubjects([...subjects, data.subject]);
+              toast.success('Mata pelajaran berhasil ditambahkan!');
+            } catch (e: any) {
+              toast.error(e.message || 'Gagal menambahkan mata pelajaran');
+            }
           }}
           onEditSubject={async (id, name, icon) => {
-            const res = await fetchAuth(`/api/subjects/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, icon }) });
-            const data = await res.json();
-            setSubjects(subjects.map(s => s.id === id ? data.subject : s));
+            try {
+              const res = await fetchAuth(`/api/subjects/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, icon }) });
+              const data = await res.json();
+              if (!res.ok) throw new Error(data.error || 'Gagal memperbarui mata pelajaran');
+              setSubjects(subjects.map(s => s.id === id ? data.subject : s));
+              toast.success('Mata pelajaran berhasil diperbarui!');
+            } catch (e: any) {
+              toast.error(e.message || 'Gagal memperbarui mata pelajaran');
+            }
           }}
           onDeleteSubject={(id) => setConfirmDelete({ type: 'subject', id })}
           onReorderSubjects={async (orderIds) => {
-            const res = await fetchAuth('/api/subjects/reorder', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ orderIds }) });
-            if (res.ok) {
-              const data = await res.json();
-              setSubjects(data.subjects);
+            try {
+              const res = await fetchAuth('/api/subjects/reorder', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ orderIds }) });
+              if (res.ok) {
+                const data = await res.json();
+                setSubjects(data.subjects);
+                toast.success('Urutan mata pelajaran berhasil disimpan!');
+              }
+            } catch (e: any) {
+              toast.error('Gagal menyimpan urutan mata pelajaran');
             }
           }}
         />;

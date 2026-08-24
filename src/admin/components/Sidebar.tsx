@@ -29,7 +29,7 @@ export function Sidebar({ user, view, setView, onLogout, onNavigate, onClearAll 
         </div>
         <div className="admin-sidebar-menu">
           <button className={`btn btn-ghost btn-full ${view === 'dashboard' ? 'active' : ''}`} style={{ justifyContent: 'flex-start', border: view === 'dashboard' ? undefined : 'none' }} onClick={() => handleNav('dashboard')}>
-            <i className="ti ti-dashboard"></i> Dashboard
+            <i className="ti ti-layout-dashboard"></i> Dashboard
           </button>
           {(user?.role === 'admin' || user?.role === 'guru') && (
           <button className={`btn btn-ghost btn-full ${view === 'modules' || view === 'modules_add_edit' ? 'active' : ''}`} style={{ justifyContent: 'flex-start', border: (view === 'modules' || view === 'modules_add_edit') ? undefined : 'none' }} onClick={() => handleNav('modules')}>

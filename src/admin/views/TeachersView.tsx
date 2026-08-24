@@ -219,7 +219,7 @@ export default function TeachersView({
                   <input type="file" id="upload-avatar" style={{ display: 'none' }} accept="image/*" onChange={async (e) => {
                     const file = e.target.files?.[0];
                     if (!file) return;
-              if (file.size > 5 * 1024 * 1024) { toast.error('Maksimal ukuran gambar adalah 5MB.'); e.target.value = ''; return; }
+                    if (file.size > 5 * 1024 * 1024) { toast.error('Maksimal ukuran gambar adalah 5MB.'); e.target.value = ''; return; }
                     
                     const formData = new FormData();
                     formData.append('avatar', file);
@@ -238,10 +238,12 @@ export default function TeachersView({
                            setViewingProfile({...viewingProfile, avatar: data.url});
                            const tIdx = teachers.findIndex((t:any) => t.id === viewingProfile.id);
                            if (tIdx !== -1) teachers[tIdx].avatar = data.url;
+                           toast.success('Foto profil guru berhasil diperbarui!');
                         }
                       }
-                    } catch (error) {
+                    } catch (error: any) {
                       console.error("Failed to upload avatar", error);
+                      toast.error(`Gagal upload avatar: ${error.message || 'Terjadi kesalahan'}`);
                     }
                   }} />
                 </div>

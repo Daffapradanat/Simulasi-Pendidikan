@@ -45,6 +45,9 @@ export function CategorySelectionView({ categories, onSelectCategory }: { catego
           ];
           const color = colors[i % colors.length];
 
+          const rawIcon = cat.icon || 'ti-school';
+          const iconClass = rawIcon.startsWith('ti ti-') ? rawIcon : rawIcon.startsWith('ti-') ? `ti ${rawIcon}` : `ti ti-${rawIcon}`;
+
           return (
             <motion.div 
               variants={itemVariants}
@@ -59,7 +62,7 @@ export function CategorySelectionView({ categories, onSelectCategory }: { catego
               whileTap={{ scale: 0.98 }}
             >
               <div className="selection-icon-wrap" style={{ background: color.bg, color: color.icon, boxShadow: `inset 0 2px 4px rgba(255,255,255,0.5), 0 4px 12px ${color.icon}20` }}>
-                <i className={`ti ${cat.icon || 'ti-school'}`}></i>
+                <i className={iconClass}></i>
               </div>
               
               <div style={{ flex: 1, textAlign: 'left' }}>

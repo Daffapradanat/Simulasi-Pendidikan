@@ -14,7 +14,8 @@ export const fetchAuth = async (url: string | URL | Request, options: any = {}) 
 
   try {
     const res = await fetch(url, opts);
-    if (res.status === 401) {
+    const urlStr = typeof url === 'string' ? url : url instanceof Request ? url.url : url.toString();
+    if (res.status === 401 && !urlStr.includes('/api/auth/login')) {
       window.dispatchEvent(new CustomEvent('auth_unauthorized'));
     }
     return res;

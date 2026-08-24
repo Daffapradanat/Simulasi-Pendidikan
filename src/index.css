@@ -544,11 +544,27 @@ input, textarea { font-family: inherit; }
 
 .progress-fill.success { background: var(--success); }
 
-/* ── Tabler Icons Sizing ── */
+/* ── Tabler Icons Base & Sizing ── */
+.ti, [class^="ti-"], [class*=" ti-"], i[class*="ti"] {
+  font-family: 'tabler-icons' !important;
+  speak: none;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+  display: inline-block;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
 .stat-icon {
   font-size: 28px;
   margin-bottom: 4px;
   color: var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .navbar-link .ti {
