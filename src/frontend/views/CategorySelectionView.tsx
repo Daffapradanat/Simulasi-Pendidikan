@@ -37,11 +37,11 @@ export function CategorySelectionView({ categories, onSelectCategory }: { catego
       >
         {categories.map((cat, i) => {
           const colors = [
-            { bg: 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)', icon: '#3b82f6', border: '#bfdbfe' },
-            { bg: 'linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%)', icon: '#10b981', border: '#a7f3d0' },
-            { bg: 'linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)', icon: '#f59e0b', border: '#fde68a' },
-            { bg: 'linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%)', icon: '#8b5cf6', border: '#ddd6fe' },
-            { bg: 'linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%)', icon: '#ef4444', border: '#fecaca' }
+            { bg: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)', themeColor: '#1d4ed8', border: '#bfdbfe' },
+            { bg: 'linear-gradient(135deg, #059669 0%, #047857 100%)', themeColor: '#047857', border: '#a7f3d0' },
+            { bg: 'linear-gradient(135deg, #d97706 0%, #b45309 100%)', themeColor: '#b45309', border: '#fde68a' },
+            { bg: 'linear-gradient(135deg, #7c3aed 0%, #5b21b6 100%)', themeColor: '#6d28d9', border: '#ddd6fe' },
+            { bg: 'linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)', themeColor: '#b91c1c', border: '#fecaca' }
           ];
           const color = colors[i % colors.length];
 
@@ -61,13 +61,13 @@ export function CategorySelectionView({ categories, onSelectCategory }: { catego
               }}
               whileTap={{ scale: 0.98 }}
             >
-              <div className="selection-icon-wrap" style={{ background: color.bg, color: color.icon, boxShadow: `inset 0 2px 4px rgba(255,255,255,0.5), 0 4px 12px ${color.icon}20` }}>
-                <i className={iconClass}></i>
+              <div className="selection-icon-wrap" style={{ background: color.bg, color: '#ffffff', boxShadow: `0 8px 20px ${color.themeColor}30` }}>
+                <i className={iconClass} style={{ color: '#ffffff' }}></i>
               </div>
               
               <div style={{ flex: 1, textAlign: 'left' }}>
                 <h3 className="selection-card-title">{cat.name}</h3>
-                <div className="selection-card-link" style={{ color: color.icon }}>
+                <div className="selection-card-link" style={{ color: color.themeColor }}>
                   Mulai Belajar <i className="ti ti-arrow-right" style={{ marginLeft: '6px', fontSize: '16px' }}></i>
                 </div>
               </div>

@@ -2019,6 +2019,16 @@ select.form-input {
   justify-content: center;
   font-size: 36px;
   flex-shrink: 0;
+  color: #ffffff !important;
+}
+
+.selection-icon-wrap i,
+.selection-icon-wrap svg,
+.selection-icon-wrap span {
+  color: #ffffff !important;
+  font-size: 36px;
+  line-height: 1;
+  display: inline-flex;
 }
 
 .selection-card-title {
@@ -2106,4 +2116,179 @@ select.form-input {
 }
 .btn-outline:hover {
   background: var(--surface-2);
+}
+
+/* ── Split Layout Modul: Kiri Materi & Game, Kanan Soal & Evaluasi ── */
+.module-split-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.95fr);
+  gap: 28px;
+  align-items: start;
+}
+
+.module-left-col,
+.module-right-col {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* ── Collapsible Card Accordion ── */
+.collapsible-card {
+  background: var(--white);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: 0 4px 16px rgba(13, 71, 161, 0.04);
+  transition: box-shadow var(--transition), border-color var(--transition);
+}
+
+.collapsible-card:hover {
+  border-color: var(--border-dark);
+}
+
+.collapsible-header {
+  padding: 16px 20px;
+  background: var(--surface-2);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  user-select: none;
+  border-bottom: 1px solid transparent;
+  transition: background var(--transition);
+}
+
+.collapsible-header:hover {
+  background: #e2e8f0;
+}
+
+.collapsible-header.is-open {
+  border-bottom-color: var(--border);
+}
+
+.collapsible-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+}
+
+.collapsible-title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 16px;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.collapsible-toggle-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--primary);
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  background: rgba(13, 71, 161, 0.08);
+  transition: background var(--transition), transform var(--transition);
+}
+
+.collapsible-toggle-btn:hover {
+  background: rgba(13, 71, 161, 0.15);
+}
+
+.collapsible-body {
+  padding: 24px;
+}
+
+/* ── Print / PDF Evaluation Sheet A4 ── */
+@page {
+  size: A4 portrait;
+  margin: 12mm 15mm 15mm 15mm;
+}
+
+@media print {
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+    font-size: 11pt !important;
+    line-height: 1.4 !important;
+  }
+
+  /* Sembunyikan elemen web normal saat print */
+  .navbar,
+  .btn,
+  button,
+  .no-print,
+  .toast-container,
+  .page-header,
+  .breadcrumb,
+  .module-split-layout > .module-left-col,
+  .collapsible-header,
+  .webgl-controls,
+  .search-box,
+  .stats-row {
+    display: none !important;
+  }
+
+  .main-wrapper {
+    padding: 0 !important;
+    margin: 0 !important;
+    max-width: 100% !important;
+  }
+
+  .module-split-layout {
+    display: block !important;
+  }
+
+  .module-right-col {
+    display: block !important;
+    width: 100% !important;
+  }
+
+  .collapsible-card {
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+  }
+
+  .collapsible-body {
+    padding: 0 !important;
+  }
+
+  #printable-sheet {
+    display: block !important;
+    width: 100% !important;
+    background: white !important;
+    color: black !important;
+  }
+
+  .print-kop {
+    display: flex !important;
+    align-items: center !important;
+    gap: 16px !important;
+    padding-bottom: 12px !important;
+    border-bottom: 3px double #000000 !important;
+    margin-bottom: 16px !important;
+  }
+
+  .print-kop img {
+    width: 70px !important;
+    height: auto !important;
+  }
+
+  .print-page-break {
+    page-break-before: always;
+  }
+}
+
+@media (max-width: 1024px) {
+  .module-split-layout {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
 }

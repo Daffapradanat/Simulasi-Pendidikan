@@ -6,21 +6,21 @@ const getSubjectStyles = (subject: Subject) => {
   const name = subject.name;
   const lowerName = name.toLowerCase();
   const presets = [
-    { icon: 'ti-calculator', color: '#3b82f6', bg: 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)', border: '#bfdbfe' },
-    { icon: 'ti-atom', color: '#8b5cf6', bg: 'linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%)', border: '#ddd6fe' },
-    { icon: 'ti-flask', color: '#10b981', bg: 'linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%)', border: '#a7f3d0' },
-    { icon: 'ti-microscope', color: '#84cc16', bg: 'linear-gradient(135deg, #f7fee7 0%, #ecfccb 100%)', border: '#d9f99d' },
-    { icon: 'ti-building-monument', color: '#f59e0b', bg: 'linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)', border: '#fde68a' },
-    { icon: 'ti-language', color: '#ec4899', bg: 'linear-gradient(135deg, #fdf2f8 0%, #fce7f3 100%)', border: '#fbcfe8' },
-    { icon: 'ti-world', color: '#06b6d4', bg: 'linear-gradient(135deg, #ecfeff 0%, #cffafe 100%)', border: '#a5f3fc' },
-    { icon: 'ti-palette', color: '#f43f5e', bg: 'linear-gradient(135deg, #fff1f2 0%, #ffe4e6 100%)', border: '#fecdd3' },
-    { icon: 'ti-device-laptop', color: '#6366f1', bg: 'linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%)', border: '#c7d2fe' },
-    { icon: 'ti-book-2', color: '#14b8a6', bg: 'linear-gradient(135deg, #f0fdfa 0%, #ccfbf1 100%)', border: '#99f6e4' },
-    { icon: 'ti-chart-bar', color: '#eab308', bg: 'linear-gradient(135deg, #fefce8 0%, #fef08a 100%)', border: '#fde047' },
-    { icon: 'ti-leaf', color: '#22c55e', bg: 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)', border: '#bbf7d0' },
-    { icon: 'ti-music', color: '#d946ef', bg: 'linear-gradient(135deg, #fdf4ff 0%, #fae8ff 100%)', border: '#f5d0fe' },
-    { icon: 'ti-brain', color: '#f97316', bg: 'linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%)', border: '#fed7aa' },
-    { icon: 'ti-ball-basketball', color: '#ea580c', bg: 'linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%)', border: '#fed7aa' }
+    { icon: 'ti-calculator', color: '#1d4ed8', bg: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)', border: '#bfdbfe' },
+    { icon: 'ti-atom', color: '#6d28d9', bg: 'linear-gradient(135deg, #7c3aed 0%, #5b21b6 100%)', border: '#ddd6fe' },
+    { icon: 'ti-flask', color: '#047857', bg: 'linear-gradient(135deg, #059669 0%, #047857 100%)', border: '#a7f3d0' },
+    { icon: 'ti-microscope', color: '#4d7c0f', bg: 'linear-gradient(135deg, #65a30d 0%, #3f6212 100%)', border: '#d9f99d' },
+    { icon: 'ti-building-monument', color: '#b45309', bg: 'linear-gradient(135deg, #d97706 0%, #b45309 100%)', border: '#fde68a' },
+    { icon: 'ti-language', color: '#be185d', bg: 'linear-gradient(135deg, #db2777 0%, #9d174d 100%)', border: '#fbcfe8' },
+    { icon: 'ti-world', color: '#0e7490', bg: 'linear-gradient(135deg, #0891b2 0%, #155e75 100%)', border: '#a5f3fc' },
+    { icon: 'ti-palette', color: '#be123c', bg: 'linear-gradient(135deg, #e11d48 0%, #9f1239 100%)', border: '#fecdd3' },
+    { icon: 'ti-device-laptop', color: '#4338ca', bg: 'linear-gradient(135deg, #4f46e5 0%, #3730a3 100%)', border: '#c7d2fe' },
+    { icon: 'ti-book-2', color: '#0f766e', bg: 'linear-gradient(135deg, #0d9488 0%, #115e59 100%)', border: '#99f6e4' },
+    { icon: 'ti-chart-bar', color: '#a16207', bg: 'linear-gradient(135deg, #ca8a04 0%, #854d0e 100%)', border: '#fde047' },
+    { icon: 'ti-leaf', color: '#15803d', bg: 'linear-gradient(135deg, #16a34a 0%, #166534 100%)', border: '#bbf7d0' },
+    { icon: 'ti-music', color: '#a21caf', bg: 'linear-gradient(135deg, #c026d3 0%, #86198f 100%)', border: '#f5d0fe' },
+    { icon: 'ti-brain', color: '#c2410c', bg: 'linear-gradient(135deg, #ea580c 0%, #9a3412 100%)', border: '#fed7aa' },
+    { icon: 'ti-ball-basketball', color: '#9a3412', bg: 'linear-gradient(135deg, #c2410c 0%, #7c2d12 100%)', border: '#fed7aa' }
   ];
 
   if (lowerName.includes('matematika') || lowerName.includes('math')) return presets[0];
@@ -101,8 +101,8 @@ export function SubjectSelectionView({ subjects, onSelectSubject, onBack }: { su
               }}
               whileTap={{ scale: 0.98 }}
             >
-              <div className="selection-icon-wrap" style={{ background: style.bg, color: style.color, boxShadow: `inset 0 2px 4px rgba(255,255,255,0.5), 0 4px 12px ${style.color}20` }}>
-                <i className={iconClass}></i>
+              <div className="selection-icon-wrap" style={{ background: style.bg, color: '#ffffff', boxShadow: `0 8px 20px ${style.color}30` }}>
+                <i className={iconClass} style={{ color: '#ffffff' }}></i>
               </div>
               
               <div style={{ flex: 1, textAlign: 'left' }}>

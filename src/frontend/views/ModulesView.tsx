@@ -183,8 +183,8 @@ export function ModulesView({ modules, subjects, user, onOpenModule, lastModuleI
                 return (
                   <div key={subject.id} style={{ marginBottom: '40px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px', paddingBottom: '12px', borderBottom: '1px solid var(--border)' }}>
-                      <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'var(--primary-light)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>
-                        <i className={`ti ${subject.icon || 'ti-book'}`}></i>
+                      <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', boxShadow: '0 4px 10px rgba(37, 99, 235, 0.25)' }}>
+                        <i className={`ti ${subject.icon || 'ti-book'}`} style={{ color: '#ffffff' }}></i>
                       </div>
                       <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '20px', fontWeight: 800, color: 'var(--text)', margin: 0 }}>{subject.name}</h2>
                     </div>
