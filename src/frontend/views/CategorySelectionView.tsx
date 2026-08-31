@@ -37,11 +37,11 @@ export function CategorySelectionView({ categories, onSelectCategory }: { catego
       >
         {categories.map((cat, i) => {
           const colors = [
-            { bg: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)', themeColor: '#1d4ed8', border: '#bfdbfe' },
-            { bg: 'linear-gradient(135deg, #059669 0%, #047857 100%)', themeColor: '#047857', border: '#a7f3d0' },
-            { bg: 'linear-gradient(135deg, #d97706 0%, #b45309 100%)', themeColor: '#b45309', border: '#fde68a' },
-            { bg: 'linear-gradient(135deg, #7c3aed 0%, #5b21b6 100%)', themeColor: '#6d28d9', border: '#ddd6fe' },
-            { bg: 'linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)', themeColor: '#b91c1c', border: '#fecaca' }
+            { bg: '#0d47a1', themeColor: '#0d47a1', border: '#bfdbfe' },
+            { bg: '#047857', themeColor: '#047857', border: '#a7f3d0' },
+            { bg: '#b45309', themeColor: '#b45309', border: '#fde68a' },
+            { bg: '#6d28d9', themeColor: '#6d28d9', border: '#ddd6fe' },
+            { bg: '#b91c1c', themeColor: '#b91c1c', border: '#fecaca' }
           ];
           const color = colors[i % colors.length];
 

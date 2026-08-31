@@ -18,6 +18,7 @@ export type Module = {
   isDeleted?: boolean;
   category_id?: number;
   subject_id?: number;
+  subject?: string;
   material: {
     objectives: string[];
     theory: string;

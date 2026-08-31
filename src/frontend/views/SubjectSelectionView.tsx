@@ -6,21 +6,21 @@ const getSubjectStyles = (subject: Subject) => {
   const name = subject.name;
   const lowerName = name.toLowerCase();
   const presets = [
-    { icon: 'ti-calculator', color: '#1d4ed8', bg: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)', border: '#bfdbfe' },
-    { icon: 'ti-atom', color: '#6d28d9', bg: 'linear-gradient(135deg, #7c3aed 0%, #5b21b6 100%)', border: '#ddd6fe' },
-    { icon: 'ti-flask', color: '#047857', bg: 'linear-gradient(135deg, #059669 0%, #047857 100%)', border: '#a7f3d0' },
-    { icon: 'ti-microscope', color: '#4d7c0f', bg: 'linear-gradient(135deg, #65a30d 0%, #3f6212 100%)', border: '#d9f99d' },
-    { icon: 'ti-building-monument', color: '#b45309', bg: 'linear-gradient(135deg, #d97706 0%, #b45309 100%)', border: '#fde68a' },
-    { icon: 'ti-language', color: '#be185d', bg: 'linear-gradient(135deg, #db2777 0%, #9d174d 100%)', border: '#fbcfe8' },
-    { icon: 'ti-world', color: '#0e7490', bg: 'linear-gradient(135deg, #0891b2 0%, #155e75 100%)', border: '#a5f3fc' },
-    { icon: 'ti-palette', color: '#be123c', bg: 'linear-gradient(135deg, #e11d48 0%, #9f1239 100%)', border: '#fecdd3' },
-    { icon: 'ti-device-laptop', color: '#4338ca', bg: 'linear-gradient(135deg, #4f46e5 0%, #3730a3 100%)', border: '#c7d2fe' },
-    { icon: 'ti-book-2', color: '#0f766e', bg: 'linear-gradient(135deg, #0d9488 0%, #115e59 100%)', border: '#99f6e4' },
-    { icon: 'ti-chart-bar', color: '#a16207', bg: 'linear-gradient(135deg, #ca8a04 0%, #854d0e 100%)', border: '#fde047' },
-    { icon: 'ti-leaf', color: '#15803d', bg: 'linear-gradient(135deg, #16a34a 0%, #166534 100%)', border: '#bbf7d0' },
-    { icon: 'ti-music', color: '#a21caf', bg: 'linear-gradient(135deg, #c026d3 0%, #86198f 100%)', border: '#f5d0fe' },
-    { icon: 'ti-brain', color: '#c2410c', bg: 'linear-gradient(135deg, #ea580c 0%, #9a3412 100%)', border: '#fed7aa' },
-    { icon: 'ti-ball-basketball', color: '#9a3412', bg: 'linear-gradient(135deg, #c2410c 0%, #7c2d12 100%)', border: '#fed7aa' }
+    { icon: 'ti-calculator', color: '#0d47a1', bg: '#0d47a1', border: '#bfdbfe' },
+    { icon: 'ti-atom', color: '#6d28d9', bg: '#6d28d9', border: '#ddd6fe' },
+    { icon: 'ti-flask', color: '#047857', bg: '#047857', border: '#a7f3d0' },
+    { icon: 'ti-microscope', color: '#4d7c0f', bg: '#4d7c0f', border: '#d9f99d' },
+    { icon: 'ti-building-monument', color: '#b45309', bg: '#b45309', border: '#fde68a' },
+    { icon: 'ti-language', color: '#be185d', bg: '#be185d', border: '#fbcfe8' },
+    { icon: 'ti-world', color: '#0e7490', bg: '#0e7490', border: '#a5f3fc' },
+    { icon: 'ti-palette', color: '#be123c', bg: '#be123c', border: '#fecdd3' },
+    { icon: 'ti-device-laptop', color: '#4338ca', bg: '#4338ca', border: '#c7d2fe' },
+    { icon: 'ti-book-2', color: '#0f766e', bg: '#0f766e', border: '#99f6e4' },
+    { icon: 'ti-chart-bar', color: '#a16207', bg: '#a16207', border: '#fde047' },
+    { icon: 'ti-leaf', color: '#15803d', bg: '#15803d', border: '#bbf7d0' },
+    { icon: 'ti-music', color: '#a21caf', bg: '#a21caf', border: '#f5d0fe' },
+    { icon: 'ti-brain', color: '#c2410c', bg: '#c2410c', border: '#fed7aa' },
+    { icon: 'ti-ball-basketball', color: '#9a3412', bg: '#9a3412', border: '#fed7aa' }
   ];
 
   if (lowerName.includes('matematika') || lowerName.includes('math')) return presets[0];

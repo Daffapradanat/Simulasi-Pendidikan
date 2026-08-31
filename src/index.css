@@ -2118,11 +2118,106 @@ select.form-input {
   background: var(--surface-2);
 }
 
-/* ── Split Layout Modul: Kiri Materi & Game, Kanan Soal & Evaluasi ── */
+/* ── Modern Module View & Split Layout (Formal Institutional Kemendikdasmen) ── */
+.module-hero-banner {
+  background: var(--primary);
+  border: 1px solid var(--primary-dark);
+  border-radius: var(--radius-lg);
+  padding: 24px 28px;
+  color: #ffffff;
+  position: relative;
+  box-shadow: 0 4px 16px rgba(13, 71, 161, 0.12);
+  margin-bottom: 24px;
+}
+
+.module-hero-badges {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.hero-badge-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+}
+
+.module-hero-title {
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: -0.3px;
+  margin: 0 0 8px 0;
+  line-height: 1.3;
+}
+
+.module-hero-desc {
+  font-size: 14px;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.9);
+  max-width: 900px;
+  margin: 0 0 18px 0;
+}
+
+.module-timeline-track {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+  flex-wrap: wrap;
+}
+
+.timeline-step-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.timeline-step-indicator.active {
+  color: #ffffff;
+}
+
+.timeline-step-num {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.timeline-step-indicator.active .timeline-step-num {
+  background: #ffffff;
+  color: var(--primary);
+}
+
+.timeline-step-indicator.completed .timeline-step-num {
+  background: #16a34a;
+  color: #ffffff;
+}
+
 .module-split-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.95fr);
-  gap: 28px;
+  grid-template-columns: minmax(0, 1.18fr) minmax(0, 0.92fr);
+  gap: 24px;
   align-items: start;
 }
 
@@ -2133,76 +2228,465 @@ select.form-input {
   gap: 20px;
 }
 
-/* ── Collapsible Card Accordion ── */
-.collapsible-card {
-  background: var(--white);
-  border: 1.5px solid var(--border);
-  border-radius: var(--radius-lg);
+/* ── Modern Step Card Container ── */
+.modern-step-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 4px 16px rgba(13, 71, 161, 0.04);
-  transition: box-shadow var(--transition), border-color var(--transition);
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+  transition: border-color 0.2s ease;
 }
 
-.collapsible-card:hover {
-  border-color: var(--border-dark);
+.modern-step-card:hover {
+  border-color: #cbd5e1;
 }
 
-.collapsible-header {
+.step-card-header {
   padding: 16px 20px;
-  background: var(--surface-2);
+  background: #ffffff;
   display: flex;
   align-items: center;
   justify-content: space-between;
   cursor: pointer;
   user-select: none;
-  border-bottom: 1px solid transparent;
-  transition: background var(--transition);
+  border-bottom: 1px solid #f1f5f9;
+  transition: background 0.15s ease;
 }
 
-.collapsible-header:hover {
-  background: #e2e8f0;
+.step-card-header:hover {
+  background: #f8fafc;
 }
 
-.collapsible-header.is-open {
-  border-bottom-color: var(--border);
+.step-card-header.is-open {
+  border-bottom-color: #e2e8f0;
 }
 
-.collapsible-title-wrap {
+.step-header-left {
   display: flex;
   align-items: center;
   gap: 12px;
-  flex: 1;
 }
 
-.collapsible-title {
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 16px;
-  color: var(--text);
+.step-number-badge {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
   display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 13px;
+  color: #ffffff;
+  flex-shrink: 0;
+}
+
+.step-number-badge.blue {
+  background: #0d47a1;
+}
+
+.step-number-badge.emerald {
+  background: #15803d;
+}
+
+.step-number-badge.amber {
+  background: #b45309;
+}
+
+.step-header-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.step-title {
+  font-family: var(--font-display);
+  font-size: 15.5px;
+  font-weight: 700;
+  color: #0f172a;
+  letter-spacing: -0.2px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 2px 0;
+}
+
+.step-subtitle {
+  font-size: 12px;
+  color: #64748b;
+  margin: 0;
+}
+
+.step-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #475569;
+  padding: 5px 10px;
+  border-radius: 6px;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  transition: all 0.15s ease;
+}
+
+.step-toggle-btn:hover {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+.step-card-body {
+  padding: 20px;
+}
+
+/* ── Tab Switcher inside Step 1 ── */
+.materi-tab-nav {
+  display: flex;
+  gap: 6px;
+  padding: 4px;
+  background: #f1f5f9;
+  border-radius: 8px;
+  margin-bottom: 18px;
+}
+
+.materi-tab-btn {
+  flex: 1;
+  padding: 7px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #64748b;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all 0.15s ease;
+}
+
+.materi-tab-btn.active {
+  background: #ffffff;
+  color: var(--primary);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+  font-weight: 700;
+}
+
+/* ── Rich Theory Typography ── */
+.theory-prose {
+  font-size: 14px;
+  line-height: 1.7;
+  color: #334155;
+}
+
+.theory-prose p {
+  margin-bottom: 12px;
+}
+
+.theory-prose strong {
+  color: #0f172a;
+  font-weight: 700;
+}
+
+.theory-prose h3, .theory-prose h4 {
+  font-family: var(--font-display);
+  color: #0f172a;
+  font-weight: 700;
+  margin: 16px 0 8px 0;
+}
+
+.theory-callout {
+  background: #f0f7ff;
+  border-left: 4px solid var(--primary);
+  padding: 12px 16px;
+  border-radius: 0 8px 8px 0;
+  margin: 14px 0;
+  font-size: 13px;
+  color: #1e3a8a;
+  line-height: 1.5;
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+/* ── Objective & Key Terms ── */
+.objective-list-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 9px 12px;
+  background: #f8fafc;
+  border: 1px solid #f1f5f9;
+  border-radius: 8px;
+  margin-bottom: 6px;
+}
+
+.objective-icon {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #dcfce7;
+  color: #15803d;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.keyterm-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-left: 4px solid var(--primary);
+  border-radius: 8px;
+  padding: 12px 14px;
+}
+
+.keyterm-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--primary);
+  margin-bottom: 3px;
+}
+
+.keyterm-def {
+  font-size: 12.5px;
+  color: #475569;
+  line-height: 1.45;
+}
+
+/* ── Modern Game Simulator UI ── */
+.modern-game-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  transition: border-color 0.2s ease;
+}
+
+.modern-game-card:hover {
+  border-color: var(--primary);
+}
+
+.modern-game-card.active-game {
+  border-color: var(--primary);
+  background: #f0f7ff;
+}
+
+.modern-game-card.played {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+}
+
+.game-icon-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  background: var(--primary);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.modern-webgl-frame {
+  background: #0f172a;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid #334155;
+  margin-bottom: 18px;
+}
+
+.webgl-frame-header {
+  padding: 10px 16px;
+  background: #1e293b;
+  border-bottom: 1px solid #334155;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #ffffff;
+}
+
+/* ── Modern Questions & Evaluation UI ── */
+.questions-card-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.question-box {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 18px;
+  transition: border-color 0.2s ease;
+  position: relative;
+}
+
+.question-box:hover {
+  border-color: #cbd5e1;
+}
+
+.question-box.is-answered {
+  border-color: #93c5fd;
+}
+
+.question-meta-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.question-number-tag {
+  display: inline-flex;
   align-items: center;
   gap: 8px;
 }
 
-.collapsible-toggle-btn {
+.number-chip {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  background: #0f172a;
+  color: #ffffff;
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 13px;
-  font-weight: 600;
+  justify-content: center;
+  font-size: 11.5px;
+  font-weight: 700;
+}
+
+.type-pill {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #64748b;
+}
+
+.question-prompt-text {
+  font-size: 14.5px;
+  font-weight: 700;
+  color: #0f172a;
+  line-height: 1.5;
+  margin: 0 0 14px 0;
+}
+
+/* ── Interactive Option Tiles ── */
+.option-tile {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 11px 14px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  cursor: pointer;
+  margin-bottom: 8px;
+  font-size: 13.5px;
+  color: #1e293b;
+  transition: all 0.15s ease;
+}
+
+.option-tile:hover {
+  border-color: #94a3b8;
+  background: #f8fafc;
+}
+
+.option-tile.selected {
+  border-color: var(--primary);
+  background: #eff6ff;
   color: var(--primary);
-  padding: 4px 10px;
-  border-radius: var(--radius-sm);
-  background: rgba(13, 71, 161, 0.08);
-  transition: background var(--transition), transform var(--transition);
+  font-weight: 600;
 }
 
-.collapsible-toggle-btn:hover {
-  background: rgba(13, 71, 161, 0.15);
+.letter-circle {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1px solid #cbd5e1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: #64748b;
+  margin-right: 10px;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
 }
 
-.collapsible-body {
-  padding: 24px;
+.option-tile.selected .letter-circle {
+  border-color: var(--primary);
+  background: var(--primary);
+  color: #ffffff;
+}
+
+/* ── Score Dashboard & Summary ── */
+.score-hero-dashboard {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 24px 20px;
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.score-circular-badge {
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 14px;
+  color: #ffffff;
+}
+
+.score-circular-badge.passed {
+  background: #15803d;
+}
+
+.score-circular-badge.failed {
+  background: #b45309;
+}
+
+.score-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin: 18px 0;
+}
+
+.score-stat-card {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 10px 6px;
+  text-align: center;
+}
+
+.score-stat-val {
+  font-size: 17px;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.score-stat-lbl {
+  font-size: 10.5px;
+  color: #64748b;
+  font-weight: 600;
+  text-transform: uppercase;
 }
 
 /* ── Print / PDF Evaluation Sheet A4 ── */
@@ -2219,7 +2703,6 @@ select.form-input {
     line-height: 1.4 !important;
   }
 
-  /* Sembunyikan elemen web normal saat print */
   .navbar,
   .btn,
   button,
@@ -2228,8 +2711,9 @@ select.form-input {
   .page-header,
   .breadcrumb,
   .module-split-layout > .module-left-col,
-  .collapsible-header,
-  .webgl-controls,
+  .step-card-header,
+  .module-hero-banner,
+  .materi-tab-nav,
   .search-box,
   .stats-row {
     display: none !important;
@@ -2250,13 +2734,13 @@ select.form-input {
     width: 100% !important;
   }
 
-  .collapsible-card {
+  .modern-step-card {
     border: none !important;
     box-shadow: none !important;
     padding: 0 !important;
   }
 
-  .collapsible-body {
+  .step-card-body {
     padding: 0 !important;
   }
 
@@ -2290,5 +2774,13 @@ select.form-input {
   .module-split-layout {
     grid-template-columns: 1fr;
     gap: 24px;
+  }
+  
+  .module-hero-banner {
+    padding: 20px 24px;
+  }
+  
+  .module-hero-title {
+    font-size: 22px;
   }
 }

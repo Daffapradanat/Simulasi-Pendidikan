@@ -19,7 +19,6 @@ export function QuestionsView({
   const [shuffledRights, setShuffledRights] = useState<Record<number, string[]>>({});
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [reflection, setReflection] = useState('');
-  const [confirmSubmitOpen, setConfirmSubmitOpen] = useState(false);
 
   useEffect(() => {
     const rights: Record<number, string[]> = {};
@@ -38,7 +37,7 @@ export function QuestionsView({
   }, [questions]);
 
   const handleSelect = (qIndex: number, answer: any) => {
-    if (isSubmitted) return; // Kunci input jika sudah submit
+    if (isSubmitted) return;
     const q = questions[qIndex];
     if (q.type === 'multiple_select') {
       const currentAnswers = answers[qIndex] || [];
@@ -63,7 +62,6 @@ export function QuestionsView({
     });
     setAnswers(initialAns);
     setIsSubmitted(false);
-    setConfirmSubmitOpen(false);
   };
 
   const checkIsCorrect = (q: any, ans: any) => {
@@ -116,6 +114,7 @@ export function QuestionsView({
   const answeredCount = questions.filter((_, i) => isQuestionAnswered(i)).length;
   const correctCount = questions.filter((q, i) => checkIsCorrect(q, answers[i])).length;
   const score = questions.length > 0 ? Math.round((correctCount / questions.length) * 100) : 100;
+  const progressPercent = questions.length > 0 ? Math.round((answeredCount / questions.length) * 100) : 0;
 
   const getCorrectAnswerLabel = (q: any) => {
     const type = q.type || 'multiple_choice';
@@ -153,7 +152,7 @@ export function QuestionsView({
     window.print();
   };
 
-  const studentName = user?.name || 'Siswa';
+  const studentName = user?.name || 'Siswa Pembelajar';
   const currentDate = new Date().toLocaleDateString('id-ID', {
     weekday: 'long',
     year: 'numeric',
@@ -161,80 +160,97 @@ export function QuestionsView({
     day: 'numeric'
   });
 
-  // --- JIKA TIDAK ADA SOAL DI MODUL (HANYA REFLEKSI) ---
+  // --- JIKA TIDAK ADA SOAL DI MODUL (REFLEKSI MANDIRI SAJA) ---
   if (!questions || questions.length === 0) {
     return (
-      <div className="questions-container">
-        <div style={{ padding: '24px', background: 'var(--white)', borderRadius: '14px', border: '1.5px solid var(--border)' }}>
-          <div style={{ textAlign: 'center', marginBottom: '20px' }}>
-            <div style={{ width: '52px', height: '52px', borderRadius: '50%', background: 'var(--primary)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', margin: '0 auto 12px' }}>
-              <i className="ti ti-notes"></i>
-            </div>
-            <h3 style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text)', margin: '0 0 6px 0', fontFamily: 'var(--font-display)' }}>
-              Refleksi Pembelajaran
-            </h3>
-            <p style={{ color: 'var(--text-muted)', fontSize: '13px', margin: 0, lineHeight: 1.5 }}>
-              Modul ini berbasis eksperimen interaktif. Tuliskan pemahaman yang Anda dapatkan setelah mencoba simulasi ini.
-            </p>
+      <div style={{ padding: '8px' }}>
+        <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+          <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: '#eff6ff', color: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', margin: '0 auto 12px' }}>
+            <i className="ti ti-notes"></i>
           </div>
-
-          <div style={{ marginBottom: '20px' }}>
-            <label style={{ display: 'block', fontSize: '13px', fontWeight: 700, marginBottom: '8px', color: 'var(--text)' }}>
-              Catatan Refleksi Mandiri:
-            </label>
-            <textarea 
-              className="form-input" 
-              rows={4} 
-              value={reflection}
-              onChange={(e) => setReflection(e.target.value)}
-              placeholder="Contoh: Dari simulasi ini saya memahami bagaimana variabel massa memengaruhi gravitasi..."
-              style={{ width: '100%', resize: 'vertical', borderRadius: '10px', padding: '14px', fontSize: '14px', lineHeight: '1.5', minHeight: '100px' }}
-            />
-          </div>
-
-          <button 
-            className="btn btn-primary" 
-            onClick={() => onComplete(reflection)} 
-            disabled={!reflection.trim()}
-            style={{ width: '100%', justifyContent: 'center', height: '44px', fontWeight: 700, fontSize: '14px' }}
-          >
-            <i className="ti ti-circle-check"></i> Selesaikan Modul
-          </button>
+          <h3 style={{ fontSize: '17px', fontWeight: 800, color: '#0f172a', margin: '0 0 6px 0' }}>
+            Refleksi Pembelajaran Mandiri
+          </h3>
+          <p style={{ color: '#64748b', fontSize: '13px', margin: 0, lineHeight: 1.5 }}>
+            Modul ini berbasis eksperimen virtual. Tuliskan pemahaman yang Anda dapatkan setelah mencoba simulasi laboratorium.
+          </p>
         </div>
+
+        <div style={{ marginBottom: '20px' }}>
+          <label style={{ display: 'block', fontSize: '13px', fontWeight: 700, marginBottom: '8px', color: '#0f172a' }}>
+            Catatan Refleksi Siswa:
+          </label>
+          <textarea 
+            className="form-input" 
+            rows={4} 
+            value={reflection}
+            onChange={(e) => setReflection(e.target.value)}
+            placeholder="Tuliskan konsep sains yang Anda pahami setelah mencoba simulasi..."
+            style={{ width: '100%', resize: 'vertical', borderRadius: '10px', padding: '12px 14px', fontSize: '13.5px', lineHeight: '1.5' }}
+          />
+        </div>
+
+        <button 
+          className="btn btn-primary" 
+          onClick={() => onComplete(reflection)} 
+          disabled={!reflection.trim()}
+          style={{ width: '100%', justifyContent: 'center', height: '44px', fontWeight: 700, fontSize: '14px', borderRadius: '10px' }}
+        >
+          <i className="ti ti-circle-check"></i> Selesaikan Modul
+        </button>
       </div>
     );
   }
 
   return (
-    <div className="questions-view-container">
-      {/* ── MODE 1: LEMBAR PENGERJAAN SOAL (SEMUA SOAL TERLEBIH DAHULU) ── */}
+    <div>
+      {/* ── MODE 1: LEMBAR PENGERJAAN SOAL EVALUASI ── */}
       {!isSubmitted ? (
         <div>
-          {/* Header Status Pengerjaan */}
+          {/* Header Progress Pengerjaan */}
           <div style={{ 
-            background: 'linear-gradient(135deg, #1d4ed8 0%, #0d47a1 100%)', 
-            color: 'white', 
-            padding: '16px 20px', 
-            borderRadius: '12px', 
-            marginBottom: '20px',
-            boxShadow: '0 4px 12px rgba(13, 71, 161, 0.15)'
+            background: '#f8fafc', 
+            border: '1px solid #e2e8f0', 
+            padding: '16px', 
+            borderRadius: '14px', 
+            marginBottom: '20px' 
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <i className="ti ti-edit" style={{ fontSize: '18px' }}></i>
-                <span style={{ fontWeight: 700, fontSize: '15px' }}>Lembar Soal Evaluasi</span>
-              </div>
-              <span className="badge" style={{ background: 'rgba(255,255,255,0.2)', color: 'white', border: 'none', padding: '4px 10px', fontSize: '12px', fontWeight: 600 }}>
-                {answeredCount} dari {questions.length} Dijawab
+              <span style={{ fontWeight: 700, fontSize: '13.5px', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <i className="ti ti-checklist" style={{ color: '#d97706' }}></i> Progress Soal Evaluasi
+              </span>
+              <span style={{ 
+                background: answeredCount === questions.length ? '#dcfce7' : '#eff6ff', 
+                color: answeredCount === questions.length ? '#15803d' : '#1d4ed8', 
+                padding: '3px 10px', 
+                borderRadius: '12px', 
+                fontSize: '12px', 
+                fontWeight: 700 
+              }}>
+                {answeredCount} / {questions.length} Terjawab ({progressPercent}%)
               </span>
             </div>
-            <p style={{ margin: 0, fontSize: '12.5px', color: 'rgba(255,255,255,0.85)', lineHeight: 1.4 }}>
-              Kerjakan semua pertanyaan di bawah ini secara teliti. Setelah selesai, klik tombol <strong>Kirim & Periksa Jawaban</strong> untuk melihat skor dan pembenaran.
+
+            {/* Progress Bar Line */}
+            <div style={{ width: '100%', height: '8px', background: '#e2e8f0', borderRadius: '4px', overflow: 'hidden' }}>
+              <div 
+                style={{ 
+                  width: `${progressPercent}%`, 
+                  height: '100%', 
+                  background: answeredCount === questions.length ? '#10b981' : '#2563eb', 
+                  transition: 'width 0.3s ease',
+                  borderRadius: '4px'
+                }} 
+              />
+            </div>
+            
+            <p style={{ margin: '10px 0 0 0', fontSize: '12px', color: '#64748b', lineHeight: 1.4 }}>
+              Jawab seluruh pertanyaan di bawah ini dengan teliti. Klik <strong>Kirim & Periksa Jawaban</strong> setelah selesai.
             </p>
           </div>
 
-          {/* Daftar Semua Butir Soal */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', marginBottom: '24px' }}>
+          {/* Daftar Butir Soal */}
+          <div className="questions-card-container">
             {questions.map((q, idx) => {
               const qType = q.type || 'multiple_choice';
               const isAnswered = isQuestionAnswered(idx);
@@ -243,147 +259,79 @@ export function QuestionsView({
                 <div 
                   key={idx} 
                   id={`question-item-${idx}`}
-                  style={{ 
-                    background: 'var(--white)', 
-                    border: `1.5px solid ${isAnswered ? 'var(--border-dark)' : 'var(--border)'}`, 
-                    borderRadius: '14px', 
-                    padding: '20px',
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.02)',
-                    transition: 'border-color 0.2s ease'
-                  }}
+                  className={`question-box ${isAnswered ? 'is-answered' : ''}`}
                 >
-                  <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '10px', marginBottom: '12px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <div style={{ 
-                        width: '28px', 
-                        height: '28px', 
-                        borderRadius: '8px', 
-                        background: isAnswered ? 'var(--primary)' : 'var(--surface-2)', 
-                        color: isAnswered ? 'white' : 'var(--text-muted)', 
-                        display: 'flex', 
-                        alignItems: 'center', 
-                        justifyContent: 'center', 
-                        fontWeight: 700, 
-                        fontSize: '13px' 
-                      }}>
+                  <div className="question-meta-row">
+                    <div className="question-number-tag">
+                      <div className="number-chip" style={{ background: isAnswered ? '#2563eb' : '#0f172a' }}>
                         {idx + 1}
                       </div>
-                      <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+                      <span className="type-pill">
                         {qType === 'multiple_choice' ? 'Pilihan Ganda' :
                          qType === 'multiple_select' ? 'Pilihan Ganda Kompleks' :
                          qType === 'true_false' ? 'Benar / Salah' :
                          qType === 'short_answer' ? 'Isian Singkat' :
-                         qType === 'essay' ? 'Uraian' :
+                         qType === 'essay' ? 'Uraian Singkat' :
                          qType === 'matching' ? 'Menjodohkan' : 'Mengurutkan'}
                       </span>
                     </div>
 
                     {isAnswered ? (
-                      <span style={{ fontSize: '12px', color: 'var(--success)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <span style={{ fontSize: '12px', color: '#16a34a', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px' }}>
                         <i className="ti ti-circle-check"></i> Terjawab
                       </span>
                     ) : (
-                      <span style={{ fontSize: '12px', color: 'var(--text-light)', fontWeight: 500 }}>
-                        Belum dijawab
+                      <span style={{ fontSize: '11.5px', color: '#94a3b8', fontWeight: 500 }}>
+                        Belum Diisi
                       </span>
                     )}
                   </div>
 
-                  <h4 style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text)', lineHeight: 1.5, marginBottom: '16px' }}>
+                  <h4 className="question-prompt-text">
                     {q.text}
                   </h4>
 
-                  {qType === 'multiple_select' && (
-                    <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '12px', fontStyle: 'italic' }}>
-                      *Pilih semua opsi yang benar (bisa lebih dari satu).
-                    </p>
-                  )}
-                  {qType === 'matching' && (
-                    <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '12px', fontStyle: 'italic' }}>
-                      *Pilih pasangan yang sesuai untuk setiap item di sebelah kiri.
-                    </p>
-                  )}
-                  {qType === 'ordering' && (
-                    <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '12px', fontStyle: 'italic' }}>
-                      *Gunakan tombol panah untuk menyusun urutan dari awal hingga akhir.
-                    </p>
-                  )}
-
-                  {/* Opsi Pilihan Ganda */}
+                  {/* Pilihan Ganda (Single Select) */}
                   {qType === 'multiple_choice' && (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    <div>
                       {q.options?.map((opt: string, optIdx: number) => {
                         const isSelected = answers[idx] === optIdx;
                         return (
                           <div
                             key={optIdx}
                             onClick={() => handleSelect(idx, optIdx)}
-                            style={{
-                              padding: '12px 14px',
-                              border: `1.5px solid ${isSelected ? 'var(--primary)' : 'var(--border)'}`,
-                              borderRadius: '10px',
-                              cursor: 'pointer',
-                              background: isSelected ? 'rgba(13, 71, 161, 0.06)' : 'var(--white)',
-                              color: isSelected ? 'var(--primary)' : 'var(--text)',
-                              fontWeight: isSelected ? 600 : 400,
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'space-between',
-                              fontSize: '13.5px',
-                              transition: 'all 0.15s ease'
-                            }}
+                            className={`option-tile ${isSelected ? 'selected' : ''}`}
                           >
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                              <span style={{ 
-                                width: '22px', 
-                                height: '22px', 
-                                borderRadius: '50%', 
-                                border: `1.5px solid ${isSelected ? 'var(--primary)' : 'var(--border-dark)'}`, 
-                                display: 'flex', 
-                                alignItems: 'center', 
-                                justifyContent: 'center', 
-                                fontSize: '11px', 
-                                fontWeight: 700,
-                                background: isSelected ? 'var(--primary)' : 'transparent',
-                                color: isSelected ? 'white' : 'var(--text-muted)'
-                              }}>
+                            <div style={{ display: 'flex', alignItems: 'center', flex: 1 }}>
+                              <div className="letter-circle">
                                 {String.fromCharCode(65 + optIdx)}
-                              </span>
-                              <span>{opt}</span>
+                              </div>
+                              <span style={{ lineHeight: 1.4 }}>{opt}</span>
                             </div>
-                            {isSelected && <i className="ti ti-check" style={{ color: 'var(--primary)', fontSize: '16px' }}></i>}
+                            {isSelected && <i className="ti ti-check" style={{ color: '#2563eb', fontSize: '18px', flexShrink: 0 }}></i>}
                           </div>
                         );
                       })}
                     </div>
                   )}
 
-                  {/* Pilihan Ganda Kompleks */}
+                  {/* Pilihan Ganda Kompleks (Multi Select) */}
                   {qType === 'multiple_select' && (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    <div>
+                      <p style={{ fontSize: '11.5px', color: '#64748b', fontStyle: 'italic', marginBottom: '10px' }}>
+                        *Pilih satu atau lebih opsi yang sesuai.
+                      </p>
                       {q.options?.map((opt: string, optIdx: number) => {
                         const isSelected = (answers[idx] || []).includes(optIdx);
                         return (
                           <div
                             key={optIdx}
                             onClick={() => handleSelect(idx, optIdx)}
-                            style={{
-                              padding: '12px 14px',
-                              border: `1.5px solid ${isSelected ? 'var(--primary)' : 'var(--border)'}`,
-                              borderRadius: '10px',
-                              cursor: 'pointer',
-                              background: isSelected ? 'rgba(13, 71, 161, 0.06)' : 'var(--white)',
-                              color: isSelected ? 'var(--primary)' : 'var(--text)',
-                              fontWeight: isSelected ? 600 : 400,
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'space-between',
-                              fontSize: '13.5px'
-                            }}
+                            className={`option-tile ${isSelected ? 'selected' : ''}`}
                           >
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                              <i className={`ti ${isSelected ? 'ti-square-check-filled' : 'ti-square'}`} style={{ color: isSelected ? 'var(--primary)' : 'var(--border-dark)', fontSize: '18px' }}></i>
-                              <span>{opt}</span>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1 }}>
+                              <i className={`ti ${isSelected ? 'ti-square-check-filled' : 'ti-square'}`} style={{ color: isSelected ? '#2563eb' : '#94a3b8', fontSize: '20px' }}></i>
+                              <span style={{ lineHeight: 1.4 }}>{opt}</span>
                             </div>
                           </div>
                         );
@@ -393,31 +341,27 @@ export function QuestionsView({
 
                   {/* Benar / Salah */}
                   {qType === 'true_false' && (
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
                       {[true, false].map((val, bIdx) => {
                         const isSelected = answers[idx] === val;
                         return (
                           <div
                             key={bIdx}
                             onClick={() => handleSelect(idx, val)}
-                            style={{
-                              padding: '12px',
-                              border: `1.5px solid ${isSelected ? 'var(--primary)' : 'var(--border)'}`,
-                              borderRadius: '10px',
-                              cursor: 'pointer',
-                              background: isSelected ? 'rgba(13, 71, 161, 0.06)' : 'var(--white)',
-                              color: isSelected ? 'var(--primary)' : 'var(--text)',
-                              fontWeight: isSelected ? 700 : 500,
+                            className={`option-tile ${isSelected ? 'selected' : ''}`}
+                            style={{ 
+                              justifyContent: 'center', 
                               textAlign: 'center',
-                              fontSize: '14px',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              gap: '6px'
+                              padding: '14px',
+                              background: isSelected ? (val ? '#f0fdf4' : '#fff1f2') : '#ffffff',
+                              borderColor: isSelected ? (val ? '#16a34a' : '#e11d48') : '#e2e8f0',
+                              color: isSelected ? (val ? '#16a34a' : '#e11d48') : '#1e293b'
                             }}
                           >
-                            <i className={`ti ${val ? 'ti-check' : 'ti-x'}`} style={{ color: isSelected ? 'var(--primary)' : 'inherit' }}></i>
-                            {val ? 'Benar' : 'Salah'}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 700 }}>
+                              <i className={`ti ${val ? 'ti-thumb-up' : 'ti-thumb-down'}`}></i>
+                              <span>{val ? 'Benar' : 'Salah'}</span>
+                            </div>
                           </div>
                         );
                       })}
@@ -430,19 +374,19 @@ export function QuestionsView({
                       {qType === 'essay' ? (
                         <textarea 
                           className="form-input" 
-                          placeholder="Tuliskan uraian jawaban Anda di sini..." 
+                          placeholder="Ketik uraian jawaban sains Anda di sini..." 
                           value={answers[idx] || ''} 
                           onChange={e => handleSelect(idx, e.target.value)} 
-                          style={{ width: '100%', padding: '12px', minHeight: '90px', resize: 'vertical', fontSize: '13.5px' }}
+                          style={{ width: '100%', padding: '12px', minHeight: '90px', resize: 'vertical', fontSize: '13.5px', borderRadius: '10px' }}
                         />
                       ) : (
                         <input 
                           type="text" 
                           className="form-input" 
-                          placeholder="Ketik jawaban singkat Anda..." 
+                          placeholder="Ketik jawaban singkat..." 
                           value={answers[idx] || ''} 
                           onChange={e => handleSelect(idx, e.target.value)} 
-                          style={{ width: '100%', padding: '10px 14px', fontSize: '13.5px' }}
+                          style={{ width: '100%', padding: '10px 14px', fontSize: '13.5px', borderRadius: '10px' }}
                         />
                       )}
                     </div>
@@ -454,11 +398,11 @@ export function QuestionsView({
                       {q.pairs?.map((pair: any, pIdx: number) => {
                         const currentVal = (answers[idx] || {})[pair.left] || '';
                         return (
-                          <div key={pIdx} style={{ display: 'flex', flexDirection: 'column', gap: '6px', background: 'var(--surface-2)', padding: '12px', borderRadius: '8px', border: '1px solid var(--border)' }}>
-                            <span style={{ fontWeight: 600, fontSize: '13px', color: 'var(--text)' }}>{pair.left}</span>
+                          <div key={pIdx} style={{ display: 'flex', flexDirection: 'column', gap: '6px', background: '#f8fafc', padding: '12px 14px', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
+                            <span style={{ fontWeight: 700, fontSize: '13px', color: '#0f172a' }}>{pair.left}</span>
                             <select 
                               className="form-input" 
-                              style={{ width: '100%', padding: '8px 12px', fontSize: '13px', margin: 0 }}
+                              style={{ width: '100%', padding: '8px 12px', fontSize: '13px', margin: 0, borderRadius: '8px', background: '#ffffff' }}
                               value={currentVal}
                               onChange={e => {
                                 const newAns = { ...(answers[idx] || {}) };
@@ -466,7 +410,7 @@ export function QuestionsView({
                                 handleSelect(idx, newAns);
                               }}
                             >
-                              <option value="" disabled>-- Pilih Pasangan Jawaban --</option>
+                              <option value="" disabled>-- Pilih Pasangan yang Sesuai --</option>
                               {(shuffledRights[idx] || []).map((r: string, rIdx: number) => (
                                 <option key={rIdx} value={r}>{r}</option>
                               ))}
@@ -481,7 +425,7 @@ export function QuestionsView({
                   {qType === 'ordering' && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                       {(answers[idx] || []).map((item: string, oIdx: number) => (
-                        <div key={oIdx} style={{ display: 'flex', gap: '10px', alignItems: 'center', background: 'var(--surface-2)', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--border)' }}>
+                        <div key={oIdx} style={{ display: 'flex', gap: '10px', alignItems: 'center', background: '#f8fafc', padding: '10px 14px', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
                             <button 
                               type="button"
@@ -491,9 +435,9 @@ export function QuestionsView({
                                 [newArr[oIdx - 1], newArr[oIdx]] = [newArr[oIdx], newArr[oIdx - 1]];
                                 handleSelect(idx, newArr);
                               }} 
-                              style={{ cursor: oIdx === 0 ? 'not-allowed' : 'pointer', opacity: oIdx === 0 ? 0.3 : 1, padding: 0, color: 'var(--primary)' }}
+                              style={{ cursor: oIdx === 0 ? 'not-allowed' : 'pointer', opacity: oIdx === 0 ? 0.3 : 1, padding: 0, color: '#2563eb', border: 'none', background: 'none' }}
                             >
-                              <i className="ti ti-chevron-up"></i>
+                              <i className="ti ti-chevron-up" style={{ fontSize: '16px' }}></i>
                             </button>
                             <button 
                               type="button"
@@ -503,13 +447,13 @@ export function QuestionsView({
                                 [newArr[oIdx + 1], newArr[oIdx]] = [newArr[oIdx], newArr[oIdx + 1]];
                                 handleSelect(idx, newArr);
                               }} 
-                              style={{ cursor: oIdx === answers[idx].length - 1 ? 'not-allowed' : 'pointer', opacity: oIdx === answers[idx].length - 1 ? 0.3 : 1, padding: 0, color: 'var(--primary)' }}
+                              style={{ cursor: oIdx === answers[idx].length - 1 ? 'not-allowed' : 'pointer', opacity: oIdx === answers[idx].length - 1 ? 0.3 : 1, padding: 0, color: '#2563eb', border: 'none', background: 'none' }}
                             >
-                              <i className="ti ti-chevron-down"></i>
+                              <i className="ti ti-chevron-down" style={{ fontSize: '16px' }}></i>
                             </button>
                           </div>
-                          <span style={{ fontWeight: 700, fontSize: '13px', color: 'var(--primary)', width: '20px' }}>{oIdx + 1}.</span>
-                          <span style={{ flex: 1, fontSize: '13.5px' }}>{item}</span>
+                          <span style={{ fontWeight: 800, fontSize: '13px', color: '#2563eb', width: '20px' }}>{oIdx + 1}.</span>
+                          <span style={{ flex: 1, fontSize: '13.5px', color: '#334155' }}>{item}</span>
                         </div>
                       ))}
                     </div>
@@ -520,10 +464,10 @@ export function QuestionsView({
           </div>
 
           {/* Tombol Submit Semua Jawaban */}
-          <div style={{ background: 'var(--surface)', padding: '20px', borderRadius: '12px', border: '1px solid var(--border)', textAlign: 'center' }}>
+          <div style={{ background: '#ffffff', padding: '20px', borderRadius: '16px', border: '1px solid #e2e8f0', marginTop: '20px', textAlign: 'center', boxShadow: '0 4px 12px rgba(0,0,0,0.03)' }}>
             {answeredCount < questions.length && (
-              <p style={{ fontSize: '13px', color: '#b45309', marginBottom: '12px', fontWeight: 500 }}>
-                <i className="ti ti-alert-circle"></i> Anda telah menjawab {answeredCount} dari {questions.length} soal. Pastikan semua soal terjawab sebelum mengumpulkan.
+              <p style={{ fontSize: '12.5px', color: '#d97706', marginBottom: '14px', fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                <i className="ti ti-alert-triangle"></i> Anda baru menjawab {answeredCount} dari {questions.length} butir soal.
               </p>
             )}
 
@@ -533,98 +477,100 @@ export function QuestionsView({
                 setIsSubmitted(true);
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
-              style={{ width: '100%', height: '48px', justifyContent: 'center', fontSize: '15px', fontWeight: 700 }}
+              style={{ width: '100%', height: '48px', justifyContent: 'center', fontSize: '14.5px', fontWeight: 700, borderRadius: '12px' }}
             >
-              <i className="ti ti-send"></i> Kirim & Periksa Jawaban
+              <i className="ti ti-send"></i> Kirim & Periksa Jawaban Evaluasi
             </button>
           </div>
         </div>
       ) : (
-        /* ── MODE 2: HASIL EVALUASI, SKOR, & PEMBAHASAN LENGKAP ── */
+        /* ── MODE 2: SKOR HASIL, KUNCI JAWABAN & PEMBAHASAN LENGKAP ── */
         <div>
-          {/* Banner Skor & Status */}
-          <div style={{ 
-            background: 'var(--white)', 
-            border: '1.5px solid var(--border)', 
-            borderRadius: '16px', 
-            padding: '24px 20px', 
-            textAlign: 'center',
-            marginBottom: '24px',
-            boxShadow: '0 4px 16px rgba(13, 71, 161, 0.06)'
-          }}>
-            <span className="badge" style={{ 
-              background: score >= 70 ? 'var(--success-light)' : 'var(--warning-light)', 
-              color: score >= 70 ? 'var(--success)' : 'var(--warning)',
-              border: 'none',
-              padding: '6px 14px',
+          {/* Dashboard Skor Evaluasi */}
+          <div className="score-hero-dashboard">
+            <span style={{ 
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              background: score >= 70 ? '#dcfce7' : '#fef3c7', 
+              color: score >= 70 ? '#15803d' : '#b45309',
+              padding: '6px 16px',
+              borderRadius: '20px',
               fontSize: '12px',
-              fontWeight: 700,
-              marginBottom: '12px'
+              fontWeight: 800,
+              letterSpacing: '0.5px',
+              marginBottom: '16px'
             }}>
-              {score >= 70 ? 'KOMPETENSI TUNTAS' : 'PERLU PERBAIKAN & PENGAYAAN'}
+              <i className={score >= 70 ? 'ti ti-rosette-discount-check' : 'ti ti-refresh'}></i>
+              {score >= 70 ? 'KOMPETENSI TUNTAS (MEMENUHI SYARAT)' : 'PERLU PENGAYAAN & LATIHAN ULANG'}
             </span>
 
-            <div style={{ 
-              width: '96px', 
-              height: '96px', 
-              borderRadius: '50%', 
-              background: score >= 70 ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)' : 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)', 
-              color: '#ffffff', 
-              display: 'flex', 
-              flexDirection: 'column',
-              alignItems: 'center', 
-              justifyContent: 'center',
-              margin: '0 auto 16px',
-              boxShadow: '0 8px 20px rgba(0,0,0,0.1)'
-            }}>
-              <span style={{ fontSize: '32px', fontWeight: 800, lineHeight: 1 }}>{score}</span>
-              <span style={{ fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Nilai</span>
+            {/* Circular Score Badge */}
+            <div className={`score-circular-badge ${score >= 70 ? 'passed' : 'failed'}`}>
+              <span style={{ fontSize: '34px', fontWeight: 900, lineHeight: 1 }}>{score}</span>
+              <span style={{ fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.9 }}>Nilai</span>
             </div>
 
-            <h3 style={{ fontSize: '17px', fontWeight: 800, color: 'var(--text)', marginBottom: '4px' }}>
-              {score >= 70 ? 'Selamat! Anda Berhasil Menyelesaikan Evaluasi' : 'Tetap Semangat! Pelajari Kembali Materi'}
+            <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#0f172a', margin: '0 0 6px 0' }}>
+              {score >= 70 ? 'Pencapaian Belajar Sangat Baik!' : 'Tetap Semangat! Pelajari Kembali Modul Ini'}
             </h3>
-            <p style={{ fontSize: '13px', color: 'var(--text-muted)', margin: '0 0 18px 0' }}>
-              Berhasil menjawab benar <strong style={{ color: 'var(--primary)' }}>{correctCount}</strong> dari <strong>{questions.length}</strong> soal evaluasi.
+            <p style={{ fontSize: '13px', color: '#64748b', margin: 0 }}>
+              Menjawab benar <strong>{correctCount}</strong> dari <strong>{questions.length}</strong> butir pertanyaan evaluasi.
             </p>
 
+            {/* Stat Cards Grid */}
+            <div className="score-stats-grid">
+              <div className="score-stat-card">
+                <div className="score-stat-val" style={{ color: '#16a34a' }}>{correctCount}</div>
+                <div className="score-stat-lbl">Jawaban Benar</div>
+              </div>
+              <div className="score-stat-card">
+                <div className="score-stat-val" style={{ color: '#e11d48' }}>{questions.length - correctCount}</div>
+                <div className="score-stat-lbl">Perlu Dibenahi</div>
+              </div>
+              <div className="score-stat-card">
+                <div className="score-stat-val" style={{ color: '#2563eb' }}>{score}%</div>
+                <div className="score-stat-lbl">Tingkat Akurasi</div>
+              </div>
+            </div>
+
             {/* Action Buttons: Print PDF & Ulangi */}
-            <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap', marginTop: '16px' }}>
               <button 
                 className="btn btn-outline"
                 onClick={handlePrint}
                 style={{ 
-                  background: 'var(--surface-2)', 
-                  border: '1.5px solid var(--border-dark)', 
-                  color: 'var(--text)', 
-                  fontWeight: 600, 
+                  background: '#ffffff', 
+                  border: '1.5px solid #0d47a1', 
+                  color: '#0d47a1', 
+                  fontWeight: 700, 
                   fontSize: '13px', 
-                  padding: '8px 16px',
-                  borderRadius: '8px',
+                  padding: '9px 18px',
+                  borderRadius: '10px',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '6px'
+                  gap: '8px'
                 }}
               >
-                <i className="ti ti-printer" style={{ fontSize: '16px', color: 'var(--primary)' }}></i> Cetak Hasil / Unduh PDF (A4)
+                <i className="ti ti-printer" style={{ fontSize: '17px' }}></i> Cetak Hasil / Unduh PDF (A4)
               </button>
 
               <button 
                 className="btn btn-ghost"
                 onClick={handleRetry}
                 style={{ 
-                  border: '1.5px solid var(--primary)', 
-                  color: 'var(--primary)', 
+                  border: '1.5px solid #cbd5e1', 
+                  color: '#475569', 
                   fontWeight: 600, 
                   fontSize: '13px', 
-                  padding: '8px 16px',
-                  borderRadius: '8px',
+                  padding: '9px 18px',
+                  borderRadius: '10px',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '6px'
+                  gap: '8px'
                 }}
               >
-                <i className="ti ti-rotate-clockwise" style={{ fontSize: '16px' }}></i> Ulangi Evaluasi
+                <i className="ti ti-rotate-clockwise" style={{ fontSize: '17px' }}></i> Ulangi Evaluasi
               </button>
             </div>
           </div>
@@ -632,9 +578,9 @@ export function QuestionsView({
           {/* Pembahasan & Pembenaran Soal */}
           <div style={{ marginBottom: '24px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
-              <i className="ti ti-file-check" style={{ color: 'var(--primary)', fontSize: '20px' }}></i>
-              <h3 style={{ fontSize: '16px', fontWeight: 800, color: 'var(--text)', margin: 0, fontFamily: 'var(--font-display)' }}>
-                Pembahasan & Pembenaran Soal
+              <i className="ti ti-file-check" style={{ color: '#2563eb', fontSize: '20px' }}></i>
+              <h3 style={{ fontSize: '16px', fontWeight: 800, color: '#0f172a', margin: 0 }}>
+                Analisis Kunci Jawaban & Pembenaran Konsep
               </h3>
             </div>
 
@@ -644,37 +590,37 @@ export function QuestionsView({
                 const isCorrect = checkIsCorrect(q, ans);
                 return (
                   <div key={i} style={{ 
-                    border: `1.5px solid ${isCorrect ? 'var(--success)' : 'var(--accent)'}`, 
-                    borderRadius: '12px', 
-                    padding: '16px',
-                    background: isCorrect ? 'rgba(46, 125, 50, 0.04)' : 'rgba(229, 57, 53, 0.04)'
+                    border: `1.5px solid ${isCorrect ? '#86efac' : '#fca5a5'}`, 
+                    borderRadius: '14px', 
+                    padding: '18px',
+                    background: isCorrect ? '#fafffc' : '#fffbfa'
                   }}>
                     <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
                       <div style={{ 
-                        width: '26px', height: '26px', borderRadius: '50%', flexShrink: 0,
+                        width: '28px', height: '28px', borderRadius: '8px', flexShrink: 0,
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        background: isCorrect ? 'var(--success)' : 'var(--accent)', color: 'white',
-                        fontSize: '13px', fontWeight: 700
+                        background: isCorrect ? '#16a34a' : '#e11d48', color: '#ffffff',
+                        fontSize: '13px', fontWeight: 800
                       }}>
                         {i + 1}
                       </div>
 
                       <div style={{ flex: 1 }}>
-                        <p style={{ margin: '0 0 10px 0', fontSize: '14px', fontWeight: 700, color: 'var(--text)', lineHeight: 1.5 }}>
+                        <p style={{ margin: '0 0 10px 0', fontSize: '14.5px', fontWeight: 700, color: '#0f172a', lineHeight: 1.5 }}>
                           {q.text}
                         </p>
                         
                         <div style={{ fontSize: '13px', marginBottom: '6px', lineHeight: 1.4 }}>
-                          <span style={{ color: 'var(--text-muted)' }}>Jawaban Anda: </span>
-                          <strong style={{ color: isCorrect ? 'var(--success)' : 'var(--accent)' }}>
-                            {getUserAnswerLabel(q, ans)} {isCorrect ? '✓ (Benar)' : '✗ (Salah)'}
+                          <span style={{ color: '#64748b' }}>Jawaban Anda: </span>
+                          <strong style={{ color: isCorrect ? '#16a34a' : '#e11d48' }}>
+                            {getUserAnswerLabel(q, ans)} {isCorrect ? '✓ (Benar)' : '✗ (Kurang Tepat)'}
                           </strong>
                         </div>
 
                         {!isCorrect && (
                           <div style={{ fontSize: '13px', marginBottom: '6px', lineHeight: 1.4 }}>
-                            <span style={{ color: 'var(--text-muted)' }}>Kunci Jawaban Benar: </span>
-                            <strong style={{ color: 'var(--success)' }}>
+                            <span style={{ color: '#64748b' }}>Kunci Jawaban Resmi: </span>
+                            <strong style={{ color: '#16a34a' }}>
                               {getCorrectAnswerLabel(q)}
                             </strong>
                           </div>
@@ -682,16 +628,19 @@ export function QuestionsView({
 
                         {q.explanation && (
                           <div style={{ 
-                            marginTop: '10px', 
-                            padding: '10px 12px', 
-                            background: 'var(--white)', 
-                            borderRadius: '8px', 
-                            border: '1px solid var(--border)',
-                            fontSize: '12.5px', 
-                            color: 'var(--text)',
-                            lineHeight: 1.5
+                            marginTop: '12px', 
+                            padding: '12px 14px', 
+                            background: '#ffffff', 
+                            borderRadius: '10px', 
+                            border: '1px solid #e2e8f0',
+                            fontSize: '13px', 
+                            color: '#334155',
+                            lineHeight: 1.55
                           }}>
-                            <strong style={{ color: 'var(--primary)' }}><i className="ti ti-bulb"></i> Pembenaran & Penjelasan:</strong> {q.explanation}
+                            <strong style={{ color: '#1d4ed8', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
+                              <i className="ti ti-bulb"></i> Penjelasan Konsep Ilmiah:
+                            </strong>
+                            <span>{q.explanation}</span>
                           </div>
                         )}
                       </div>
@@ -704,33 +653,33 @@ export function QuestionsView({
 
           {/* Form Refleksi Pembelajaran */}
           <div style={{ 
-            background: 'var(--surface)', 
+            background: '#f8fafc', 
             padding: '20px', 
-            borderRadius: '12px', 
-            border: '1px solid var(--border)', 
+            borderRadius: '16px', 
+            border: '1px solid #e2e8f0', 
             marginBottom: '20px' 
           }}>
-            <h4 style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text)', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <i className="ti ti-notebook" style={{ color: 'var(--primary)' }}></i> Refleksi Pembelajaran Siswa
+            <h4 style={{ fontSize: '14px', fontWeight: 800, color: '#0f172a', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <i className="ti ti-notebook" style={{ color: '#2563eb' }}></i> Catatan Refleksi Pembelajaran
             </h4>
-            <p style={{ color: 'var(--text-muted)', fontSize: '12.5px', marginBottom: '12px', lineHeight: 1.4 }}>
-              Tuliskan pemahaman penting yang Anda dapatkan dari modul ini untuk melengkapi catatan pembelajaran Anda.
+            <p style={{ color: '#64748b', fontSize: '12.5px', marginBottom: '12px', lineHeight: 1.45 }}>
+              Tuliskan pemahaman atau hal baru yang Anda peroleh dari kombinasi materi, simulasi laboratorium, dan evaluasi ini.
             </p>
             <textarea 
               className="form-input" 
               rows={3} 
               value={reflection}
               onChange={(e) => setReflection(e.target.value)}
-              placeholder="Tulis refleksi pemahaman materi di sini..."
+              placeholder="Contoh: Saya memahami bagaimana perubahan nilai variabel berpengaruh langsung terhadap hasil eksperimen..."
               style={{ 
                 width: '100%', 
                 resize: 'vertical', 
-                background: 'white', 
-                borderRadius: '8px', 
-                border: '1.5px solid var(--border)', 
-                padding: '10px 12px', 
+                background: '#ffffff', 
+                borderRadius: '10px', 
+                border: '1.5px solid #cbd5e1', 
+                padding: '12px 14px', 
                 fontSize: '13.5px', 
-                minHeight: '80px'
+                minHeight: '85px'
               }}
             />
           </div>
@@ -739,9 +688,9 @@ export function QuestionsView({
           <button 
             className="btn btn-primary" 
             onClick={() => onComplete(reflection)} 
-            style={{ width: '100%', justifyContent: 'center', height: '48px', fontWeight: 700, fontSize: '15px' }}
+            style={{ width: '100%', justifyContent: 'center', height: '48px', fontWeight: 800, fontSize: '15px', borderRadius: '12px' }}
           >
-            <i className="ti ti-circle-check"></i> Simpan & Selesaikan Modul
+            <i className="ti ti-circle-check"></i> Simpan Hasil & Selesaikan Modul
           </button>
         </div>
       )}
@@ -766,7 +715,7 @@ export function QuestionsView({
               DIREKTORAT JENDERAL PENDIDIKAN DASAR DAN MENENGAH
             </h3>
             <p style={{ fontSize: '9pt', margin: 0, fontStyle: 'italic', color: '#333' }}>
-              Platform Digital Literasi & Laboratorium Simulasi Sains Interaktif
+              Platform Laboratorium Simulasi Sains Digital & Literasi Interaktif
             </p>
           </div>
         </div>
@@ -834,7 +783,7 @@ export function QuestionsView({
               }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px', fontWeight: 700 }}>
                   <span>Soal No. {idx + 1}</span>
-                  <span style={{ color: isCorrect ? '#000' : '#000', fontWeight: 800 }}>
+                  <span style={{ color: '#000', fontWeight: 800 }}>
                     Status: {isCorrect ? '[ BENAR (✓) ]' : '[ SALAH (✗) ]'}
                   </span>
                 </div>
