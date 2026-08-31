@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { Module, User } from '../../types';
+import { PdfReportModal } from '../components/PdfReportModal';
 
 export function QuestionsView({ 
   questions = [], 
@@ -19,6 +20,7 @@ export function QuestionsView({
   const [shuffledRights, setShuffledRights] = useState<Record<number, string[]>>({});
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [reflection, setReflection] = useState('');
+  const [isPdfModalOpen, setIsPdfModalOpen] = useState(false);
 
   useEffect(() => {
     const rights: Record<number, string[]> = {};
@@ -537,8 +539,9 @@ export function QuestionsView({
             {/* Action Buttons: Print PDF & Ulangi */}
             <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap', marginTop: '16px' }}>
               <button 
+                id="btn-open-pdf-modal"
                 className="btn btn-outline"
-                onClick={handlePrint}
+                onClick={() => setIsPdfModalOpen(true)}
                 style={{ 
                   background: '#ffffff', 
                   border: '1.5px solid #0d47a1', 
@@ -549,13 +552,15 @@ export function QuestionsView({
                   borderRadius: '10px',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '8px'
+                  gap: '8px',
+                  boxShadow: '0 2px 6px rgba(13, 71, 161, 0.08)'
                 }}
               >
-                <i className="ti ti-printer" style={{ fontSize: '17px' }}></i> Cetak Hasil / Unduh PDF (A4)
+                <i className="ti ti-printer" style={{ fontSize: '17px' }}></i> Pratinjau & Unduh PDF / Cetak A4
               </button>
 
               <button 
+                id="btn-retry-eval"
                 className="btn btn-ghost"
                 onClick={handleRetry}
                 style={{ 
@@ -695,146 +700,21 @@ export function QuestionsView({
         </div>
       )}
 
-      {/* ── PRINT SHEET KHUSUS KERTAS A4 DENGAN KOP KEMENDIKDASMEN ── */}
-      <div id="printable-sheet" style={{ display: 'none' }}>
-        {/* KOP Resmi Kemendikdasmen */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', paddingBottom: '12px', borderBottom: '3px double #000000', marginBottom: '16px' }}>
-          <img 
-            src="/tutwurihandayani_Icon.png" 
-            alt="Logo Kemendikdasmen" 
-            style={{ width: '75px', height: 'auto', objectFit: 'contain' }}
-            onError={(e) => {
-              (e.target as HTMLElement).style.display = 'none';
-            }}
-          />
-          <div style={{ textAlign: 'center', flex: 1 }}>
-            <h2 style={{ fontSize: '15pt', fontWeight: 900, margin: '0 0 2px 0', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-              KEMENTERIAN PENDIDIKAN DASAR DAN MENENGAH
-            </h2>
-            <h3 style={{ fontSize: '12pt', fontWeight: 700, margin: '0 0 2px 0', textTransform: 'uppercase' }}>
-              DIREKTORAT JENDERAL PENDIDIKAN DASAR DAN MENENGAH
-            </h3>
-            <p style={{ fontSize: '9pt', margin: 0, fontStyle: 'italic', color: '#333' }}>
-              Platform Laboratorium Simulasi Sains Digital & Literasi Interaktif
-            </p>
-          </div>
-        </div>
-
-        {/* Judul Lembar Hasil */}
-        <div style={{ textAlign: 'center', marginBottom: '18px' }}>
-          <h1 style={{ fontSize: '13pt', fontWeight: 800, textDecoration: 'underline', margin: '0 0 4px 0', textTransform: 'uppercase' }}>
-            LEMBAR HASIL EVALUASI PEMBELAJARAN SISWA
-          </h1>
-          <p style={{ fontSize: '9.5pt', margin: 0, color: '#444' }}>
-            Tahun Ajaran 2025/2026
-          </p>
-        </div>
-
-        {/* Identitas Siswa & Modul */}
-        <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '16px', fontSize: '10pt' }}>
-          <tbody>
-            <tr>
-              <td style={{ width: '140px', padding: '4px 0', fontWeight: 600 }}>Nama Siswa</td>
-              <td style={{ width: '10px' }}>:</td>
-              <td style={{ fontWeight: 700, textTransform: 'uppercase' }}>{studentName}</td>
-              <td style={{ width: '140px', padding: '4px 0', fontWeight: 600 }}>Tanggal Pengerjaan</td>
-              <td style={{ width: '10px' }}>:</td>
-              <td>{currentDate}</td>
-            </tr>
-            <tr>
-              <td style={{ padding: '4px 0', fontWeight: 600 }}>Judul Modul</td>
-              <td>:</td>
-              <td style={{ fontWeight: 600 }}>{module?.title || 'Modul Sains'}</td>
-              <td style={{ padding: '4px 0', fontWeight: 600 }}>Jenjang / Tingkat</td>
-              <td>:</td>
-              <td>{module?.level || '-'}</td>
-            </tr>
-            <tr>
-              <td style={{ padding: '4px 0', fontWeight: 600 }}>Nilai Akhir (Skor)</td>
-              <td>:</td>
-              <td>
-                <span style={{ fontSize: '12pt', fontWeight: 900 }}>{score} / 100</span>
-                {' '}({score >= 70 ? 'TUNTAS' : 'PERLU BIMBINGAN'})
-              </td>
-              <td style={{ padding: '4px 0', fontWeight: 600 }}>Hasil Jawaban</td>
-              <td>:</td>
-              <td><strong>{correctCount} Benar</strong> dari {questions.length} Soal</td>
-            </tr>
-          </tbody>
-        </table>
-
-        {/* Tabel Analisis Soal, Jawaban & Pembenaran */}
-        <h4 style={{ fontSize: '10.5pt', fontWeight: 700, marginBottom: '8px', borderBottom: '1px solid #000', paddingBottom: '4px' }}>
-          A. Analisis Butir Soal dan Kunci Pembenaran
-        </h4>
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '16px' }}>
-          {questions.map((q, idx) => {
-            const ans = answers[idx];
-            const isCorrect = checkIsCorrect(q, ans);
-
-            return (
-              <div key={idx} style={{ 
-                border: '1px solid #777', 
-                borderRadius: '4px', 
-                padding: '8px 10px',
-                fontSize: '9.5pt',
-                pageBreakInside: 'avoid'
-              }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px', fontWeight: 700 }}>
-                  <span>Soal No. {idx + 1}</span>
-                  <span style={{ color: '#000', fontWeight: 800 }}>
-                    Status: {isCorrect ? '[ BENAR (✓) ]' : '[ SALAH (✗) ]'}
-                  </span>
-                </div>
-                <div style={{ marginBottom: '4px', lineHeight: 1.35 }}>
-                  <strong>Pertanyaan:</strong> {q.text}
-                </div>
-                <div style={{ marginBottom: '2px' }}>
-                  <strong>Jawaban Siswa:</strong> {getUserAnswerLabel(q, ans)}
-                </div>
-                <div style={{ marginBottom: '4px' }}>
-                  <strong>Kunci Jawaban Benar:</strong> {getCorrectAnswerLabel(q)}
-                </div>
-                {q.explanation && (
-                  <div style={{ background: '#f5f5f5', padding: '4px 6px', borderLeft: '3px solid #333', fontSize: '9pt', marginTop: '4px' }}>
-                    <strong>Pembenaran / Pembahasan:</strong> {q.explanation}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Refleksi Siswa */}
-        {reflection && (
-          <div style={{ marginBottom: '20px', pageBreakInside: 'avoid' }}>
-            <h4 style={{ fontSize: '10.5pt', fontWeight: 700, marginBottom: '6px', borderBottom: '1px solid #000', paddingBottom: '4px' }}>
-              B. Catatan Refleksi Pembelajaran Siswa
-            </h4>
-            <div style={{ border: '1px solid #777', padding: '8px 10px', borderRadius: '4px', fontSize: '9.5pt', fontStyle: 'italic', background: '#fafafa' }}>
-              "{reflection}"
-            </div>
-          </div>
-        )}
-
-        {/* Tanda Tangan */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '24px', pageBreakInside: 'avoid', fontSize: '10pt' }}>
-          <div style={{ textAlign: 'center', width: '200px' }}>
-            <div>Siswa yang Bersangkutan,</div>
-            <div style={{ height: '55px' }}></div>
-            <div style={{ fontWeight: 700, textDecoration: 'underline' }}>{studentName}</div>
-            <div style={{ fontSize: '9pt', color: '#555' }}>Siswa Literasi Sains</div>
-          </div>
-
-          <div style={{ textAlign: 'center', width: '220px' }}>
-            <div>Guru Pembimbing / Penguji,</div>
-            <div style={{ height: '55px' }}></div>
-            <div style={{ fontWeight: 700, textDecoration: 'underline' }}>( ........................................ )</div>
-            <div style={{ fontSize: '9pt', color: '#555' }}>NIP. .....................................</div>
-          </div>
-        </div>
-      </div>
+      {/* ── MODAL PRATINJAU DOKUMEN RESMI PDF & CETAK A4 ── */}
+      <PdfReportModal
+        isOpen={isPdfModalOpen}
+        onClose={() => setIsPdfModalOpen(false)}
+        module={module}
+        user={user}
+        questions={questions}
+        answers={answers}
+        score={score}
+        correctCount={correctCount}
+        reflection={reflection}
+        checkIsCorrect={checkIsCorrect}
+        getUserAnswerLabel={getUserAnswerLabel}
+        getCorrectAnswerLabel={getCorrectAnswerLabel}
+      />
     </div>
   );
 }
