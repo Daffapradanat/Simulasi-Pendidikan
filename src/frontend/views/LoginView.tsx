@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 
 // --- LOGIN VIEW ---
 interface LoginViewProps {
-  onLogin: (email: string, pass: string, remember: boolean) => void;
+  onLogin?: (email: string, pass: string, remember: boolean) => void;
   onGuestLogin?: (name: string) => void;
   defaultMode?: 'siswa-guest' | 'siswa-full' | 'guru' | 'admin';
 }
@@ -27,7 +27,7 @@ export function LoginView({ onLogin, onGuestLogin, defaultMode = 'siswa-guest' }
     if (defaultMode === 'siswa-guest') {
       const cleanName = guestName.trim();
       if (!cleanName) {
-        setError('Silakan masukkan nama kamu.');
+        setError('Silakan masukkan nama lengkap Anda.');
         return;
       }
       if (onGuestLogin) onGuestLogin(cleanName);
@@ -38,7 +38,7 @@ export function LoginView({ onLogin, onGuestLogin, defaultMode = 'siswa-guest' }
         setError('Username/Email dan password wajib diisi.');
         return;
       }
-      onLogin(cleanEmail, cleanPass, rememberMe);
+      if (onLogin) onLogin(cleanEmail, cleanPass, rememberMe);
     }
   };
 
@@ -156,10 +156,10 @@ export function LoginView({ onLogin, onGuestLogin, defaultMode = 'siswa-guest' }
         {defaultMode === 'siswa-guest' ? (
           <>
             <div className="login-title">Mulai Simulasi Sains</div>
-            <div className="login-subtitle">Silakan masukkan nama kamu untuk mulai belajar.</div>
+            <div className="login-subtitle">Silakan masukkan nama lengkap untuk mulai belajar.</div>
             <div className="form-group">
-              <label className="form-label">Nama Kamu</label>
-              <input className="form-input" type="text" placeholder="Misal: Daffa" value={guestName} onChange={e => setGuestName(e.target.value)} onKeyDown={e => e.key === 'Enter' && submit()} />
+              <label className="form-label">Nama Lengkap</label>
+              <input className="form-input" type="text" placeholder="Masukkan nama lengkap..." value={guestName} onChange={e => setGuestName(e.target.value)} onKeyDown={e => e.key === 'Enter' && submit()} />
             </div>
           </>
         ) : (

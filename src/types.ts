@@ -29,9 +29,20 @@ export type Module = {
   gameCount: number;
   banner_url?: string;
   questionCount?: number;
+  is_restricted?: boolean;
 };
 
-export type User = { id?: number; name: string; username?: string; email: string; role: string; category_ids?: number[]; subject_ids?: number[] };
+export type User = { 
+  id?: number | string; 
+  name: string; 
+  username?: string; 
+  email: string; 
+  role: string; 
+  category_ids?: number[]; 
+  subject_ids?: number[];
+  avatar?: string;
+  isGuest?: boolean;
+};
 
 export type Toast = {
   id: number;

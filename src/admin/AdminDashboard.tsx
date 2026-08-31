@@ -81,7 +81,8 @@ export default function AdminDashboard({ user, onLogout, onNavigate, onUpdateUse
   const [moduleForm, setModuleForm] = useState({ 
     title: '', desc: '', level: categories.length > 0 ? categories[0].name : '', duration: '', 
     category_id: 1, subject_id: 1,
-    objectives: '', theory: '', keyTerms: [] as {term: string, def: string}[], banner_url: '' 
+    objectives: '', theory: '', keyTerms: [] as {term: string, def: string}[], banner_url: '',
+    is_restricted: false
   });
   const [studentForm, setStudentForm] = useState<any>({ name: '', email: '', nisn: '', school_id: '' });
   const [teacherForm, setTeacherForm] = useState<any>({ name: '', nip: '', email: '', subject_ids: [] as number[], school_id: '' });
@@ -225,7 +226,7 @@ export default function AdminDashboard({ user, onLogout, onNavigate, onUpdateUse
       }
       setView('modules');
       setEditingModule(null);
-      setModuleForm({ title: '', desc: '', level: categories.length > 0 ? categories[0].name : '', duration: '', category_id: 1, subject_id: 1, objectives: '', theory: '', keyTerms: [], banner_url: '' });
+      setModuleForm({ title: '', desc: '', level: categories.length > 0 ? categories[0].name : '', duration: '', category_id: 1, subject_id: 1, objectives: '', theory: '', keyTerms: [], banner_url: '', is_restricted: false });
       setModuleGameFiles([]);
       setModuleQuestions([]);
     } catch (err: any) {

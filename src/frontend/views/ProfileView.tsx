@@ -40,41 +40,53 @@ export function ProfileView({ user, completedModuleIds, modules, subjects = [], 
                 <img src={`https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=random&color=fff&size=100`} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               )}
             </div>
-            <label htmlFor="upload-my-avatar" style={{ position: 'absolute', bottom: '0', right: '0', width: '32px', height: '32px', borderRadius: '50%', background: 'var(--primary)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,0,0,0.2)' }}>
-              <i className="ti ti-camera" style={{ fontSize: '16px' }}></i>
-            </label>
-            <input type="file" id="upload-my-avatar" style={{ display: 'none' }} accept="image/*" onChange={async (e) => {
-              const file = e.target.files?.[0];
-              if (!file) return;
-              if (file.size > 5 * 1024 * 1024) { toast.error('Maksimal ukuran gambar adalah 5MB.'); e.target.value = ''; return; }
-              const formData = new FormData();
-              formData.append('avatar', file);
-              
-              try {
-                const res = await fetchAuth('/api/upload-avatar', { method: 'POST', body: formData });
-                if (res.ok) {
-                  const data = await res.json();
-                  if (data.url) {
-                     // Update the user avatar in backend
-                     await fetchAuth(`/api/users/${user.id}/avatar`, {
-                       method: 'PUT',
-                       headers: { 'Content-Type': 'application/json' },
-                       body: JSON.stringify({ avatar: data.url, role: user.role })
-                     });
-                     setUser({...user, avatar: data.url} as User);
-                     toast.success('Foto profil berhasil diperbarui!');
+            {!user.isGuest && (
+              <>
+                <label htmlFor="upload-my-avatar" style={{ position: 'absolute', bottom: '0', right: '0', width: '32px', height: '32px', borderRadius: '50%', background: 'var(--primary)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,0,0,0.2)' }} title="Ubah Foto Profil">
+                  <i className="ti ti-camera" style={{ fontSize: '16px' }}></i>
+                </label>
+                <input type="file" id="upload-my-avatar" style={{ display: 'none' }} accept="image/*" onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  if (file.size > 5 * 1024 * 1024) { toast.error('Maksimal ukuran gambar adalah 5MB.'); e.target.value = ''; return; }
+                  const formData = new FormData();
+                  formData.append('avatar', file);
+                  
+                  try {
+                    const res = await fetchAuth('/api/upload-avatar', { method: 'POST', body: formData });
+                    if (res.ok) {
+                      const data = await res.json();
+                      if (data.url) {
+                         // Update the user avatar in backend
+                         await fetchAuth(`/api/users/${user.id}/avatar`, {
+                           method: 'PUT',
+                           headers: { 'Content-Type': 'application/json' },
+                           body: JSON.stringify({ avatar: data.url, role: user.role })
+                         });
+                         setUser({...user, avatar: data.url} as User);
+                         toast.success('Foto profil berhasil diperbarui!');
+                      }
+                    }
+                  } catch (error: any) {
+                    console.error("Failed to upload avatar", error);
+                    toast.error(`Gagal upload avatar: ${error.message || 'Terjadi kesalahan'}`);
                   }
-                }
-              } catch (error: any) {
-                console.error("Failed to upload avatar", error);
-                toast.error(`Gagal upload avatar: ${error.message || 'Terjadi kesalahan'}`);
-              }
-            }} />
+                }} />
+              </>
+            )}
           </div>
           <div>
             <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '24px', fontWeight: '800', color: 'var(--text)' }}>{user.name}</h2>
-            <p style={{ color: 'var(--text-muted)' }}>{user.email}</p>
-            <span className="badge badge-primary" style={{ marginTop: '8px' }}><i className="ti ti-star"></i> Peran: {user.role}</span>
+            <p style={{ color: 'var(--text-muted)', fontSize: '14px' }}>{user.isGuest ? 'Sesi Tamu' : user.email}</p>
+            <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', alignItems: 'center', marginTop: '8px' }}>
+              <span className="badge badge-primary"><i className="ti ti-user"></i> Peran: {user.isGuest ? 'Siswa (Tamu)' : user.role}</span>
+            </div>
+            {user.isGuest && (
+              <div style={{ marginTop: '12px', padding: '8px 16px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '12px', color: 'var(--text-muted)', maxWidth: '400px' }}>
+                <i className="ti ti-info-circle" style={{ marginRight: '6px' }}></i>
+                Foto profil otomatis dibuat berdasarkan inisial nama untuk mode tamu.
+              </div>
+            )}
           </div>
         </div>
 

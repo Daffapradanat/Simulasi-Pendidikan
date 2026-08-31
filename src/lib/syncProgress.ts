@@ -1,7 +1,7 @@
 import { fetchAuth } from './fetchAuth';
 
 export const syncProgressWithServer = async (
-  userId: number,
+  userId: number | string,
   playedGames: number[],
   completedModuleIds: number[],
   reflections: Record<number, string>
