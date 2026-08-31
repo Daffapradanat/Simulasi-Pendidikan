@@ -1,3 +1,4 @@
+import { getBaseUrl } from './lib/basePath';
 import {StrictMode} from 'react';
 import {createRoot} from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
@@ -20,9 +21,11 @@ if (!import.meta.env.DEV) {
   registerSW({ immediate: true });
 }
 
+const basename = getBaseUrl() === '/' ? '' : '/digital/simulasisains';
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <BrowserRouter>
+    <BrowserRouter basename={basename}>
       <App />
     </BrowserRouter>
   </StrictMode>,
@@ -30,7 +33,12 @@ createRoot(document.getElementById('root')!).render(
 
 // Register game service worker for local offline playing
 if ('serviceWorker' in navigator && !import.meta.env.DEV) {
-  navigator.serviceWorker.register('/game-sw.js', { scope: '/local-game-play/' })
-    .then(reg => console.log('Game SW registered', reg.scope))
-    .catch(err => console.error('Game SW failed', err));
+  navigator.serviceWorker.register(
+    `${getBaseUrl()}game-sw.js`,
+    {
+      scope: `${getBaseUrl()}local-game-play/`
+    }
+  )
+  .then(reg => console.log('Game SW registered', reg.scope))
+  .catch(err => console.error('Game SW failed', err));
 }

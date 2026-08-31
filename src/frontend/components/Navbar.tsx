@@ -1,3 +1,4 @@
+import { getBaseUrl } from '../../lib/basePath';
 import { User } from '../../types';
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -11,7 +12,7 @@ export function Navbar({ user, onLogout, viewMode, inDetail, onNavigate }: { use
     <>
       <nav className="navbar">
         <div className="navbar-logo">
-          <img src="/Pusmendik-dashboard.png" className="logo-img" alt="Pusmendik Dashboard Logo" />
+          <img src="/digital/simulasisains/Pusmendik-dashboard.png" className="logo-img" alt="Pusmendik Dashboard Logo" />
         </div>
         <div className="navbar-spacer"></div>
         {user && (
@@ -28,7 +29,7 @@ export function Navbar({ user, onLogout, viewMode, inDetail, onNavigate }: { use
           <div className="navbar-user">
             <div className="navbar-avatar" style={{ background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)', color: 'white', border: '2px solid rgba(255,255,255,0.8)', overflow: 'hidden' }}>
               {(user as any).avatar ? (
-                <img src={(user as any).avatar} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                <img src={((user as any).avatar || "").startsWith("/") ? `${getBaseUrl()}${((user as any).avatar).substring(1)}` : (user as any).avatar} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               ) : (
                 <i className="ti ti-user" style={{ fontSize: '16px' }}></i>
               )}

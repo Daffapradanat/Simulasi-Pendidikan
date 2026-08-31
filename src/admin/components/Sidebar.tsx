@@ -12,7 +12,7 @@ export function Sidebar({ user, view, setView, onLogout, onNavigate, onClearAll 
     <>
       <div className="admin-mobile-header">
         <div className="navbar-logo" style={{ marginBottom: 0 }}>
-          <img src="/Pusmendik-dashboard.png" className="logo-img" alt="Pusmendik Dashboard Logo" style={{ height: '32px' }} />
+          <img src="/digital/simulasisains/Pusmendik-dashboard.png" className="logo-img" alt="Pusmendik Dashboard Logo" style={{ height: '32px' }} />
         </div>
         <button className="hamburger" onClick={() => setMobileOpen(!mobileOpen)}>
           <span></span><span></span><span></span>
@@ -24,7 +24,7 @@ export function Sidebar({ user, view, setView, onLogout, onNavigate, onClearAll 
       <div className={`admin-sidebar ${mobileOpen ? 'open' : ''}`}>
         <div className="admin-sidebar-header" style={{ padding: '24px', borderBottom: '1px solid var(--border)' }}>
           <div className="navbar-logo" style={{ marginBottom: 0 }}>
-            <img src="/Pusmendik-dashboard.png" className="logo-img" alt="Pusmendik Dashboard Logo" />
+            <img src="/digital/simulasisains/Pusmendik-dashboard.png" className="logo-img" alt="Pusmendik Dashboard Logo" />
           </div>
         </div>
         <div className="admin-sidebar-menu">

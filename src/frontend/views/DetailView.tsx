@@ -1,3 +1,4 @@
+import { getBaseUrl } from '../../lib/basePath';
 import { QuestionsView } from './QuestionsView';
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -56,7 +57,7 @@ export function DetailView({
       const game = module.games?.find((g: any) => g.id === activeGameId);
       if (game?.path?.endsWith('.zip')) {
         const cacheName = 'local-games-cache';
-        const gamePrefix = `/local-game-play/game_${game.id}/`;
+        const gamePrefix = `${getBaseUrl()}local-game-play/game_${game.id}/`;
         
         caches.open(cacheName).then(cache => {
           cache.match(gamePrefix + 'index.html').then(res => {
@@ -66,7 +67,11 @@ export function DetailView({
                setDownloadingGame(true);
                setDownloadProgress('Mengunduh simulasi...');
                
-               fetch(game.path || '')
+               let fetchUrl = game.path || '';
+               if (fetchUrl.startsWith('/')) {
+                 fetchUrl = `${getBaseUrl()}${fetchUrl.substring(1)}`;
+               }
+               fetch(fetchUrl)
                  .then(res => res.blob())
                  .then(blob => JSZip.loadAsync(blob))
                  .then(async (zip) => {

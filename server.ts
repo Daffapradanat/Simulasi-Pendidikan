@@ -1550,9 +1550,11 @@ app.get('/api/modules/:id/questions', authenticateToken, (req, res) => {
       server: { middlewareMode: true },
       appType: "spa",
     });
+    app.use('/digital/simulasisains', vite.middlewares);
     app.use(vite.middlewares);
   } else {
     const distPath = path.join(process.cwd(), "dist");
+    app.use('/digital/simulasisains', express.static(distPath));
     app.use(express.static(distPath));
     app.get("*", (req, res) => {
       res.sendFile(path.join(distPath, "index.html"));

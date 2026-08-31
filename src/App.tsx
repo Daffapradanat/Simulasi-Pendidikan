@@ -1,3 +1,4 @@
+import { getBaseUrl } from './lib/basePath';
 import { ToastContainer, toast } from "./components/Toast";
 import { LoginView } from './frontend/views/LoginView';
 import { ModulesView } from './frontend/views/ModulesView';
@@ -409,7 +410,7 @@ export default function App() {
 
   const handleLogout = useCallback(async () => {
     try {
-      await fetch('/api/auth/logout', { method: 'POST' });
+      await fetch(`${getBaseUrl()}api/auth/logout`, { method: 'POST' });
     } catch (e) {
       // ignore
     }

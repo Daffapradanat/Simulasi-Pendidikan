@@ -1,3 +1,4 @@
+import { getBaseUrl } from '../../lib/basePath';
 import { toast } from '../../components/Toast';
 
 import React, { useState } from 'react';
@@ -34,7 +35,7 @@ export function ProfileView({ user, completedModuleIds, modules, subjects = [], 
           <div style={{ position: 'relative' }}>
             <div style={{ width: '100px', height: '100px', borderRadius: '50%', background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '32px', fontWeight: 'bold', overflow: 'hidden' }}>
               {(user as any).avatar ? (
-                <img src={(user as any).avatar} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                <img src={((user as any).avatar || "").startsWith("/") ? `${getBaseUrl()}${((user as any).avatar).substring(1)}` : (user as any).avatar} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               ) : (
                 <img src={`https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=random&color=fff&size=100`} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               )}

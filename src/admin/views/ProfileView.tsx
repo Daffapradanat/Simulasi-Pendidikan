@@ -1,3 +1,4 @@
+import { getBaseUrl } from '../../lib/basePath';
 import { toast } from '../../components/Toast';
 import React, { useState } from 'react';
 import { ConfirmModal } from '../../components/ConfirmModal';
@@ -27,7 +28,7 @@ export default function ProfileView({
                 color: 'white', overflow: 'hidden'
               }}>
                 {(user as any).avatar ? (
-                  <img src={(user as any).avatar} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  <img src={((user as any).avatar || "").startsWith("/") ? `${getBaseUrl()}${((user as any).avatar).substring(1)}` : (user as any).avatar} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 ) : (
                   <img src={`https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=random&color=fff&size=100`} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 )}

@@ -1,3 +1,4 @@
+import { getBaseUrl } from '../../lib/basePath';
 import React, { useState, useEffect } from 'react';
 import { Module } from '../../types';
 import { MODULE_THUMBS } from '../../data';
@@ -180,7 +181,7 @@ export function ModulesView({ modules, onOpenModule, lastModuleId, onBack }: { m
                 
                 {mod.banner_url ? (
                   <div className="module-thumb" style={{ padding: 0, overflow: 'hidden' }}>
-                    <img src={mod.banner_url} alt={mod.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    <img src={(mod.banner_url || "").startsWith("/") ? `${getBaseUrl()}${(mod.banner_url).substring(1)}` : mod.banner_url} alt={mod.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                   </div>
                 ) : (
                   <div className="module-thumb" dangerouslySetInnerHTML={{ __html: MODULE_THUMBS[mod.id] || getFallbackThumb(mod.id) }} />

@@ -1,3 +1,4 @@
+import { getBaseUrl } from '../../lib/basePath';
 import { toast } from '../../components/Toast';
 import React, { useState, useRef, useEffect } from 'react';
 import { ConfirmModal } from '../../components/ConfirmModal';
@@ -141,7 +142,7 @@ export default function ModulesAddEditView({
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                     {(moduleForm.banner_url || bannerPreview) ? (
                       <div style={{ position: 'relative', width: '100%', height: '200px', borderRadius: '12px', overflow: 'hidden', border: '1px solid var(--border)', background: 'var(--bg-alt)' }}>
-                        <img src={bannerPreview || moduleForm.banner_url} alt="Banner" style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: isUploadingBanner ? 0.5 : 1, transition: 'opacity 0.2s' }} />
+                        <img src={bannerPreview || ((moduleForm.banner_url || "").startsWith("/") ? `${getBaseUrl()}${(moduleForm.banner_url).substring(1)}` : moduleForm.banner_url)} alt="Banner" style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: isUploadingBanner ? 0.5 : 1, transition: 'opacity 0.2s' }} />
                         {isUploadingBanner && (
                            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.2)' }}>
                              <div className="spinner" style={{ width: '32px', height: '32px', border: '3px solid white', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>

@@ -1,3 +1,4 @@
+import { getBaseUrl } from '../../lib/basePath';
 import { toast } from '../../components/Toast';
 import { ImportExportMenu } from '../components/ImportExportMenu';
 import React, { useState } from 'react';
@@ -208,7 +209,7 @@ export default function TeachersView({
                 <div style={{ position: 'relative' }}>
                   <div style={{ width: '100px', height: '100px', borderRadius: '50%', background: 'var(--surface-2)', border: '2px solid var(--border)', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     {viewingProfile.avatar ? (
-                      <img src={viewingProfile.avatar} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      <img src={(viewingProfile.avatar || "").startsWith("/") ? `${getBaseUrl()}${(viewingProfile.avatar).substring(1)}` : viewingProfile.avatar} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                     ) : (
                       <img src={`https://ui-avatars.com/api/?name=${encodeURIComponent(viewingProfile.name)}&background=random&color=fff&size=100`} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                     )}

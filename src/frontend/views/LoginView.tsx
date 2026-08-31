@@ -80,7 +80,7 @@ export function LoginView({ onLogin, defaultMode = 'siswa' }: { onLogin: (e: str
       <div className="login-page">
         <div className="login-card">
           <div className="login-logo" style={{ justifyContent: 'center' }}>
-            <img src="/Pusmendik.jpg" className="logo-img" alt="Pusmendik Logo" />
+            <img src="/digital/simulasisains/Pusmendik.jpg" className="logo-img" alt="Pusmendik Logo" />
           </div>
           
           {resetSuccess ? (
@@ -154,7 +154,7 @@ export function LoginView({ onLogin, defaultMode = 'siswa' }: { onLogin: (e: str
     <div className="login-page">
       <div className="login-card">
         <div className="login-logo" style={{ justifyContent: 'center' }}>
-            <img src="/Pusmendik.jpg" className="logo-img" alt="Pusmendik Logo" />
+            <img src="/digital/simulasisains/Pusmendik.jpg" className="logo-img" alt="Pusmendik Logo" />
           </div>
           <div className="login-title">Masuk ke Akun {title}</div>
           <div className="login-subtitle">Selamat datang! Silakan masuk untuk mengakses dashboard.</div>
