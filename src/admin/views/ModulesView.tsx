@@ -92,7 +92,7 @@ export default function ModulesView({
               className="btn btn-primary btn-sm" 
               onClick={() => {
                 setEditingModule(null);
-                setModuleForm({ title: '', desc: '', level: categories && categories.length > 0 ? categories[0].name : '', duration: '', category_id: 1, subject_id: 1, objectives: '', theory: '', keyTerms: [], banner_url: '' });
+                setModuleForm({ title: '', desc: '', level: categories && categories.length > 0 ? categories[0].name : '', duration: '', category_id: 1, subject_id: 1, objectives: '', theory: '', keyTerms: [], banner_url: '', is_restricted: false });
                 setModuleGameFiles([]);
                 if (setModuleQuestions) setModuleQuestions([]);
                 setView('modules_add_edit');
@@ -186,7 +186,8 @@ export default function ModulesView({
                           objectives: mod.material?.objectives?.join('\n') || '',
                           theory: mod.material?.theory || '',
                           keyTerms: mod.material?.keyTerms || [],
-                          banner_url: mod.banner_url || ''
+                          banner_url: mod.banner_url || '',
+                          is_restricted: mod.is_restricted || false
                         }).sort((a: any, b: any) => {
     if (a.isDeleted && !b.isDeleted) return 1;
     if (!a.isDeleted && b.isDeleted) return -1;

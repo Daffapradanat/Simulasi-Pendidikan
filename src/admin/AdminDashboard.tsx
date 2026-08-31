@@ -171,6 +171,7 @@ export default function AdminDashboard({ user, onLogout, onNavigate, onUpdateUse
       formData.append('subject_id', moduleForm.subject_id.toString());
       formData.append('duration', moduleForm.duration);
       formData.append('banner_url', moduleForm.banner_url || '');
+      formData.append('is_restricted', moduleForm.is_restricted ? 'true' : 'false');
       formData.append('material', JSON.stringify(material));
       
       const gamesMeta = moduleGameFiles.map((gf, idx) => ({ 

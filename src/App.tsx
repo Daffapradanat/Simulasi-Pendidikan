@@ -323,6 +323,31 @@ export default function App() {
     }
   }, [playedGames, completedModuleIds, reflections, currentUser, isProgressLoaded]);
 
+  const handleGuestLogin = async (name: string) => {
+    try {
+      const res = await fetchAuth('/api/auth/guest-login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Login gagal.');
+      
+      const user = data.user;
+      const token = data.token;
+      
+      localStorage.setItem('simpend_token', token);
+      localStorage.setItem('simpend_auto_login', 'true');
+      localStorage.setItem('simpend_current_user', JSON.stringify(user));
+      setCurrentUser(user);
+      
+      // Navigate straight to dashboard root for guest
+      navigate('/');
+    } catch(err) {
+      showToast(err instanceof Error ? err.message : 'Terjadi kesalahan', 'error');
+    }
+  };
+
   const handleLogin = async (email: string, pass: string, remember: boolean, mode: 'siswa' | 'guru' | 'admin') => {
     if (loginBlockTime && Date.now() < loginBlockTime) {
       const waitTime = Math.ceil((loginBlockTime - Date.now()) / 1000);
@@ -549,7 +574,13 @@ export default function App() {
         <Route path="/login" element={
           currentUser ? <Navigate to={currentUser.role === 'admin' ? "/admin" : currentUser.role === 'guru' ? "/guru" : "/"} replace /> :
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}>
-            <LoginView onLogin={(e, p, r) => handleLogin(e, p, r, 'siswa')} defaultMode="siswa" />
+            <LoginView onGuestLogin={handleGuestLogin} defaultMode="siswa-guest" />
+          </motion.div>
+        } />
+        <Route path="/siswa/login" element={
+          (currentUser && !currentUser.isGuest) ? <Navigate to="/" replace /> :
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}>
+            <LoginView onLogin={(e, p, r) => handleLogin(e, p, r, 'siswa')} defaultMode="siswa-full" />
           </motion.div>
         } />
         
@@ -614,30 +645,15 @@ export default function App() {
               />
 
               <AnimatePresence mode="wait">
-                {viewMode === 'main' && !currentModuleId && !selectedCategoryId && (
-                  <motion.div key="categories" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}>
-                    <CategorySelectionView 
-                      categories={filteredCategories} 
-                      onSelectCategory={(id) => navigate(`/category/${id}`)} 
-                    />
-                  </motion.div>
-                )}
-                {viewMode === 'main' && !currentModuleId && selectedCategoryId && !selectedSubjectId && (
-                  <motion.div key="subjects" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}>
-                    <SubjectSelectionView 
-                      subjects={filteredSubjects} 
-                      onSelectSubject={(id) => navigate(`/category/${selectedCategoryId}/subject/${id}`)} 
-                      onBack={filteredCategories.length > 1 ? () => navigate('/') : undefined}
-                    />
-                  </motion.div>
-                )}
-                {viewMode === 'main' && !currentModuleId && selectedSubjectId && (
+                {viewMode === 'main' && !currentModuleId && (
                   <motion.div key="modules" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}>
                     <ModulesView 
-                      modules={computedModules.filter(m => m.subject_id === selectedSubjectId && m.category_id === selectedCategoryId)} 
+                      modules={computedModules} 
+                      subjects={appSubjects}
+                      user={currentUser}
                       onOpenModule={handleOpenModule} 
                       lastModuleId={lastModuleId}
-                      onBack={filteredSubjects.length > 1 ? () => navigate(`/category/${selectedCategoryId}`) : undefined}
+                      onRequireLogin={() => navigate('/siswa/login')}
                     />
                   </motion.div>
                 )}
@@ -647,7 +663,7 @@ export default function App() {
                       module={currentModule}
                       onBack={() => {
                         setActiveGameId(null);
-                        navigate(`/category/${selectedCategoryId}/subject/${selectedSubjectId}`);
+                        navigate('/');
                       }}
                       activeGameId={activeGameId}
                       playedGames={playedGames}

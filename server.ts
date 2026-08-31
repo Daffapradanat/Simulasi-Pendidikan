@@ -97,7 +97,7 @@ async function initDB() {
     CREATE TABLE IF NOT EXISTS teachers (id INTEGER PRIMARY KEY, data TEXT);
     CREATE TABLE IF NOT EXISTS students (id INTEGER PRIMARY KEY, data TEXT);
     CREATE TABLE IF NOT EXISTS activities (id INTEGER PRIMARY KEY, data TEXT);
-    CREATE TABLE IF NOT EXISTS user_progress (id INTEGER PRIMARY KEY, data TEXT);
+    CREATE TABLE IF NOT EXISTS user_progress (id TEXT PRIMARY KEY, data TEXT);
     CREATE TABLE IF NOT EXISTS categories (id INTEGER PRIMARY KEY, data TEXT);
     CREATE TABLE IF NOT EXISTS schools (id INTEGER PRIMARY KEY, data TEXT);
     CREATE TABLE IF NOT EXISTS subjects (id INTEGER PRIMARY KEY, data TEXT);
@@ -537,6 +537,21 @@ app.post("/api/upload-image", authenticateToken, isAdmin, (req, res) => {
     if (!nip) return true;
     return !teachersData.some(t => !t.isDeleted && t.nip === nip && t.id !== excludeId);
   }
+
+  app.post("/api/auth/guest-login", (req, res) => {
+    const { name } = req.body;
+    if (!name) return res.status(400).json({ error: "Nama harus diisi" });
+    const user = {
+      id: "guest_" + Date.now(),
+      name: name,
+      email: "guest@simulasisains.id",
+      role: 'siswa',
+      isGuest: true,
+      avatar: "https://ui-avatars.com/api/?name=" + encodeURIComponent(name) + "&background=random&color=fff&size=100"
+    };
+    const token = jwt.sign(user, SECRET_KEY, { expiresIn: '24h' });
+    res.json({ token, user });
+  });
 
   app.post("/api/auth/login", async (req, res) => {
     const { email, password } = req.body;
@@ -1190,7 +1205,7 @@ app.get('/api/modules/:id/questions', authenticateToken, (req, res) => {
 
   app.post("/api/modules", authenticateToken, isAdmin, upload.array('gameFiles') as any, async (req, res) => {
     try {
-      let { title, desc, level, category_id, subject_id, duration, material, gamesMeta, banner_url } = req.body;
+      let { title, desc, level, category_id, subject_id, duration, material, gamesMeta, banner_url, is_restricted } = req.body;
       try { material = JSON.parse(material || '[]'); } catch(e) {}
       try { gamesMeta = JSON.parse(gamesMeta || '[]'); } catch(e) {}
 
@@ -1225,7 +1240,7 @@ app.get('/api/modules/:id/questions', authenticateToken, (req, res) => {
         subject_id: parseInt(subject_id) || null,
         duration, material, 
         games: gamesMeta, gameCount: gamesMeta?.length || 0,
-        status: 'locked', banner_url
+        status: 'locked', banner_url, is_restricted: is_restricted === 'true' || is_restricted === true
       };
       modulesData.push(newModule);
       logActivity('module', 'Admin', `Menambahkan modul baru "${title}"`);
@@ -1243,7 +1258,7 @@ app.get('/api/modules/:id/questions', authenticateToken, (req, res) => {
       const index = modulesData.findIndex(m => m.id === id);
       if (index === -1) return res.status(404).json({ error: "Not found" });
 
-      let { title, desc, level, category_id, subject_id, duration, material, gamesMeta, banner_url } = req.body;
+      let { title, desc, level, category_id, subject_id, duration, material, gamesMeta, banner_url, is_restricted } = req.body;
       try { material = JSON.parse(material || '[]'); } catch(e) {}
       try { gamesMeta = JSON.parse(gamesMeta || '[]'); } catch(e) {}
 
@@ -1289,7 +1304,7 @@ app.get('/api/modules/:id/questions', authenticateToken, (req, res) => {
         title, desc, level, 
         category_id: parseInt(category_id) || null,
         subject_id: parseInt(subject_id) || null,
-        duration, material, games: gamesMeta, gameCount: gamesMeta?.length || 0, banner_url
+        duration, material, games: gamesMeta, gameCount: gamesMeta?.length || 0, banner_url, is_restricted: is_restricted === 'true' || is_restricted === true
       };
       logActivity('module', 'Admin', `Mengubah modul "${title}"`);
       saveDb();

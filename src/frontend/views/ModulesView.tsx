@@ -1,6 +1,6 @@
 import { getBaseUrl } from '../../lib/basePath';
 import React, { useState, useEffect } from 'react';
-import { Module } from '../../types';
+import { Module, Subject, User } from '../../types';
 import { MODULE_THUMBS } from '../../data';
 
 const getFallbackThumb = (id: number) => {
@@ -49,7 +49,7 @@ const renderLevelBadge = (level: string) => {
 }
 
 // --- MODULES VIEW ---
-export function ModulesView({ modules, onOpenModule, lastModuleId, onBack }: { modules: Module[], onOpenModule: (id: number) => void, lastModuleId: number | null, onBack?: () => void }) {
+export function ModulesView({ modules, subjects, user, onOpenModule, lastModuleId, onRequireLogin, onBack }: { modules: Module[], subjects?: Subject[], user?: User | null, onOpenModule: (id: number) => void, lastModuleId: number | null, onRequireLogin?: () => void, onBack?: () => void }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(() => {
     const saved = sessionStorage.getItem('simpend_module_page');
@@ -169,54 +169,99 @@ export function ModulesView({ modules, onOpenModule, lastModuleId, onBack }: { m
           />
         </div>
         
-        <div className="modules-grid">
+        <div>
           {currentModules.length === 0 ? (
             <div className="empty-state" style={{ gridColumn: '1 / -1' }}>
               <div className="empty-icon"><i className="ti ti-search"></i></div>
               <p>Modul tidak ditemukan untuk pencarian "{searchQuery}".</p>
             </div>
           ) : (
-            currentModules.map(mod => (
-              <div key={mod.id} className={`module-card ${mod.status}`} onClick={() => { if (mod.status !== 'locked') onOpenModule(mod.id); }} style={{ cursor: mod.status === 'locked' ? 'not-allowed' : 'pointer', opacity: mod.status === 'locked' ? 0.7 : 1 }}>
-                
-                {mod.banner_url ? (
-                  <div className="module-thumb" style={{ padding: 0, overflow: 'hidden' }}>
-                    <img src={(mod.banner_url || "").startsWith("/") ? `${getBaseUrl()}${(mod.banner_url).substring(1)}` : mod.banner_url} alt={mod.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                  </div>
-                ) : (
-                  <div className="module-thumb" dangerouslySetInnerHTML={{ __html: MODULE_THUMBS[mod.id] || getFallbackThumb(mod.id) }} />
-                )}
-
-                <div className="module-card-inner">
-                  <div className="module-card-top">
-                    <div className="module-number">{modules.findIndex(m => m.id === mod.id) + 1}</div>
-                    {mod.status === 'locked' && <span className="module-lock-icon"><i className="ti ti-lock"></i></span>}
-                    {mod.status === 'completed' && <span className="badge badge-success"><i className="ti ti-check"></i> Selesai</span>}
-                    {mod.status === 'unlocked' && <span className="badge badge-primary"><i className="ti ti-lock-open"></i> Tersedia</span>}
-                  </div>
-                  <div className="module-card-body">
-                    <div className="module-card-title">{mod.title}</div>
-                    <div className="module-card-desc">
-                      <div style={{ marginBottom: (mod.material && typeof mod.material === 'object' && mod.material.theory) ? '8px' : '0' }}>
-                        <strong>Deskripsi:</strong> {mod.desc}
+            (subjects && subjects.length > 0) ? (
+              subjects.map(subject => {
+                const subjectModules = currentModules.filter(m => m.subject_id === subject.id);
+                if (subjectModules.length === 0) return null;
+                return (
+                  <div key={subject.id} style={{ marginBottom: '40px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px', paddingBottom: '12px', borderBottom: '1px solid var(--border)' }}>
+                      <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'var(--primary-light)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>
+                        <i className={`ti ${subject.icon || 'ti-book'}`}></i>
                       </div>
-                      {(mod.material && typeof mod.material === 'object' && mod.material.theory) && (
-                        <div>
-                          <strong>Materi:</strong>{' '}
-                          <div style={{ display: 'inline' }} dangerouslySetInnerHTML={{ __html: mod.material.theory.replace(/<[^>]+>/g, '').substring(0, 80) + '...' }}></div>
+                      <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '20px', fontWeight: 800, color: 'var(--text)', margin: 0 }}>{subject.name}</h2>
+                    </div>
+                    <div className="modules-grid">
+                      {subjectModules.map(mod => (
+                        <div key={mod.id} className={`module-card ${mod.status}`} onClick={() => { 
+                          if (mod.is_restricted && user?.isGuest) {
+                            onRequireLogin && onRequireLogin();
+                            return;
+                          }
+                          if (mod.status !== 'locked') onOpenModule(mod.id); 
+                        }} style={{ cursor: (mod.status === 'locked' && (!mod.is_restricted || !user?.isGuest)) ? 'not-allowed' : 'pointer', opacity: (mod.status === 'locked' && (!mod.is_restricted || !user?.isGuest)) ? 0.7 : 1 }}>
+                          {mod.banner_url ? (
+                            <div className="module-thumb" style={{ padding: 0, overflow: 'hidden' }}>
+                              <img src={(mod.banner_url || "").startsWith("/") ? `${getBaseUrl()}${(mod.banner_url).substring(1)}` : mod.banner_url} alt={mod.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            </div>
+                          ) : (
+                            <div className="module-thumb" dangerouslySetInnerHTML={{ __html: MODULE_THUMBS[mod.id] || getFallbackThumb(mod.id) }} />
+                          )}
+                          <div className="module-card-inner">
+                            <div className="module-card-top">
+                              <div className="module-number">{modules.findIndex(m => m.id === mod.id) + 1}</div>
+                              {mod.is_restricted && <span className="badge" style={{ background: '#f59e0b', color: 'white', position: 'absolute', top: '12px', right: '12px', zIndex: 10, border: 'none', padding: '4px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 'bold' }}><i className="ti ti-lock"></i> Terbatas</span>}
+                              {mod.status === 'locked' && (!mod.is_restricted || !user?.isGuest) && <span className="module-lock-icon"><i className="ti ti-lock"></i></span>}
+                              {mod.status === 'completed' && <span className="badge badge-success"><i className="ti ti-check"></i> Selesai</span>}
+                              {mod.status === 'unlocked' && <span className="badge badge-primary"><i className="ti ti-lock-open"></i> Tersedia</span>}
+                            </div>
+                            <div className="module-card-body">
+                              <div className="module-card-title">{mod.title}</div>
+                              <div className="module-card-desc">
+                                <div style={{ marginBottom: (mod.material && typeof mod.material === 'object' && mod.material.theory) ? '8px' : '0' }}>
+                                  <strong>Deskripsi:</strong> {mod.desc}
+                                </div>
+                                {(mod.material && typeof mod.material === 'object' && mod.material.theory) && (
+                                  <div>
+                                    <strong>Materi:</strong>{' '}
+                                    <div style={{ display: 'inline' }} dangerouslySetInnerHTML={{ __html: mod.material.theory.replace(/<[^>]+>/g, '').substring(0, 80) + '...' }}></div>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                            <div className="module-card-footer">
+                              <div className="module-meta">
+                                <i className="ti ti-device-gamepad-2"></i> {mod.gameCount} game &nbsp;·&nbsp; <i className="ti ti-clock"></i> {mod.duration}
+                              </div>
+                              {renderLevelBadge(mod.level)}
+                            </div>
+                          </div>
                         </div>
-                      )}
+                      ))}
                     </div>
                   </div>
-                  <div className="module-card-footer">
-                    <div className="module-meta">
-                      <i className="ti ti-device-gamepad-2"></i> {mod.gameCount} game &nbsp;·&nbsp; <i className="ti ti-clock"></i> {mod.duration}
+                );
+              })
+            ) : (
+              <div className="modules-grid">
+                {currentModules.map(mod => (
+                  <div key={mod.id} className={`module-card ${mod.status}`} onClick={() => { 
+                    if (mod.is_restricted && user?.isGuest) {
+                      onRequireLogin && onRequireLogin();
+                      return;
+                    }
+                    if (mod.status !== 'locked') onOpenModule(mod.id); 
+                  }} style={{ cursor: (mod.status === 'locked' && (!mod.is_restricted || !user?.isGuest)) ? 'not-allowed' : 'pointer', opacity: (mod.status === 'locked' && (!mod.is_restricted || !user?.isGuest)) ? 0.7 : 1 }}>
+                    <div className="module-card-inner">
+                      <div className="module-card-top">
+                        <div className="module-number">{modules.findIndex(m => m.id === mod.id) + 1}</div>
+                        {mod.is_restricted && <span className="badge" style={{ background: '#f59e0b', color: 'white', position: 'absolute', top: '12px', right: '12px', zIndex: 10, border: 'none', padding: '4px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 'bold' }}><i className="ti ti-lock"></i> Terbatas</span>}
+                        {mod.status === 'locked' && (!mod.is_restricted || !user?.isGuest) && <span className="module-lock-icon"><i className="ti ti-lock"></i></span>}
+                      </div>
+                      <div className="module-card-title">{mod.title}</div>
                     </div>
-                    {renderLevelBadge(mod.level)}
                   </div>
-                </div>
+                ))}
               </div>
-            )))}
+            )
+          )}
         </div>
 
         {totalPages > 1 && (

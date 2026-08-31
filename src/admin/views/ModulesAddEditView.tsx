@@ -135,6 +135,41 @@ export default function ModulesAddEditView({
                   <p style={{ fontSize: '12px', color: 'var(--text-muted)', margin: '-4px 0 8px 0' }}>Penjelasan singkat materi, akan ditampilkan di kartu daftar modul di halaman utama siswa.</p>
                   <textarea className="form-input" required value={moduleForm.desc} onChange={e => setModuleForm({...moduleForm, desc: e.target.value})} placeholder="Deskripsi singkat modul..." rows={2}></textarea>
                 </div>
+                
+                <div style={{ marginBottom: '24px', padding: '16px', background: 'var(--bg)', borderRadius: '8px', border: '1px solid var(--border)' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer' }}>
+                    <div style={{
+                      width: '40px', 
+                      height: '24px', 
+                      borderRadius: '12px', 
+                      background: moduleForm.is_restricted ? 'var(--primary)' : 'var(--border)', 
+                      position: 'relative',
+                      transition: 'all 0.3s ease'
+                    }}>
+                      <div style={{
+                        width: '20px', 
+                        height: '20px', 
+                        borderRadius: '50%', 
+                        background: 'white', 
+                        position: 'absolute', 
+                        top: '2px', 
+                        left: moduleForm.is_restricted ? '18px' : '2px',
+                        transition: 'all 0.3s ease',
+                        boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                      }} />
+                    </div>
+                    <input 
+                      type="checkbox" 
+                      style={{ display: 'none' }} 
+                      checked={moduleForm.is_restricted || false} 
+                      onChange={e => setModuleForm({...moduleForm, is_restricted: e.target.checked})} 
+                    />
+                    <div>
+                      <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text)' }}>Modul Terbatas (Gembok)</div>
+                      <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px' }}>Siswa Guest harus login dengan akun terdaftar untuk mengakses modul ini.</div>
+                    </div>
+                  </label>
+                </div>
 
                 <div style={{ marginBottom: '24px' }}>
                   <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: 500 }}>Gambar Banner Modul (Opsional)</label>
