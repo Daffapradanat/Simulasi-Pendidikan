@@ -15,20 +15,20 @@ export default function ModulesView({
   const [levelFilter, setLevelFilter] = useState('all');
   const itemsPerPage = 6;
 
-  const filteredModules = modules.filter((m: any) => {
-    const matchesSearch = (m.title || '').toLowerCase().includes((moduleSearch || '').toLowerCase());
+  const filteredModules = (modules || []).filter((m: any) => {
+    const matchesSearch = (m?.title || '').toLowerCase().includes((moduleSearch || '').toLowerCase());
     
     let matchesStatus = true;
-    if (statusFilter === 'active') matchesStatus = !m.isDeleted;
-    if (statusFilter === 'deleted') matchesStatus = m.isDeleted;
+    if (statusFilter === 'active') matchesStatus = !m?.isDeleted;
+    if (statusFilter === 'deleted') matchesStatus = !!m?.isDeleted;
     
     let matchesLevel = true;
-    if (levelFilter !== 'all') matchesLevel = m.category_id?.toString() === levelFilter || m.level === levelFilter;
+    if (levelFilter !== 'all') matchesLevel = m?.category_id?.toString() === levelFilter || m?.level === levelFilter;
     
     return matchesSearch && matchesStatus && matchesLevel;
   }).sort((a: any, b: any) => {
-    if (a.isDeleted && !b.isDeleted) return 1;
-    if (!a.isDeleted && b.isDeleted) return -1;
+    if (a?.isDeleted && !b?.isDeleted) return 1;
+    if (!a?.isDeleted && b?.isDeleted) return -1;
     return 0;
   });
 

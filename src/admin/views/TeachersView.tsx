@@ -17,15 +17,15 @@ export default function TeachersView({
 
   const itemsPerPage = 8;
 
-  const filteredTeachers = teachers.filter((t: any) => {
-    const matchesSearch = (t.name || '').toLowerCase().includes((teacherSearch || '').toLowerCase()); // removed t.subject search
+  const filteredTeachers = (teachers || []).filter((t: any) => {
+    const matchesSearch = (t?.name || '').toLowerCase().includes((teacherSearch || '').toLowerCase());
     
-    if (statusFilter === 'active') return matchesSearch && !t.isDeleted;
-    if (statusFilter === 'deleted') return matchesSearch && t.isDeleted;
+    if (statusFilter === 'active') return matchesSearch && !t?.isDeleted;
+    if (statusFilter === 'deleted') return matchesSearch && !!t?.isDeleted;
     return matchesSearch;
   }).sort((a: any, b: any) => {
-    if (a.isDeleted && !b.isDeleted) return 1;
-    if (!a.isDeleted && b.isDeleted) return -1;
+    if (a?.isDeleted && !b?.isDeleted) return 1;
+    if (!a?.isDeleted && b?.isDeleted) return -1;
     return 0;
   });
 

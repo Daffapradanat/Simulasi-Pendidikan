@@ -20,17 +20,17 @@ export default function StudentsView({
 
   const itemsPerPage = 8;
 
-  const filteredStudents = students.filter((s: any) => {
-    const matchesSearch = (s.name || '').toLowerCase().includes((studentSearch || '').toLowerCase()) || 
-                          (s.email || '').toLowerCase().includes((studentSearch || '').toLowerCase()) ||
-                          (s.nisn && s.nisn.includes(studentSearch));
+  const filteredStudents = (students || []).filter((s: any) => {
+    const matchesSearch = (s?.name || '').toLowerCase().includes((studentSearch || '').toLowerCase()) || 
+                          (s?.email || '').toLowerCase().includes((studentSearch || '').toLowerCase()) ||
+                          (s?.nisn && s.nisn.includes(studentSearch));
     
-    if (statusFilter === 'active') return matchesSearch && !s.isDeleted;
-    if (statusFilter === 'deleted') return matchesSearch && s.isDeleted;
+    if (statusFilter === 'active') return matchesSearch && !s?.isDeleted;
+    if (statusFilter === 'deleted') return matchesSearch && !!s?.isDeleted;
     return matchesSearch;
   }).sort((a: any, b: any) => {
-    if (a.isDeleted && !b.isDeleted) return 1;
-    if (!a.isDeleted && b.isDeleted) return -1;
+    if (a?.isDeleted && !b?.isDeleted) return 1;
+    if (!a?.isDeleted && b?.isDeleted) return -1;
     return 0;
   });
 
