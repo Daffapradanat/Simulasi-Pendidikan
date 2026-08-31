@@ -337,174 +337,233 @@ export default function ModulesAddEditView({
                 </div>
                 
                 <div style={{ marginBottom: '40px', padding: '24px', background: 'var(--surface-2)', borderRadius: '12px', border: '1px solid var(--border)' }}>
-                  <label style={{ display: 'block', marginBottom: '16px', fontSize: '16px', fontWeight: 600 }}><i className="ti ti-notes"></i> Soal</label>
-                  <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '16px' }}>Tambahkan soal-soal evaluasi dengan berbagai tipe yang akan dikerjakan siswa.</p>
+                  <label style={{ display: 'block', marginBottom: '16px', fontSize: '16px', fontWeight: 600 }}><i className="ti ti-notes"></i> Soal Evaluasi</label>
+                  <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '16px' }}>Tambahkan soal-soal evaluasi dengan berbagai tipe (Pilihan Ganda, PG Kompleks, Benar/Salah, Isian Singkat, Uraian, Menjodohkan, Mengurutkan).</p>
                   
-                  {moduleQuestions && moduleQuestions.map((q: any, qIndex: number) => (
-                     <div key={qIndex} style={{ background: 'white', padding: '16px', border: '1px solid var(--border)', borderRadius: '8px', marginBottom: '16px' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
-                          <span style={{ fontWeight: 600 }}>Soal #{qIndex + 1}</span>
-                          <button type="button" className="btn btn-danger btn-sm" onClick={() => setQuestionToDelete(qIndex)}>
-                            <i className="ti ti-trash"></i>
-                          </button>
-                        </div>
-                        <input type="text" className="form-input" placeholder="Pertanyaan..." required value={q.text} onChange={e => {
-                           const nq = [...moduleQuestions];
-                           nq[qIndex].text = e.target.value;
-                           setModuleQuestions(nq);
-                        }} />
-                        <div style={{ marginTop: '12px' }}>
-                          {(!q.type || q.type === 'multiple_choice') && (
-                            <>
-                              <label style={{ fontSize: '13px', fontWeight: 500, marginBottom: '8px', display: 'block' }}>Pilihan Jawaban (Pilihan Ganda):</label>
-                              {q.options?.map((opt: string, oIndex: number) => (
-                                 <div key={oIndex} style={{ display: 'flex', gap: '8px', marginBottom: '8px', alignItems: 'center' }}>
-                                   <input type="radio" name={`correct_${qIndex}`} checked={q.correctAnswerIndex === oIndex} onChange={() => {
-                                      const nq = [...moduleQuestions];
-                                      nq[qIndex].correctAnswerIndex = oIndex;
-                                      setModuleQuestions(nq);
+                  {moduleQuestions && moduleQuestions.map((q: any, qIndex: number) => {
+                     const currentType = q.type || 'multiple_choice';
+                     const currentTypeObj = questionTypes.find(t => t.code === currentType);
+                     const typeLabel = currentTypeObj ? currentTypeObj.name : (
+                        currentType === 'multiple_select' ? 'Pilihan Ganda Kompleks' :
+                        currentType === 'true_false' ? 'Benar / Salah' :
+                        currentType === 'short_answer' ? 'Isian Singkat' :
+                        currentType === 'essay' ? 'Uraian / Essay' :
+                        currentType === 'matching' ? 'Menjodohkan' :
+                        currentType === 'ordering' ? 'Mengurutkan' : 'Pilihan Ganda'
+                     );
+                     
+                     return (
+                      <div key={qIndex} style={{ background: 'white', padding: '16px', border: '1px solid var(--border)', borderRadius: '8px', marginBottom: '16px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                             <span style={{ fontWeight: 600, fontSize: '14px' }}>Soal #{qIndex + 1}</span>
+                             <span style={{ 
+                               fontSize: '11px', 
+                               fontWeight: 600, 
+                               padding: '2px 8px', 
+                               borderRadius: '6px', 
+                               background: 'var(--primary-light, #e0f2fe)', 
+                               color: 'var(--primary, #0284c7)' 
+                             }}>
+                               {typeLabel}
+                             </span>
+                           </div>
+                           <button type="button" className="btn btn-danger btn-sm" onClick={() => setQuestionToDelete(qIndex)}>
+                             <i className="ti ti-trash"></i> Hapus
+                           </button>
+                         </div>
+                         <input type="text" className="form-input" placeholder="Tuliskan pertanyaan / instruksi soal..." required value={q.text || ''} onChange={e => {
+                            const nq = [...moduleQuestions];
+                            nq[qIndex].text = e.target.value;
+                            setModuleQuestions(nq);
+                         }} />
+                         <div style={{ marginTop: '12px' }}>
+                           {(!q.type || q.type === 'multiple_choice') && (
+                             <>
+                               <label style={{ fontSize: '13px', fontWeight: 500, marginBottom: '8px', display: 'block' }}>Pilihan Jawaban (Pilihan Ganda - pilih 1 radio yang benar):</label>
+                               {(q.options || []).map((opt: string, oIndex: number) => (
+                                  <div key={oIndex} style={{ display: 'flex', gap: '8px', marginBottom: '8px', alignItems: 'center' }}>
+                                    <input type="radio" name={`correct_${qIndex}`} checked={q.correctAnswerIndex === oIndex} onChange={() => {
+                                       const nq = [...moduleQuestions];
+                                       nq[qIndex].correctAnswerIndex = oIndex;
+                                       setModuleQuestions(nq);
+                                    }} />
+                                    <input type="text" className="form-input" style={{ margin: 0 }} placeholder={`Pilihan ${oIndex + 1}`} required value={opt} onChange={e => {
+                                       const nq = [...moduleQuestions];
+                                       nq[qIndex].options[oIndex] = e.target.value;
+                                       setModuleQuestions(nq);
+                                    }} />
+                                    {(q.options || []).length > 2 && (
+                                      <button type="button" className="btn btn-danger btn-sm" onClick={() => {
+                                        const nq = [...moduleQuestions];
+                                        nq[qIndex].options.splice(oIndex, 1);
+                                        if (nq[qIndex].correctAnswerIndex >= nq[qIndex].options.length) {
+                                          nq[qIndex].correctAnswerIndex = 0;
+                                        }
+                                        setModuleQuestions(nq);
+                                      }}><i className="ti ti-x"></i></button>
+                                    )}
+                                  </div>
+                               ))}
+                               <button type="button" className="btn btn-ghost btn-sm" onClick={() => {
+                                   const nq = [...moduleQuestions];
+                                   if (!nq[qIndex].options) nq[qIndex].options = [];
+                                   nq[qIndex].options.push('');
+                                   setModuleQuestions(nq);
+                               }}><i className="ti ti-plus"></i> Tambah Pilihan</button>
+                             </>
+                           )}
+                           {q.type === 'true_false' && (
+                             <>
+                               <label style={{ fontSize: '13px', fontWeight: 500, marginBottom: '8px', display: 'block' }}>Kunci Jawaban (Benar/Salah):</label>
+                               <div style={{ display: 'flex', gap: '16px', padding: '8px 0' }}>
+                                 <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                                   <input type="radio" name={`tf_${qIndex}`} checked={q.correctAnswer === true} onChange={() => {
+                                       const nq = [...moduleQuestions];
+                                       nq[qIndex].correctAnswer = true;
+                                       setModuleQuestions(nq);
+                                   }} /> <strong>Benar</strong>
+                                 </label>
+                                 <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                                   <input type="radio" name={`tf_${qIndex}`} checked={q.correctAnswer === false} onChange={() => {
+                                       const nq = [...moduleQuestions];
+                                       nq[qIndex].correctAnswer = false;
+                                       setModuleQuestions(nq);
+                                   }} /> <strong>Salah</strong>
+                                 </label>
+                               </div>
+                             </>
+                           )}
+                           {q.type === 'short_answer' && (
+                             <>
+                               <label style={{ fontSize: '13px', fontWeight: 500, marginBottom: '8px', display: 'block' }}>Kunci Jawaban Singkat:</label>
+                               <input type="text" className="form-input" required placeholder="Contoh: Fotosintesis" value={q.correctAnswerText || ''} onChange={e => {
+                                   const nq = [...moduleQuestions];
+                                   nq[qIndex].correctAnswerText = e.target.value;
+                                   setModuleQuestions(nq);
+                               }} />
+                             </>
+                           )}
+                           {q.type === 'multiple_select' && (
+                             <>
+                               <label style={{ fontSize: '13px', fontWeight: 500, marginBottom: '4px', display: 'block' }}>Pilihan Jawaban (Pilihan Ganda Kompleks):</label>
+                               <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '8px' }}>Centang semua kotak jawaban yang benar (bisa lebih dari satu).</p>
+                               {(q.options || []).map((opt: string, oIndex: number) => (
+                                  <div key={oIndex} style={{ display: 'flex', gap: '8px', marginBottom: '8px', alignItems: 'center' }}>
+                                    <input type="checkbox" checked={q.correctAnswers?.includes(oIndex)} onChange={(e) => {
+                                       const nq = [...moduleQuestions];
+                                       if (!nq[qIndex].correctAnswers) nq[qIndex].correctAnswers = [];
+                                       if (e.target.checked) {
+                                         nq[qIndex].correctAnswers.push(oIndex);
+                                       } else {
+                                         nq[qIndex].correctAnswers = nq[qIndex].correctAnswers.filter((id: number) => id !== oIndex);
+                                       }
+                                       setModuleQuestions(nq);
+                                    }} />
+                                    <input type="text" className="form-input" style={{ margin: 0 }} placeholder={`Pilihan ${oIndex + 1}`} required value={opt} onChange={e => {
+                                       const nq = [...moduleQuestions];
+                                       nq[qIndex].options[oIndex] = e.target.value;
+                                       setModuleQuestions(nq);
+                                    }} />
+                                    {(q.options || []).length > 2 && (
+                                      <button type="button" className="btn btn-danger btn-sm" onClick={() => {
+                                        const nq = [...moduleQuestions];
+                                        nq[qIndex].options.splice(oIndex, 1);
+                                        nq[qIndex].correctAnswers = (nq[qIndex].correctAnswers || []).filter((id: number) => id !== oIndex).map((id: number) => id > oIndex ? id - 1 : id);
+                                        setModuleQuestions(nq);
+                                      }}><i className="ti ti-x"></i></button>
+                                    )}
+                                  </div>
+                               ))}
+                               <button type="button" className="btn btn-ghost btn-sm" onClick={() => {
+                                   const nq = [...moduleQuestions];
+                                   if (!nq[qIndex].options) nq[qIndex].options = [];
+                                   nq[qIndex].options.push('');
+                                   setModuleQuestions(nq);
+                               }}><i className="ti ti-plus"></i> Tambah Pilihan</button>
+                             </>
+                           )}
+                           {q.type === 'essay' && (
+                             <>
+                               <label style={{ fontSize: '13px', fontWeight: 500, marginBottom: '8px', display: 'block' }}>Kriteria Penilaian Uraian / Essay:</label>
+                               <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Soal uraian memungkinkan siswa mengetikkan penjelasan lengkap. Masukkan rubrik atau kriteria di kolom Penjelasan di bawah sebagai panduan koreksi guru.</p>
+                             </>
+                           )}
+                           {q.type === 'matching' && (
+                             <>
+                               <label style={{ fontSize: '13px', fontWeight: 500, marginBottom: '4px', display: 'block' }}>Pasangan (Menjodohkan):</label>
+                               <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '8px' }}>Tuliskan pasangan yang benar di kiri dan kanan. Sistem akan mengacak urutannya untuk siswa.</p>
+                               {(q.pairs || []).map((pair: any, pIndex: number) => (
+                                 <div key={pIndex} style={{ display: 'flex', gap: '8px', marginBottom: '8px', alignItems: 'center' }}>
+                                   <input type="text" className="form-input" style={{ margin: 0 }} placeholder="Item Sisi Kiri" required value={pair.left || ''} onChange={e => {
+                                       const nq = [...moduleQuestions];
+                                       nq[qIndex].pairs[pIndex].left = e.target.value;
+                                       setModuleQuestions(nq);
                                    }} />
-                                   <input type="text" className="form-input" style={{ margin: 0 }} placeholder={`Pilihan ${oIndex + 1}`} required value={opt} onChange={e => {
-                                      const nq = [...moduleQuestions];
-                                      nq[qIndex].options[oIndex] = e.target.value;
-                                      setModuleQuestions(nq);
+                                   <span style={{ color: 'var(--text-muted)' }}><i className="ti ti-arrows-right-left"></i></span>
+                                   <input type="text" className="form-input" style={{ margin: 0 }} placeholder="Pasangan Sisi Kanan (Benar)" required value={pair.right || ''} onChange={e => {
+                                       const nq = [...moduleQuestions];
+                                       nq[qIndex].pairs[pIndex].right = e.target.value;
+                                       setModuleQuestions(nq);
                                    }} />
+                                   {(q.pairs || []).length > 2 && (
+                                     <button type="button" className="btn btn-danger btn-sm" onClick={() => {
+                                         const nq = [...moduleQuestions];
+                                         nq[qIndex].pairs.splice(pIndex, 1);
+                                         setModuleQuestions(nq);
+                                     }}><i className="ti ti-x"></i></button>
+                                   )}
                                  </div>
-                              ))}
-                            </>
-                          )}
-                          {q.type === 'true_false' && (
-                            <>
-                              <label style={{ fontSize: '13px', fontWeight: 500, marginBottom: '8px', display: 'block' }}>Jawaban Benar (Benar/Salah):</label>
-                              <div style={{ display: 'flex', gap: '16px' }}>
-                                <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                  <input type="radio" name={`tf_${qIndex}`} checked={q.correctAnswer === true} onChange={() => {
-                                      const nq = [...moduleQuestions];
-                                      nq[qIndex].correctAnswer = true;
-                                      setModuleQuestions(nq);
-                                  }} /> Benar
-                                </label>
-                                <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                  <input type="radio" name={`tf_${qIndex}`} checked={q.correctAnswer === false} onChange={() => {
-                                      const nq = [...moduleQuestions];
-                                      nq[qIndex].correctAnswer = false;
-                                      setModuleQuestions(nq);
-                                  }} /> Salah
-                                </label>
-                              </div>
-                            </>
-                          )}
-                          {q.type === 'short_answer' && (
-                            <>
-                              <label style={{ fontSize: '13px', fontWeight: 500, marginBottom: '8px', display: 'block' }}>Jawaban Benar (Isian Singkat):</label>
-                              <input type="text" className="form-input" required placeholder="Contoh: Gravitasi" value={q.correctAnswerText || ''} onChange={e => {
-                                  const nq = [...moduleQuestions];
-                                  nq[qIndex].correctAnswerText = e.target.value;
-                                  setModuleQuestions(nq);
-                              }} />
-                            </>
-                          )}
-                          {q.type === 'multiple_select' && (
-                            <>
-                              <label style={{ fontSize: '13px', fontWeight: 500, marginBottom: '4px', display: 'block' }}>Pilihan Jawaban (Pilihan Ganda Kompleks):</label>
-                              <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '8px' }}>Pilih kotak centang untuk jawaban-jawaban yang benar (bisa lebih dari satu).</p>
-                              {q.options?.map((opt: string, oIndex: number) => (
+                               ))}
+                               <button type="button" className="btn btn-ghost btn-sm" onClick={() => {
+                                   const nq = [...moduleQuestions];
+                                   if (!nq[qIndex].pairs) nq[qIndex].pairs = [];
+                                   nq[qIndex].pairs.push({left: '', right: ''});
+                                   setModuleQuestions(nq);
+                               }}><i className="ti ti-plus"></i> Tambah Pasangan</button>
+                             </>
+                           )}
+                           {q.type === 'ordering' && (
+                             <>
+                               <label style={{ fontSize: '13px', fontWeight: 500, marginBottom: '4px', display: 'block' }}>Urutan Benar (Mengurutkan):</label>
+                               <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '8px' }}>Tuliskan item dalam urutan yang BENAR dari atas ke bawah. Sistem akan mengacaknya untuk siswa saat dikerjakan.</p>
+                               {(q.options || []).map((opt: string, oIndex: number) => (
                                  <div key={oIndex} style={{ display: 'flex', gap: '8px', marginBottom: '8px', alignItems: 'center' }}>
-                                   <input type="checkbox" checked={q.correctAnswers?.includes(oIndex)} onChange={(e) => {
-                                      const nq = [...moduleQuestions];
-                                      if (!nq[qIndex].correctAnswers) nq[qIndex].correctAnswers = [];
-                                      if (e.target.checked) {
-                                        nq[qIndex].correctAnswers.push(oIndex);
-                                      } else {
-                                        nq[qIndex].correctAnswers = nq[qIndex].correctAnswers.filter((id: number) => id !== oIndex);
-                                      }
-                                      setModuleQuestions(nq);
+                                   <span style={{ fontWeight: 600, width: '24px' }}>{oIndex + 1}.</span>
+                                   <input type="text" className="form-input" style={{ margin: 0 }} placeholder={`Item urutan ke-${oIndex + 1}`} required value={opt} onChange={e => {
+                                       const nq = [...moduleQuestions];
+                                       nq[qIndex].options[oIndex] = e.target.value;
+                                       setModuleQuestions(nq);
                                    }} />
-                                   <input type="text" className="form-input" style={{ margin: 0 }} placeholder={`Pilihan ${oIndex + 1}`} required value={opt} onChange={e => {
-                                      const nq = [...moduleQuestions];
-                                      nq[qIndex].options[oIndex] = e.target.value;
-                                      setModuleQuestions(nq);
-                                   }} />
+                                   {(q.options || []).length > 2 && (
+                                     <button type="button" className="btn btn-danger btn-sm" onClick={() => {
+                                         const nq = [...moduleQuestions];
+                                         nq[qIndex].options.splice(oIndex, 1);
+                                         setModuleQuestions(nq);
+                                     }}><i className="ti ti-x"></i></button>
+                                   )}
                                  </div>
-                              ))}
-                            </>
-                          )}
-                          {q.type === 'essay' && (
-                            <>
-                              <label style={{ fontSize: '13px', fontWeight: 500, marginBottom: '8px', display: 'block' }}>Kriteria Penilaian Uraian:</label>
-                              <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Soal uraian tidak dinilai secara otomatis oleh sistem (selalu dianggap benar selama dijawab). Gunakan kolom penjelasan untuk memberikan kriteria atau rubrik jawaban yang benar.</p>
-                            </>
-                          )}
-                          {q.type === 'matching' && (
-                            <>
-                              <label style={{ fontSize: '13px', fontWeight: 500, marginBottom: '4px', display: 'block' }}>Pasangan (Menjodohkan):</label>
-                              <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '8px' }}>Tuliskan pasangan yang benar. Sistem akan mengacak urutannya untuk siswa.</p>
-                              {q.pairs?.map((pair: any, pIndex: number) => (
-                                <div key={pIndex} style={{ display: 'flex', gap: '8px', marginBottom: '8px', alignItems: 'center' }}>
-                                  <input type="text" className="form-input" style={{ margin: 0 }} placeholder="Sisi Kiri" required value={pair.left} onChange={e => {
-                                      const nq = [...moduleQuestions];
-                                      nq[qIndex].pairs[pIndex].left = e.target.value;
-                                      setModuleQuestions(nq);
-                                  }} />
-                                  <span style={{ color: 'var(--text-muted)' }}><i className="ti ti-arrows-right-left"></i></span>
-                                  <input type="text" className="form-input" style={{ margin: 0 }} placeholder="Sisi Kanan (Pasangan Benar)" required value={pair.right} onChange={e => {
-                                      const nq = [...moduleQuestions];
-                                      nq[qIndex].pairs[pIndex].right = e.target.value;
-                                      setModuleQuestions(nq);
-                                  }} />
-                                  <button type="button" className="btn btn-danger btn-sm" onClick={() => {
-                                      const nq = [...moduleQuestions];
-                                      nq[qIndex].pairs.splice(pIndex, 1);
-                                      setModuleQuestions(nq);
-                                  }}><i className="ti ti-x"></i></button>
-                                </div>
-                              ))}
-                              <button type="button" className="btn btn-ghost btn-sm" onClick={() => {
-                                  const nq = [...moduleQuestions];
-                                  if (!nq[qIndex].pairs) nq[qIndex].pairs = [];
-                                  nq[qIndex].pairs.push({left: '', right: ''});
-                                  setModuleQuestions(nq);
-                              }}><i className="ti ti-plus"></i> Tambah Pasangan</button>
-                            </>
-                          )}
-                          {q.type === 'ordering' && (
-                            <>
-                              <label style={{ fontSize: '13px', fontWeight: 500, marginBottom: '4px', display: 'block' }}>Urutan Benar:</label>
-                              <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '8px' }}>Tuliskan item dalam urutan yang benar dari atas ke bawah. Sistem akan mengacaknya untuk siswa.</p>
-                              {q.options?.map((opt: string, oIndex: number) => (
-                                <div key={oIndex} style={{ display: 'flex', gap: '8px', marginBottom: '8px', alignItems: 'center' }}>
-                                  <span style={{ fontWeight: 600, width: '24px' }}>{oIndex + 1}.</span>
-                                  <input type="text" className="form-input" style={{ margin: 0 }} placeholder={`Item ke-${oIndex + 1}`} required value={opt} onChange={e => {
-                                      const nq = [...moduleQuestions];
-                                      nq[qIndex].options[oIndex] = e.target.value;
-                                      setModuleQuestions(nq);
-                                  }} />
-                                  <button type="button" className="btn btn-danger btn-sm" onClick={() => {
-                                      const nq = [...moduleQuestions];
-                                      nq[qIndex].options.splice(oIndex, 1);
-                                      setModuleQuestions(nq);
-                                  }}><i className="ti ti-x"></i></button>
-                                </div>
-                              ))}
-                              <button type="button" className="btn btn-ghost btn-sm" onClick={() => {
-                                  const nq = [...moduleQuestions];
-                                  if (!nq[qIndex].options) nq[qIndex].options = [];
-                                  nq[qIndex].options.push('');
-                                  setModuleQuestions(nq);
-                              }}><i className="ti ti-plus"></i> Tambah Item</button>
-                            </>
-                          )}
-                        </div>
-                        <div style={{ marginTop: '12px' }}>
-                          <label style={{ fontSize: '13px', fontWeight: 500, marginBottom: '8px', display: 'block' }}>Penjelasan Jawaban:</label>
-                          <textarea className="form-input" placeholder="Penjelasan kenapa jawaban tersebut benar..." value={q.explanation || ''} onChange={e => {
-                             const nq = [...moduleQuestions];
-                             nq[qIndex].explanation = e.target.value;
-                             setModuleQuestions(nq);
-                          }}></textarea>
-                        </div>
-                     </div>
-                  ))}
+                               ))}
+                               <button type="button" className="btn btn-ghost btn-sm" onClick={() => {
+                                   const nq = [...moduleQuestions];
+                                   if (!nq[qIndex].options) nq[qIndex].options = [];
+                                   nq[qIndex].options.push('');
+                                   setModuleQuestions(nq);
+                               }}><i className="ti ti-plus"></i> Tambah Item</button>
+                             </>
+                           )}
+                         </div>
+                         <div style={{ marginTop: '12px' }}>
+                           <label style={{ fontSize: '13px', fontWeight: 500, marginBottom: '8px', display: 'block' }}>Penjelasan Kunci Jawaban / Pembahasan:</label>
+                           <textarea className="form-input" placeholder="Penjelasan kenapa jawaban tersebut benar..." value={q.explanation || ''} onChange={e => {
+                              const nq = [...moduleQuestions];
+                              nq[qIndex].explanation = e.target.value;
+                              setModuleQuestions(nq);
+                           }}></textarea>
+                         </div>
+                      </div>
+                     );
+                  })}
                   
                   {!showAddMenu ? (
                     <button type="button" className="btn btn-ghost btn-sm" onClick={() => setShowAddMenu(true)}>

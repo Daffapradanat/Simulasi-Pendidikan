@@ -337,10 +337,12 @@ async function doSaveDb() {
     }
 
     await db.run("DELETE FROM questions");
-    for (const q of questionsData) {
+    for (let i = 0; i < questionsData.length; i++) {
+      const q = questionsData[i];
       const typeRow = await db.get("SELECT id FROM question_types WHERE code = ?", [q.type || 'multiple_choice']);
       const type_id = typeRow ? typeRow.id : null;
-      await db.run("INSERT INTO questions (id, module_id, type_id, data) VALUES (?, ?, ?, ?)", [q.id, q.module_id, type_id, JSON.stringify(q)]);
+      const qId = q.id ? parseInt(q.id) : (i + 1);
+      await db.run("INSERT INTO questions (id, module_id, type_id, data) VALUES (?, ?, ?, ?)", [qId, Number(q.module_id), type_id, JSON.stringify(q)]);
     }
 
     await db.exec("COMMIT");
@@ -827,37 +829,38 @@ app.get('/api/question_types', authenticateToken, isAdmin, async (req, res) => {
 });
 
 app.get('/api/modules/:id/questions', authenticateToken, (req, res) => {
-    const moduleId = parseInt(req.params.id);
-    const questions = questionsData.filter(q => q.module_id === moduleId);
+    const moduleId = parseInt(req.params.id as string);
+    const questions = questionsData.filter(q => Number(q.module_id) === moduleId);
     res.json({ questions });
   });
 
   app.post('/api/modules/:id/questions', authenticateToken, isAdmin, (req, res) => {
-    const moduleId = parseInt(req.params.id);
+    const moduleId = parseInt(req.params.id as string);
     const newQuestions = req.body.questions;
     
-    questionsData = questionsData.filter(q => q.module_id !== moduleId);
+    questionsData = questionsData.filter(q => Number(q.module_id) !== moduleId);
     
     if (Array.isArray(newQuestions)) {
-       newQuestions.forEach(q => {
+       newQuestions.forEach((q, idx) => {
           questionsData.push({
-             id: Date.now() + Math.floor(Math.random() * 1000),
+             id: q.id ? parseInt(q.id) : (Date.now() + idx + Math.floor(Math.random() * 100000)),
              module_id: moduleId,
              type: q.type || 'multiple_choice',
-             text: q.text,
-             options: q.options,
-             correctAnswerIndex: q.correctAnswerIndex,
-             correctAnswer: q.correctAnswer,
-             correctAnswerText: q.correctAnswerText,
-             correctAnswers: q.correctAnswers,
-             pairs: q.pairs,
-             explanation: q.explanation
+             text: q.text || '',
+             options: Array.isArray(q.options) ? q.options : [],
+             correctAnswerIndex: typeof q.correctAnswerIndex === 'number' ? q.correctAnswerIndex : 0,
+             correctAnswer: typeof q.correctAnswer === 'boolean' ? q.correctAnswer : true,
+             correctAnswerText: q.correctAnswerText || '',
+             correctAnswers: Array.isArray(q.correctAnswers) ? q.correctAnswers : [],
+             pairs: Array.isArray(q.pairs) ? q.pairs : [],
+             explanation: q.explanation || ''
           });
        });
     }
     
     saveDb();
-    res.json({ success: true });
+    const count = questionsData.filter(q => Number(q.module_id) === moduleId).length;
+    res.json({ success: true, count });
   });
 
   app.get("/api/activities", authenticateToken, isAdmin, (req, res) => {
@@ -1183,7 +1186,7 @@ app.get('/api/modules/:id/questions', authenticateToken, (req, res) => {
   app.get("/api/modules", (req, res) => {
     const modulesWithQuestionCount = modulesData.map((m: any) => ({
       ...m,
-      questionCount: questionsData.filter(q => q.module_id === m.id).length
+      questionCount: questionsData.filter(q => Number(q.module_id) === Number(m.id)).length
     }));
     res.json(modulesWithQuestionCount);
   });
@@ -1245,7 +1248,8 @@ app.get('/api/modules/:id/questions', authenticateToken, (req, res) => {
       modulesData.push(newModule);
       logActivity('module', 'Admin', `Menambahkan modul baru "${title}"`);
       saveDb();
-      res.json({ success: true, module: newModule });
+      const qCount = questionsData.filter(q => Number(q.module_id) === Number(newModule.id)).length;
+      res.json({ success: true, module: { ...newModule, questionCount: qCount } });
     } catch (error) {
       console.error(error);
       res.status(500).json({ error: "Failed to create module" });
@@ -1308,7 +1312,8 @@ app.get('/api/modules/:id/questions', authenticateToken, (req, res) => {
       };
       logActivity('module', 'Admin', `Mengubah modul "${title}"`);
       saveDb();
-      res.json({ success: true, module: modulesData[index] });
+      const qCount = questionsData.filter(q => Number(q.module_id) === Number(modulesData[index].id)).length;
+      res.json({ success: true, module: { ...modulesData[index], questionCount: qCount } });
     } catch (error) {
       console.error(error);
       res.status(500).json({ error: "Failed to update module" });

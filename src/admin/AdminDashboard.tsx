@@ -190,14 +190,14 @@ export default function AdminDashboard({ user, onLogout, onNavigate, onUpdateUse
         }
       });
       
+      let targetModuleId = editingModule ? editingModule.id : null;
       if (editingModule) {
         const res = await fetchAuth(`/api/modules/${editingModule.id}`, {
           method: 'PUT',
           body: formData
         });
         if (!res.ok) throw new Error(await res.text());
-        const data = await res.json();
-        setModules(modules.map(m => m.id === editingModule.id ? data.module : m));
+        targetModuleId = editingModule.id;
       } else {
         const res = await fetchAuth('/api/modules', {
           method: 'POST',
@@ -205,24 +205,31 @@ export default function AdminDashboard({ user, onLogout, onNavigate, onUpdateUse
         });
         if (!res.ok) throw new Error(await res.text());
         const data = await res.json();
-        setModules([...modules, data.module]);
-        
-        await fetchAuth(`/api/modules/${data.module.id}/questions`, {
+        targetModuleId = data.module?.id;
+      }
+      
+      if (targetModuleId) {
+        const qRes = await fetchAuth(`/api/modules/${targetModuleId}/questions`, {
            method: 'POST',
            headers: { 'Content-Type': 'application/json' },
            body: JSON.stringify({ questions: moduleQuestions })
         });
+        if (!qRes.ok) {
+          console.warn('Questions save warning:', await qRes.text());
+        }
+      }
+
+      // Re-fetch all modules with fresh and accurate question counts from the server
+      const modulesRes = await fetchAuth('/api/modules');
+      if (modulesRes.ok) {
+        const allMods = await modulesRes.json();
+        setModules(Array.isArray(allMods) ? allMods : []);
       }
       
       if (editingModule) {
-        await fetchAuth(`/api/modules/${editingModule.id}/questions`, {
-           method: 'POST',
-           headers: { 'Content-Type': 'application/json' },
-           body: JSON.stringify({ questions: moduleQuestions })
-        });
-        toast.success('Modul berhasil diperbarui!');
+        toast.success('Modul dan soal berhasil diperbarui!');
       } else {
-        toast.success('Modul baru berhasil ditambahkan!');
+        toast.success('Modul baru dan soal berhasil ditambahkan!');
       }
       setView('modules');
       setEditingModule(null);
