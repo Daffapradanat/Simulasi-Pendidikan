@@ -296,7 +296,7 @@ export function QuestionsView({
               </div>
 
               {/* Opsi: Pilihan Ganda (Single Select) */}
-              {currentQ.type === 'multiple_choice' && (
+              {(!currentQ.type || currentQ.type === 'multiple_choice') && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                   {currentQ.options?.map((opt: string, optIdx: number) => {
                     const isSelected = answers[currentIdx] === optIdx;
@@ -444,6 +444,9 @@ export function QuestionsView({
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                   {currentQ.pairs?.map((pair: any, pIdx: number) => {
                     const currentVal = (answers[currentIdx] || {})[pair.left] || '';
+                    const rightOptions = (shuffledRights[currentIdx] && shuffledRights[currentIdx].length > 0)
+                      ? shuffledRights[currentIdx]
+                      : (currentQ.pairs || []).map((p: any) => p.right);
                     return (
                       <div key={pIdx} style={{ background: '#f8fafc', padding: '14px', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
                         <div style={{ fontWeight: 700, fontSize: '13.5px', color: '#0f172a', marginBottom: '6px' }}>
@@ -460,7 +463,7 @@ export function QuestionsView({
                           }}
                         >
                           <option value="" disabled>-- Pilih Pasangan yang Sesuai --</option>
-                          {(shuffledRights[currentIdx] || []).map((r: string, rIdx: number) => (
+                          {rightOptions.map((r: string, rIdx: number) => (
                             <option key={rIdx} value={r}>{r}</option>
                           ))}
                         </select>
@@ -471,42 +474,47 @@ export function QuestionsView({
               )}
 
               {/* Opsi: Mengurutkan */}
-              {currentQ.type === 'ordering' && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  {(answers[currentIdx] || []).map((item: string, oIdx: number) => (
-                    <div key={oIdx} style={{ display: 'flex', gap: '10px', alignItems: 'center', background: '#f8fafc', padding: '10px 14px', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                        <button 
-                          type="button"
-                          disabled={oIdx === 0} 
-                          onClick={() => {
-                            const newArr = [...answers[currentIdx]];
-                            [newArr[oIdx - 1], newArr[oIdx]] = [newArr[oIdx], newArr[oIdx - 1]];
-                            handleSelect(currentIdx, newArr);
-                          }} 
-                          style={{ cursor: oIdx === 0 ? 'not-allowed' : 'pointer', opacity: oIdx === 0 ? 0.3 : 1, padding: 0, color: '#0d47a1', border: 'none', background: 'none' }}
-                        >
-                          <i className="ti ti-chevron-up" style={{ fontSize: '16px' }}></i>
-                        </button>
-                        <button 
-                          type="button"
-                          disabled={oIdx === answers[currentIdx].length - 1} 
-                          onClick={() => {
-                            const newArr = [...answers[currentIdx]];
-                            [newArr[oIdx + 1], newArr[oIdx]] = [newArr[oIdx], newArr[oIdx + 1]];
-                            handleSelect(currentIdx, newArr);
-                          }} 
-                          style={{ cursor: oIdx === answers[currentIdx].length - 1 ? 'not-allowed' : 'pointer', opacity: oIdx === answers[currentIdx].length - 1 ? 0.3 : 1, padding: 0, color: '#0d47a1', border: 'none', background: 'none' }}
-                        >
-                          <i className="ti ti-chevron-down" style={{ fontSize: '16px' }}></i>
-                        </button>
+              {currentQ.type === 'ordering' && (() => {
+                const itemsList: string[] = (answers[currentIdx] && Array.isArray(answers[currentIdx]) && answers[currentIdx].length > 0)
+                  ? answers[currentIdx]
+                  : (currentQ.options || []);
+                return (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {itemsList.map((item: string, oIdx: number) => (
+                      <div key={oIdx} style={{ display: 'flex', gap: '10px', alignItems: 'center', background: '#f8fafc', padding: '10px 14px', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                          <button 
+                            type="button"
+                            disabled={oIdx === 0} 
+                            onClick={() => {
+                              const newArr = [...itemsList];
+                              [newArr[oIdx - 1], newArr[oIdx]] = [newArr[oIdx], newArr[oIdx - 1]];
+                              handleSelect(currentIdx, newArr);
+                            }} 
+                            style={{ cursor: oIdx === 0 ? 'not-allowed' : 'pointer', opacity: oIdx === 0 ? 0.3 : 1, padding: 0, color: '#0d47a1', border: 'none', background: 'none' }}
+                          >
+                            <i className="ti ti-chevron-up" style={{ fontSize: '16px' }}></i>
+                          </button>
+                          <button 
+                            type="button"
+                            disabled={oIdx === itemsList.length - 1} 
+                            onClick={() => {
+                              const newArr = [...itemsList];
+                              [newArr[oIdx + 1], newArr[oIdx]] = [newArr[oIdx], newArr[oIdx + 1]];
+                              handleSelect(currentIdx, newArr);
+                            }} 
+                            style={{ cursor: oIdx === itemsList.length - 1 ? 'not-allowed' : 'pointer', opacity: oIdx === itemsList.length - 1 ? 0.3 : 1, padding: 0, color: '#0d47a1', border: 'none', background: 'none' }}
+                          >
+                            <i className="ti ti-chevron-down" style={{ fontSize: '16px' }}></i>
+                          </button>
+                        </div>
+                        <span style={{ fontWeight: 800, fontSize: '13.5px', color: '#0d47a1', width: '24px' }}>{oIdx + 1}.</span>
+                        <span style={{ flex: 1, fontSize: '14px', color: '#334155' }}>{item}</span>
                       </div>
-                      <span style={{ fontWeight: 800, fontSize: '13.5px', color: '#0d47a1', width: '24px' }}>{oIdx + 1}.</span>
-                      <span style={{ flex: 1, fontSize: '14px', color: '#334155' }}>{item}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
+                    ))}
+                  </div>
+                );
+              })()}
             </div>
           )}
 

@@ -1528,22 +1528,50 @@ app.get('/api/modules/:id/questions', authenticateToken, (req, res) => {
     res.json({ success: true, id });
   });
 
+  // Fallback for compressed Unity/WebGL assets (.gz / .br)
+  app.get('/games/*', (req, res, next) => {
+    const cleanPath = req.path.replace(/^\/games\/?/, '');
+    const fullPath = path.join(PUBLIC_GAMES_DIR, cleanPath);
+    if (!fs.existsSync(fullPath)) {
+      if (fs.existsSync(fullPath + '.gz')) {
+        res.set('Content-Encoding', 'gzip');
+        res.set('Cache-Control', 'public, max-age=31536000, immutable');
+        if (cleanPath.endsWith('.wasm')) res.set('Content-Type', 'application/wasm');
+        else if (cleanPath.endsWith('.js')) res.set('Content-Type', 'application/javascript');
+        else if (cleanPath.endsWith('.data')) res.set('Content-Type', 'application/octet-stream');
+        else if (cleanPath.endsWith('.json')) res.set('Content-Type', 'application/json');
+        return res.sendFile(fullPath + '.gz');
+      }
+      if (fs.existsSync(fullPath + '.br')) {
+        res.set('Content-Encoding', 'br');
+        res.set('Cache-Control', 'public, max-age=31536000, immutable');
+        if (cleanPath.endsWith('.wasm')) res.set('Content-Type', 'application/wasm');
+        else if (cleanPath.endsWith('.js')) res.set('Content-Type', 'application/javascript');
+        else if (cleanPath.endsWith('.data')) res.set('Content-Type', 'application/octet-stream');
+        else if (cleanPath.endsWith('.json')) res.set('Content-Type', 'application/json');
+        return res.sendFile(fullPath + '.br');
+      }
+    }
+    next();
+  });
+
   // Serve extracted games explicitly
   app.use('/games', express.static(PUBLIC_GAMES_DIR, {
     maxAge: '1y', 
     setHeaders: (res, filePath) => {
-
       res.set('Cache-Control', 'public, max-age=31536000, immutable');
-      if (filePath.endsWith('.gz')) {
+      if (filePath.endsWith('.gz') || filePath.includes('.gz.')) {
         res.set('Content-Encoding', 'gzip');
         if (filePath.includes('.wasm')) res.set('Content-Type', 'application/wasm');
         else if (filePath.includes('.js')) res.set('Content-Type', 'application/javascript');
         else if (filePath.includes('.data')) res.set('Content-Type', 'application/octet-stream');
-      } else if (filePath.endsWith('.br')) {
+        else if (filePath.includes('.json')) res.set('Content-Type', 'application/json');
+      } else if (filePath.endsWith('.br') || filePath.includes('.br.')) {
         res.set('Content-Encoding', 'br');
         if (filePath.includes('.wasm')) res.set('Content-Type', 'application/wasm');
         else if (filePath.includes('.js')) res.set('Content-Type', 'application/javascript');
         else if (filePath.includes('.data')) res.set('Content-Type', 'application/octet-stream');
+        else if (filePath.includes('.json')) res.set('Content-Type', 'application/json');
       } else if (filePath.endsWith('.wasm')) {
         res.set('Content-Type', 'application/wasm');
       }

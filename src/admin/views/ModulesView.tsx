@@ -188,11 +188,7 @@ export default function ModulesView({
                           keyTerms: mod.material?.keyTerms || [],
                           banner_url: mod.banner_url || '',
                           is_restricted: mod.is_restricted || false
-                        }).sort((a: any, b: any) => {
-    if (a.isDeleted && !b.isDeleted) return 1;
-    if (!a.isDeleted && b.isDeleted) return -1;
-    return 0;
-  });
+                        });
                         setModuleGameFiles((mod.games || []).map((g: any) => ({ file: null, title: g.title, desc: g.desc, id: g.id, path: g.path })));
                         setView('modules_add_edit');
                       }}

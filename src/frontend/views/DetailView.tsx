@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Module, User } from '../../types';
 import JSZip from 'jszip';
+import * as fflate from 'fflate';
 import { fetchAuth } from '../../lib/fetchAuth';
 
 export function DetailView({ 
@@ -45,12 +46,35 @@ export function DetailView({
   const [materiTab, setMateriTab] = useState<'theory' | 'glossary'>('theory');
 
   const getMimeType = (filename: string) => {
-    const ext = filename.split('.').pop()?.toLowerCase() || '';
+    let clean = filename.toLowerCase();
+    if (clean.endsWith('.gz')) clean = clean.slice(0, -3);
+    if (clean.endsWith('.br')) clean = clean.slice(0, -3);
+
+    const ext = clean.split('.').pop() || '';
     const types: Record<string, string> = {
-      'html': 'text/html', 'js': 'text/javascript', 'css': 'text/css', 'json': 'application/json',
-      'png': 'image/png', 'jpg': 'image/jpeg', 'jpeg': 'image/jpeg', 'svg': 'image/svg+xml',
-      'gif': 'image/gif', 'wav': 'audio/wav', 'mp3': 'audio/mpeg', 'ogg': 'audio/ogg',
-      'mp4': 'video/mp4', 'wasm': 'application/wasm'
+      'html': 'text/html; charset=utf-8',
+      'htm': 'text/html; charset=utf-8',
+      'js': 'text/javascript; charset=utf-8',
+      'mjs': 'text/javascript; charset=utf-8',
+      'css': 'text/css; charset=utf-8',
+      'json': 'application/json',
+      'png': 'image/png',
+      'jpg': 'image/jpeg',
+      'jpeg': 'image/jpeg',
+      'svg': 'image/svg+xml',
+      'gif': 'image/gif',
+      'webp': 'image/webp',
+      'ico': 'image/x-icon',
+      'wav': 'audio/wav',
+      'mp3': 'audio/mpeg',
+      'ogg': 'audio/ogg',
+      'mp4': 'video/mp4',
+      'webm': 'video/webm',
+      'wasm': 'application/wasm',
+      'data': 'application/octet-stream',
+      'unityweb': 'application/octet-stream',
+      'mem': 'application/octet-stream',
+      'symbols': 'application/json'
     };
     return types[ext] || 'application/octet-stream';
   };
@@ -79,10 +103,13 @@ export function DetailView({
                  fetchUrl = `${getBaseUrl()}${fetchUrl.substring(1)}`;
                }
                fetch(fetchUrl)
-                 .then(res => res.blob())
+                 .then(res => {
+                   if (!res.ok) throw new Error(`HTTP error ${res.status}`);
+                   return res.blob();
+                 })
                  .then(blob => JSZip.loadAsync(blob))
                  .then(async (zip) => {
-                   setDownloadProgress('Mengekstrak file simulasi...');
+                   setDownloadProgress('Mengekstrak file simulasi (Gzip / WebGL)...');
                    let indexPath = 'index.html';
                    
                    for (const filename of Object.keys(zip.files)) {
@@ -92,19 +119,45 @@ export function DetailView({
                      }
                    }
                    
-                   const cache = await caches.open(cacheName);
+                   const targetCache = await caches.open(cacheName);
                    
                    const promises = [];
                    for (const [filename, zipEntry] of Object.entries(zip.files)) {
-                     if (!zipEntry.dir && !filename.includes('__MACOSX')) {
+                     if (!zipEntry.dir && !filename.includes('__MACOSX') && !filename.startsWith('.')) {
                        promises.push(
-                         zipEntry.async('blob').then(fileBlob => {
-                           const fullPath = gamePrefix + filename;
-                           const headers = new Headers();
-                           headers.set('Content-Type', getMimeType(filename));
-                           const res = new Response(fileBlob, { headers });
-                           return cache.put(new Request(fullPath), res);
-                         })
+                         (async () => {
+                           try {
+                             const fileBytes = await zipEntry.async('uint8array');
+                             const fullPath = gamePrefix + filename;
+                             const mime = getMimeType(filename);
+                             const isGz = filename.toLowerCase().endsWith('.gz');
+                             const isBr = filename.toLowerCase().endsWith('.br');
+
+                             // Simpan file asli ke cache
+                             const rawHeaders = new Headers();
+                             rawHeaders.set('Content-Type', mime);
+                             if (isGz) rawHeaders.set('Content-Encoding', 'gzip');
+                             if (isBr) rawHeaders.set('Content-Encoding', 'br');
+                             
+                             await targetCache.put(new Request(fullPath), new Response(fileBytes, { headers: rawHeaders }));
+
+                             // Jika file terkompresi Gzip (.gz), decompress dan simpan juga versi uncompressed-nya
+                             // agar WebGL / Unity loader yang meminta 'file.wasm' atau 'file.data' tidak mengalami 404
+                             if (isGz) {
+                               try {
+                                 const decompressed = fflate.gunzipSync(fileBytes);
+                                 const uncompressedPath = fullPath.replace(/\.gz$/i, '');
+                                 const decompHeaders = new Headers();
+                                 decompHeaders.set('Content-Type', getMimeType(uncompressedPath));
+                                 await targetCache.put(new Request(uncompressedPath), new Response(decompressed, { headers: decompHeaders }));
+                               } catch (decErr) {
+                                 // Abaikan jika bukan format gzip standar
+                               }
+                             }
+                           } catch (err) {
+                             console.warn('Gagal memproses file zip:', filename, err);
+                           }
+                         })()
                        );
                      }
                    }
@@ -115,9 +168,9 @@ export function DetailView({
                    setLocalGameSrc(gamePrefix + indexPath);
                  })
                  .catch(err => {
-                   console.error(err);
+                   console.error('Gagal memuat game:', err);
                    setDownloadProgress('Gagal memuat simulasi');
-                   setTimeout(() => setDownloadingGame(false), 2000);
+                   setTimeout(() => setDownloadingGame(false), 2500);
                  });
             }
           });
@@ -143,6 +196,16 @@ export function DetailView({
       document.getElementById('webgl-player-container')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
   }, [activeGameId]);
+
+  const toggleFullscreen = () => {
+    const elem = document.getElementById('webgl-player-container');
+    if (!elem) return;
+    if (!document.fullscreenElement) {
+      elem.requestFullscreen().catch(() => {});
+    } else {
+      document.exitFullscreen().catch(() => {});
+    }
+  };
 
   return (
     <div className="page active">
@@ -399,29 +462,35 @@ export function DetailView({
                   >
                     <div className="step-card-body">
                       
-                      {/* Active Game Player Theater View */}
+                      {/* Active Game Player View */}
                       {activeGameId !== null && (
                         <div id="webgl-player-container" className="modern-webgl-frame">
                           <div className="webgl-frame-header">
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                              <span style={{ 
-                                display: 'inline-flex', 
-                                alignItems: 'center', 
-                                gap: '6px', 
-                                background: 'rgba(16, 185, 129, 0.2)', 
-                                color: '#34d399', 
-                                padding: '3px 8px', 
-                                borderRadius: '6px', 
-                                fontSize: '11.5px', 
-                                fontWeight: 700 
-                              }}>
-                                <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#34d399', display: 'inline-block', animation: 'pulse 1.5s infinite' }}></span>
-                                LIVE SIMULASI
-                              </span>
-                              <strong style={{ fontSize: '14px', color: '#ffffff' }}>{activeGame?.title}</strong>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <i className="ti ti-device-gamepad-2" style={{ color: '#60a5fa', fontSize: '18px' }}></i>
+                              <span style={{ fontSize: '14px', fontWeight: 700, color: '#ffffff' }}>{activeGame?.title}</span>
                             </div>
 
                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <button 
+                                className="btn btn-sm"
+                                onClick={toggleFullscreen}
+                                title="Layar Penuh"
+                                style={{ 
+                                  background: 'rgba(255, 255, 255, 0.1)', 
+                                  color: '#e2e8f0', 
+                                  border: '1px solid rgba(255, 255, 255, 0.2)', 
+                                  padding: '4px 10px', 
+                                  fontSize: '12px', 
+                                  borderRadius: '6px',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '4px'
+                                }}
+                              >
+                                <i className="ti ti-maximize"></i> Fullscreen
+                              </button>
+
                               <button 
                                 className="btn btn-sm" 
                                 onClick={onCloseGame}
@@ -431,7 +500,10 @@ export function DetailView({
                                   border: '1px solid rgba(239, 68, 68, 0.4)', 
                                   padding: '4px 10px', 
                                   fontSize: '12px', 
-                                  borderRadius: '8px' 
+                                  borderRadius: '6px',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '4px'
                                 }}
                               >
                                 <i className="ti ti-x"></i> Tutup Simulasi
@@ -451,6 +523,7 @@ export function DetailView({
                                   src={localGameSrc} 
                                   style={{ width: '100%', height: '100%', border: 'none', background: 'transparent' }} 
                                   title={activeGame.title}
+                                  allow="fullscreen; cross-origin-isolated"
                                   onLoad={(e) => {
                                     try {
                                       const win = (e.target as HTMLIFrameElement).contentWindow as any;
@@ -459,7 +532,6 @@ export function DetailView({
                                         win.console.log = noop;
                                         win.console.info = noop;
                                         win.console.debug = noop;
-                                        win.console.warn = noop;
                                       }
                                     } catch (err) {}
                                   }}
@@ -472,16 +544,6 @@ export function DetailView({
                                 <small>Modul ini akan segera dilengkapi dengan simulasi interaktif.</small>
                               </div>
                             )}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Info Banner when no simulation is active */}
-                      {activeGameId === null && (
-                        <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '12px', padding: '14px 18px', display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px', color: '#166534' }}>
-                          <i className="ti ti-device-gamepad" style={{ fontSize: '22px', flexShrink: 0 }}></i>
-                          <div style={{ fontSize: '13px', lineHeight: 1.45 }}>
-                            <strong>Instruksi Laboratorium:</strong> Klik tombol <strong>Mainkan Eksperimen</strong> pada salah satu game di bawah ini untuk memulai simulasi sains.
                           </div>
                         </div>
                       )}

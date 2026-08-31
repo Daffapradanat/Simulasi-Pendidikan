@@ -6,12 +6,22 @@ import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
 import { fetchAuth } from '../../lib/fetchAuth';
 
+const DEFAULT_QUESTION_TYPES = [
+  { code: 'multiple_choice', name: 'Pilihan Ganda', description: 'Pilihan ganda biasa (satu jawaban benar)' },
+  { code: 'multiple_select', name: 'Pilihan Ganda Kompleks', description: 'Pilihan ganda kompleks (lebih dari satu jawaban benar)' },
+  { code: 'true_false', name: 'Benar / Salah', description: 'Pernyataan benar atau salah' },
+  { code: 'short_answer', name: 'Isian Singkat', description: 'Jawaban teks / kata singkat' },
+  { code: 'essay', name: 'Uraian / Essay', description: 'Pertanyaan uraian / jawaban terbuka' },
+  { code: 'matching', name: 'Menjodohkan', description: 'Mencocokkan pasangan konsep' },
+  { code: 'ordering', name: 'Mengurutkan', description: 'Mengurutkan tahapan atau proses' }
+];
+
 export default function ModulesAddEditView({ 
   editingModule, moduleForm, setModuleForm, setView, handleSaveModule, moduleGameFiles, setModuleGameFiles, isSaving, categories, subjects, moduleQuestions, setModuleQuestions
 }: any) {
   const [showAddMenu, setShowAddMenu] = useState(false);
   const [questionToDelete, setQuestionToDelete] = useState<number | null>(null);
-  const [questionTypes, setQuestionTypes] = useState<any[]>([]);
+  const [questionTypes, setQuestionTypes] = useState<any[]>(DEFAULT_QUESTION_TYPES);
   const [isUploadingBanner, setIsUploadingBanner] = useState(false);
   const [bannerPreview, setBannerPreview] = useState('');
 
@@ -19,7 +29,7 @@ export default function ModulesAddEditView({
     fetchAuth('/api/question_types')
       .then(r => r.ok ? r.json() : [])
       .then(data => {
-        if (Array.isArray(data)) setQuestionTypes(data);
+        if (Array.isArray(data) && data.length > 0) setQuestionTypes(data);
       })
       .catch(() => {});
   }, []);
