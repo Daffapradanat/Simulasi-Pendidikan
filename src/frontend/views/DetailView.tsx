@@ -35,9 +35,9 @@ export function DetailView({
   const allPlayed = totalGames === 0 || isModuleCompleted || (module.games || []).every(g => playedGames.has(g.id));
   
   const [questions, setQuestions] = useState<any[]>([]);
-  const [isStep1Open, setIsStep1Open] = useState(true);
-  const [isStep2Open, setIsStep2Open] = useState(true);
-  const [isStep3Open, setIsStep3Open] = useState(true);
+  const [isQuestionsOpen, setIsQuestionsOpen] = useState(true);
+  const [isMateriOpen, setIsMateriOpen] = useState(true);
+  const [isGamesOpen, setIsGamesOpen] = useState(true);
   const [materiTab, setMateriTab] = useState<'theory' | 'glossary'>('theory');
 
   const [downloadingGame, setDownloadingGame] = useState(false);
@@ -235,17 +235,70 @@ export function DetailView({
 
         {/* 2-Column Responsive Layout */}
         <div className="module-detail-grid">
-          {/* KOLOM KIRI: LANGKAH 1 (MATERI) & LANGKAH 2 (SIMULASI INTERAKTIF) */}
+          
+          {/* ========================================================= */}
+          {/* KOLOM KIRI: EVALUASI & PEMBENARAN SOAL                   */}
+          {/* ========================================================= */}
           <div className="module-left-col">
-            
-            {/* LANGKAH 1: MATERI & GLOSARIUM */}
             <div className="modern-step-card">
               <div 
-                className={`step-card-header ${isStep1Open ? 'is-open' : ''}`}
-                onClick={() => setIsStep1Open(!isStep1Open)}
+                className={`step-card-header ${isQuestionsOpen ? 'is-open' : ''}`}
+                onClick={() => setIsQuestionsOpen(!isQuestionsOpen)}
               >
                 <div className="step-header-left">
-                  <div className="step-number-badge blue">01</div>
+                  <div className="step-number-badge amber">01</div>
+                  <div className="step-header-info">
+                    <h3 className="step-title">
+                      <i className="ti ti-list-check" style={{ color: '#d97706', fontSize: '18px' }}></i>
+                      Evaluasi & Pembenaran Soal
+                    </h3>
+                    <p className="step-subtitle">Uji pemahaman dan periksa analisis kunci jawaban</p>
+                  </div>
+                </div>
+
+                <div className="step-toggle-btn">
+                  <span>{isQuestionsOpen ? 'Tutup' : 'Buka'}</span>
+                  <i className={`ti ${isQuestionsOpen ? 'ti-chevron-up' : 'ti-chevron-down'}`}></i>
+                </div>
+              </div>
+
+              <AnimatePresence initial={false}>
+                {isQuestionsOpen && (
+                  <motion.div 
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.22 }}
+                    style={{ overflow: 'hidden' }}
+                  >
+                    <div className="step-card-body" style={{ padding: '20px' }}>
+                      <QuestionsView 
+                        questions={questions}
+                        module={module}
+                        user={user}
+                        allPlayed={allPlayed}
+                        onComplete={onCompleteModule}
+                      />
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          </div>
+
+          {/* ========================================================= */}
+          {/* KOLOM KANAN: MATERI & GLOSARIUM & SIMULASI INTERAKTIF   */}
+          {/* ========================================================= */}
+          <div className="module-right-col">
+            
+            {/* MATERI & GLOSARIUM */}
+            <div className="modern-step-card">
+              <div 
+                className={`step-card-header ${isMateriOpen ? 'is-open' : ''}`}
+                onClick={() => setIsMateriOpen(!isMateriOpen)}
+              >
+                <div className="step-header-left">
+                  <div className="step-number-badge blue">02</div>
                   <div className="step-header-info">
                     <h3 className="step-title">
                       <i className="ti ti-book-2" style={{ color: 'var(--primary)', fontSize: '18px' }}></i>
@@ -256,13 +309,13 @@ export function DetailView({
                 </div>
 
                 <div className="step-toggle-btn">
-                  <span>{isStep1Open ? 'Tutup' : 'Buka'}</span>
-                  <i className={`ti ${isStep1Open ? 'ti-chevron-up' : 'ti-chevron-down'}`}></i>
+                  <span>{isMateriOpen ? 'Tutup' : 'Buka'}</span>
+                  <i className={`ti ${isMateriOpen ? 'ti-chevron-up' : 'ti-chevron-down'}`}></i>
                 </div>
               </div>
 
               <AnimatePresence initial={false}>
-                {isStep1Open && (
+                {isMateriOpen && (
                   <motion.div
                     initial={{ height: 0, opacity: 0 }}
                     animate={{ height: 'auto', opacity: 1 }}
@@ -330,7 +383,7 @@ export function DetailView({
                               <h4 style={{ fontSize: '14px', fontWeight: 700, color: '#0f172a', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                                 <i className="ti ti-vocabulary" style={{ color: 'var(--primary)' }}></i> Istilah Kunci
                               </h4>
-                              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '10px' }}>
+                              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '10px' }}>
                                 {module.material.keyTerms.map((item: any, idx: number) => (
                                   <div key={idx} className="keyterm-card">
                                     <div className="keyterm-title">{item.term}</div>
@@ -354,14 +407,14 @@ export function DetailView({
               </AnimatePresence>
             </div>
 
-            {/* LANGKAH 2: SIMULASI INTERAKTIF */}
+            {/* SIMULASI INTERAKTIF */}
             <div className="modern-step-card">
               <div 
-                className={`step-card-header ${isStep2Open ? 'is-open' : ''}`}
-                onClick={() => setIsStep2Open(!isStep2Open)}
+                className={`step-card-header ${isGamesOpen ? 'is-open' : ''}`}
+                onClick={() => setIsGamesOpen(!isGamesOpen)}
               >
                 <div className="step-header-left">
-                  <div className="step-number-badge emerald">02</div>
+                  <div className="step-number-badge emerald">03</div>
                   <div className="step-header-info">
                     <h3 className="step-title">
                       <i className="ti ti-device-gamepad-2" style={{ color: '#15803d', fontSize: '18px' }}></i>
@@ -372,13 +425,13 @@ export function DetailView({
                 </div>
 
                 <div className="step-toggle-btn">
-                  <span>{isStep2Open ? 'Tutup' : 'Buka'}</span>
-                  <i className={`ti ${isStep2Open ? 'ti-chevron-up' : 'ti-chevron-down'}`}></i>
+                  <span>{isGamesOpen ? 'Tutup' : 'Buka'}</span>
+                  <i className={`ti ${isGamesOpen ? 'ti-chevron-up' : 'ti-chevron-down'}`}></i>
                 </div>
               </div>
 
               <AnimatePresence initial={false}>
-                {isStep2Open && (
+                {isGamesOpen && (
                   <motion.div
                     initial={{ height: 0, opacity: 0 }}
                     animate={{ height: 'auto', opacity: 1 }}
@@ -522,55 +575,6 @@ export function DetailView({
             </div>
           </div>
 
-          {/* ========================================================= */}
-          {/* KOLOM KANAN: LANGKAH 3 (EVALUASI SOAL & REFLEKSI SISWA)  */}
-          {/* ========================================================= */}
-          <div className="module-right-col">
-            <div className="modern-step-card">
-              <div 
-                className={`step-card-header ${isStep3Open ? 'is-open' : ''}`}
-                onClick={() => setIsStep3Open(!isStep3Open)}
-              >
-                <div className="step-header-left">
-                  <div className="step-number-badge amber">03</div>
-                  <div className="step-header-info">
-                    <h3 className="step-title">
-                      <i className="ti ti-list-check" style={{ color: '#d97706', fontSize: '18px' }}></i>
-                      Evaluasi & Pembenaran Soal
-                    </h3>
-                    <p className="step-subtitle">Uji pemahaman dan periksa analisis kunci jawaban</p>
-                  </div>
-                </div>
-
-                <div className="step-toggle-btn">
-                  <span>{isStep3Open ? 'Tutup' : 'Buka'}</span>
-                  <i className={`ti ${isStep3Open ? 'ti-chevron-up' : 'ti-chevron-down'}`}></i>
-                </div>
-              </div>
-
-              <AnimatePresence initial={false}>
-                {isStep3Open && (
-                  <motion.div 
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: 'auto', opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    transition={{ duration: 0.22 }}
-                    style={{ overflow: 'hidden' }}
-                  >
-                    <div className="step-card-body" style={{ padding: '20px' }}>
-                      <QuestionsView 
-                        questions={questions}
-                        module={module}
-                        user={user}
-                        allPlayed={allPlayed}
-                        onComplete={onCompleteModule}
-                      />
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-          </div>
         </div>
       </div>
     </div>
