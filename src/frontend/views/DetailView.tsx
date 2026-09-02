@@ -35,9 +35,9 @@ export function DetailView({
   const allPlayed = totalGames === 0 || isModuleCompleted || (module.games || []).every(g => playedGames.has(g.id));
   
   const [questions, setQuestions] = useState<any[]>([]);
-  const [isQuestionsOpen, setIsQuestionsOpen] = useState(true);
   const [isMateriOpen, setIsMateriOpen] = useState(true);
   const [isGamesOpen, setIsGamesOpen] = useState(true);
+  const [isQuestionsOpen, setIsQuestionsOpen] = useState(true);
   const [materiTab, setMateriTab] = useState<'theory' | 'glossary'>('theory');
 
   const [downloadingGame, setDownloadingGame] = useState(false);
@@ -237,59 +237,9 @@ export function DetailView({
         <div className="module-detail-grid">
           
           {/* ========================================================= */}
-          {/* KOLOM KIRI: EVALUASI & PEMBENARAN SOAL                   */}
+          {/* KOLOM KIRI: MATERI & GLOSARIUM & SIMULASI INTERAKTIF     */}
           {/* ========================================================= */}
           <div className="module-left-col">
-            <div className="modern-step-card">
-              <div 
-                className={`step-card-header ${isQuestionsOpen ? 'is-open' : ''}`}
-                onClick={() => setIsQuestionsOpen(!isQuestionsOpen)}
-              >
-                <div className="step-header-left">
-                  <div className="step-number-badge amber">01</div>
-                  <div className="step-header-info">
-                    <h3 className="step-title">
-                      <i className="ti ti-list-check" style={{ color: '#d97706', fontSize: '18px' }}></i>
-                      Evaluasi & Pembenaran Soal
-                    </h3>
-                    <p className="step-subtitle">Uji pemahaman dan periksa analisis kunci jawaban</p>
-                  </div>
-                </div>
-
-                <div className="step-toggle-btn">
-                  <span>{isQuestionsOpen ? 'Tutup' : 'Buka'}</span>
-                  <i className={`ti ${isQuestionsOpen ? 'ti-chevron-up' : 'ti-chevron-down'}`}></i>
-                </div>
-              </div>
-
-              <AnimatePresence initial={false}>
-                {isQuestionsOpen && (
-                  <motion.div 
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: 'auto', opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    transition={{ duration: 0.22 }}
-                    style={{ overflow: 'hidden' }}
-                  >
-                    <div className="step-card-body" style={{ padding: '20px' }}>
-                      <QuestionsView 
-                        questions={questions}
-                        module={module}
-                        user={user}
-                        allPlayed={allPlayed}
-                        onComplete={onCompleteModule}
-                      />
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-          </div>
-
-          {/* ========================================================= */}
-          {/* KOLOM KANAN: MATERI & GLOSARIUM & SIMULASI INTERAKTIF   */}
-          {/* ========================================================= */}
-          <div className="module-right-col">
             
             {/* MATERI & GLOSARIUM */}
             <div className="modern-step-card">
@@ -298,7 +248,7 @@ export function DetailView({
                 onClick={() => setIsMateriOpen(!isMateriOpen)}
               >
                 <div className="step-header-left">
-                  <div className="step-number-badge blue">02</div>
+                  <div className="step-number-badge blue">01</div>
                   <div className="step-header-info">
                     <h3 className="step-title">
                       <i className="ti ti-book-2" style={{ color: 'var(--primary)', fontSize: '18px' }}></i>
@@ -414,7 +364,7 @@ export function DetailView({
                 onClick={() => setIsGamesOpen(!isGamesOpen)}
               >
                 <div className="step-header-left">
-                  <div className="step-number-badge emerald">03</div>
+                  <div className="step-number-badge emerald">02</div>
                   <div className="step-header-info">
                     <h3 className="step-title">
                       <i className="ti ti-device-gamepad-2" style={{ color: '#15803d', fontSize: '18px' }}></i>
@@ -568,6 +518,56 @@ export function DetailView({
                           })
                         )}
                       </div>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          </div>
+
+          {/* ========================================================= */}
+          {/* KOLOM KANAN: EVALUASI & PEMBENARAN SOAL                   */}
+          {/* ========================================================= */}
+          <div className="module-right-col">
+            <div className="modern-step-card">
+              <div 
+                className={`step-card-header ${isQuestionsOpen ? 'is-open' : ''}`}
+                onClick={() => setIsQuestionsOpen(!isQuestionsOpen)}
+              >
+                <div className="step-header-left">
+                  <div className="step-number-badge amber">03</div>
+                  <div className="step-header-info">
+                    <h3 className="step-title">
+                      <i className="ti ti-list-check" style={{ color: '#d97706', fontSize: '18px' }}></i>
+                      Evaluasi & Pembenaran Soal
+                    </h3>
+                    <p className="step-subtitle">Uji pemahaman dan periksa analisis kunci jawaban</p>
+                  </div>
+                </div>
+
+                <div className="step-toggle-btn">
+                  <span>{isQuestionsOpen ? 'Tutup' : 'Buka'}</span>
+                  <i className={`ti ${isQuestionsOpen ? 'ti-chevron-up' : 'ti-chevron-down'}`}></i>
+                </div>
+              </div>
+
+              <AnimatePresence initial={false}>
+                {isQuestionsOpen && (
+                  <motion.div 
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.22 }}
+                    style={{ overflow: 'hidden' }}
+                  >
+                    <div className="step-card-body" style={{ padding: '20px' }}>
+                      <QuestionsView 
+                        questions={questions}
+                        module={module}
+                        user={user}
+                        allPlayed={allPlayed}
+                        onComplete={onCompleteModule}
+                      />
                     </div>
                   </motion.div>
                 )}
