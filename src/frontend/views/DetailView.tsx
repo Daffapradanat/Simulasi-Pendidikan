@@ -4,10 +4,8 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Module, User } from '../../types';
 import JSZip from 'jszip';
-import { MODULE_THUMBS } from '../../data';
 import { fetchAuth } from '../../lib/fetchAuth';
 
-// --- DETAIL VIEW ---
 export function DetailView({ 
   module, 
   onBack, 
@@ -15,7 +13,8 @@ export function DetailView({
   playedGames, 
   onLaunchGame, 
   onCloseGame, 
-  onCompleteModule 
+  onCompleteModule,
+  user
 }: {
   module: Module;
   onBack: () => void;
@@ -24,18 +23,26 @@ export function DetailView({
   onLaunchGame: (id: number, title: string) => void;
   onCloseGame: () => void;
   onCompleteModule: (reflection?: string) => void;
-  user?: any;
+  user?: User | null;
 }) {
-
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'instant' });
   }, [module.id]);
-  const activeGame = module.games.find(g => g.id === activeGameId);
-  const totalGames = module.games.length;
+
+  const activeGame = module.games?.find(g => g.id === activeGameId);
+  const totalGames = module.games?.length || 0;
   const isModuleCompleted = module.status === 'completed';
-  const allPlayed = totalGames === 0 || isModuleCompleted || module.games.every(g => playedGames.has(g.id));
+  const allPlayed = totalGames === 0 || isModuleCompleted || (module.games || []).every(g => playedGames.has(g.id));
+  
   const [questions, setQuestions] = useState<any[]>([]);
-  const [showQuestions, setShowQuestions] = useState(false);
+  const [isStep1Open, setIsStep1Open] = useState(true);
+  const [isStep2Open, setIsStep2Open] = useState(true);
+  const [isStep3Open, setIsStep3Open] = useState(true);
+  const [materiTab, setMateriTab] = useState<'theory' | 'glossary'>('theory');
+
+  const [downloadingGame, setDownloadingGame] = useState(false);
+  const [downloadProgress, setDownloadProgress] = useState('');
+  const [localGameSrc, setLocalGameSrc] = useState<string | null>(null);
 
   const getMimeType = (filename: string) => {
     let cleanName = filename.toLowerCase();
@@ -71,10 +78,6 @@ export function DetailView({
     return types[ext] || 'application/octet-stream';
   };
 
-  const [downloadingGame, setDownloadingGame] = useState(false);
-  const [downloadProgress, setDownloadProgress] = useState('');
-  const [localGameSrc, setLocalGameSrc] = useState<string | null>(null);
-
   useEffect(() => {
     if (activeGameId) {
       const game = module.games?.find((g: any) => g.id === activeGameId);
@@ -101,7 +104,7 @@ export function DetailView({
                }
                fetch(fetchUrl)
                  .then(res => {
-                   if (!res.ok) throw new Error('Zip not found on server');
+                   if (!res.ok) throw new Error('Zip file not found on server');
                    return res.blob();
                  })
                  .then(blob => JSZip.loadAsync(blob))
@@ -123,9 +126,9 @@ export function DetailView({
                    const promises = [];
                    for (const [filename, zipEntry] of Object.entries(zip.files)) {
                      if (!zipEntry.dir && !filename.includes('__MACOSX')) {
+                       const fullPath = gamePrefix + filename;
                        promises.push(
                          zipEntry.async('blob').then(fileBlob => {
-                           const fullPath = gamePrefix + filename;
                            const headers = new Headers();
                            headers.set('Content-Type', getMimeType(filename));
                            const res = new Response(fileBlob, { headers });
@@ -142,7 +145,6 @@ export function DetailView({
                  })
                  .catch(err => {
                    console.warn('Local zip extraction fallback to server static:', err);
-                   // Fallback to static server extraction
                    const fallbackUrl = `${getBaseUrl()}games/game_${game.id}/index.html`;
                    setLocalGameSrc(fallbackUrl);
                    setDownloadingGame(false);
@@ -170,357 +172,404 @@ export function DetailView({
   
   useEffect(() => {
     if (activeGameId !== null) {
-      document.getElementById('webgl-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      document.getElementById('webgl-simulation-player')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
   }, [activeGameId]);
 
   return (
-    <div className="page active">
+    <div className="page active" style={{ paddingBottom: '60px' }}>
       <div className="main-wrapper">
-        <div className="page-header">
-          <div className="breadcrumb">
-            <span style={{ cursor: 'pointer', color: 'var(--primary)' }} onClick={onBack}>Daftar Modul</span>
-            <span className="sep">›</span>
-            <span className="current">{module.title}</span>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
-            <div className="page-title">{module.title}</div>
-            {module.status === 'completed' ? (
-               <span className="badge badge-success"><i className="ti ti-circle-check"></i> Selesai</span>
-            ) : (
-               <span className="badge badge-primary"><i className="ti ti-play"></i> Sedang Berjalan</span>
-            )}
-          </div>
-          <div className="page-subtitle">{module.desc}</div>
-        </div>
-        
-        <div className="detail-layout">
-          <div className="detail-main">
-            <div className="section-card material-card" style={{ marginBottom: '24px' }}>
-              <div className="section-card-title">
-                <i className="ti ti-book-2"></i> Materi Simulasi
-                <span className="step-chip">Langkah 1</span>
-              </div>
-              
-              <div className="material-intro" style={{ marginBottom: '24px', paddingBottom: '20px', borderBottom: '1px solid var(--border)' }}>
-                <p style={{ fontSize: '15px', color: 'var(--text)', lineHeight: 1.6 }}>
-                  {module.desc}
-                </p>
-              </div>
+        {/* Navigation & Header */}
+        <div style={{ marginBottom: '24px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px', flexWrap: 'wrap', gap: '10px' }}>
+            <div className="breadcrumb" style={{ margin: 0 }}>
+              <span style={{ cursor: 'pointer', color: 'var(--primary)', fontWeight: 600 }} onClick={onBack}>
+                <i className="ti ti-arrow-left" style={{ marginRight: '4px' }}></i> Daftar Modul
+              </span>
+              <span className="sep">›</span>
+              <span className="current" style={{ color: '#64748b' }}>{module.title}</span>
+            </div>
 
-              {(module.material && typeof module.material === 'object' && !Array.isArray(module.material) && module.material.objectives && module.material.objectives.length > 0) && (
-                <div className="material-block" style={{ marginBottom: '28px' }}>
-                  <div className="material-subtitle"><i className="ti ti-target" style={{ color: 'var(--primary)' }}></i> Tujuan Pembelajaran</div>
-                  <ul className="material-objectives" style={{ display: 'grid', gap: '10px', background: 'var(--surface-2)', padding: '16px 20px', borderRadius: '8px' }}>
-                    {module.material.objectives.map((obj, i) => (
-                      <li key={i} style={{ wordWrap: 'break-word', wordBreak: 'break-word' }}>
-                        <span style={{ color: 'var(--text)' }}>{obj}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-              
-              {(module.material && typeof module.material === 'object' && !Array.isArray(module.material) && module.material.keyTerms && module.material.keyTerms.length > 0) && (
-                <div className="material-block" style={{ marginBottom: '28px' }}>
-                  <div className="material-subtitle"><i className="ti ti-vocabulary" style={{ color: 'var(--primary)' }}></i> Istilah Kunci</div>
-                  <div className="material-terms" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '12px' }}>
-                    {module.material.keyTerms.map((term, i) => (
-                      <div key={i} className="term-item" style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', borderLeft: '4px solid var(--primary)', padding: '14px 16px', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '6px', wordWrap: 'break-word', wordBreak: 'break-word' }}>
-                        <span className="term-name" style={{ fontSize: '15px', color: 'var(--primary-dark)', fontWeight: 700 }}>{term.term}</span>
-                        <span className="term-def" style={{ fontSize: '14px', color: 'var(--text-muted)', lineHeight: 1.5 }}>{term.def}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
+            <button 
+              className="btn btn-outline" 
+              onClick={onBack}
+              style={{ padding: '6px 14px', fontSize: '13px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}
+            >
+              <i className="ti ti-arrow-left"></i> Kembali ke Modul
+            </button>
+          </div>
 
-              <div className="material-block" style={{ marginBottom: 0 }}>
-                <div className="material-subtitle"><i className="ti ti-file-text" style={{ color: 'var(--primary)' }}></i> Penjelasan Materi</div>
-                {module.material && typeof module.material === 'object' && !Array.isArray(module.material) && module.material.theory ? (
-                  <div className="material-theory" style={{ background: 'var(--white)', border: '1px solid var(--border)', padding: '24px', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }} dangerouslySetInnerHTML={{ __html: module.material.theory }} />
-                ) : (
-                  <div style={{ background: 'var(--surface)', padding: '24px', borderRadius: '12px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '14px' }}>
-                    <i className="ti ti-note" style={{ fontSize: '24px', display: 'block', marginBottom: '8px', color: 'var(--text-light)' }}></i>
-                    Belum ada penjelasan materi yang ditambahkan.
-                  </div>
-                )}
-              </div>
+          <div style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '20px 24px', boxShadow: '0 2px 8px rgba(15, 23, 42, 0.04)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap', marginBottom: '8px' }}>
+              <h1 style={{ fontSize: '22px', fontWeight: 800, color: '#0f172a', margin: 0, letterSpacing: '-0.3px' }}>
+                {module.title}
+              </h1>
+              {isModuleCompleted ? (
+                <span className="badge badge-success" style={{ fontSize: '12px', padding: '4px 10px', borderRadius: '6px' }}>
+                  <i className="ti ti-circle-check"></i> Selesai
+                </span>
+              ) : (
+                <span className="badge badge-primary" style={{ fontSize: '12px', padding: '4px 10px', borderRadius: '6px' }}>
+                  <i className="ti ti-play"></i> Sedang Berjalan
+                </span>
+              )}
             </div>
             
-            <div className="section-card">
-              <div className="section-card-title">
-                <i className="ti ti-device-gamepad-2"></i> Simulasi Interaktif
-                <span className="step-chip">Langkah 2</span>
-              </div>
-              
-              {activeGameId !== null && (
-                <div id="webgl-section" style={{ marginBottom: '24px' }}>
-                  <div className="webgl-header">
-                    <div className="webgl-title-row">
-                      <span className="webgl-now-playing">Sedang dimainkan:</span>
-                      <strong className="webgl-game-name">{activeGame?.title}</strong>
-                      <span className="badge badge-success" style={{ marginLeft: '4px' }}><i className="ti ti-wifi"></i> Aktif</span>
-                    </div>
-                  </div>
-                  <div className="webgl-container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', width: '100%', aspectRatio: '16/9', background: '#f8f9fa', borderRadius: '8px', overflow: 'hidden', border: '1px solid var(--border)' }}>
-                    {activeGame?.path ? (
-                      (downloadingGame && !localGameSrc) ? (
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--text-muted)' }}>
-                          <div className="loading-spinner" style={{ marginBottom: '16px' }}></div>
-                          <p>{downloadProgress}</p>
-                        </div>
-                      ) : localGameSrc ? (
-                        <iframe 
-                          src={localGameSrc} 
-                          style={{ width: '100%', height: '100%', border: 'none', background: 'transparent' }} 
-                          title={activeGame.title}
-                          onLoad={(e) => {
-                            try {
-                              const win = (e.target as HTMLIFrameElement).contentWindow as any;
-                              if (win && win.console) {
-                                const noop = () => {};
-                                win.console.log = noop;
-                                win.console.info = noop;
-                                win.console.debug = noop;
-                                win.console.warn = noop;
-                              }
-                            } catch (err) {}
-                          }}
-                        />
-                      ) : null
-                    ) : (
-                      <div className="webgl-placeholder" style={{ color: '#aaa', textAlign: 'center' }}>
-                        <div className="play-icon" style={{ background: '#e9ecef', color: '#adb5bd', margin: '0 auto 16px', width: '64px', height: '64px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px' }}><i className="ti ti-device-gamepad-2"></i></div>
-                        <p style={{ fontWeight: 600, color: '#495057' }}>Game belum diupload</p>
-                        <small>Pastikan game telah diupload dan ada file index.html di root zip.</small>
-                      </div>
-                    )}
-                  </div>
-                  <div className="webgl-controls">
-                    <button className="btn btn-danger btn-sm" onClick={onCloseGame}>
-                      <i className="ti ti-x"></i> Tutup Game
-                    </button>
-                    <div className="webgl-hint">Tutup game lalu mainkan semua game untuk melanjutkan.</div>
+            <p style={{ fontSize: '14px', color: '#64748b', margin: '0 0 14px 0', lineHeight: 1.5 }}>
+              {module.desc}
+            </p>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '18px', flexWrap: 'wrap', fontSize: '12.5px', color: '#64748b' }}>
+              <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                <i className="ti ti-school" style={{ color: 'var(--primary)' }}></i> {module.level || 'Semua Jenjang'}
+              </span>
+              <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                <i className="ti ti-clock" style={{ color: 'var(--primary)' }}></i> {module.duration || '30 Menit'}
+              </span>
+              <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                <i className="ti ti-device-gamepad-2" style={{ color: 'var(--primary)' }}></i> {module.games?.length || 0} Simulasi Interaktif
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* 2-Column Responsive Layout */}
+        <div className="module-detail-grid">
+          {/* KOLOM KIRI: LANGKAH 1 (MATERI) & LANGKAH 2 (SIMULASI INTERAKTIF) */}
+          <div className="module-left-col">
+            
+            {/* LANGKAH 1: MATERI & GLOSARIUM */}
+            <div className="modern-step-card">
+              <div 
+                className={`step-card-header ${isStep1Open ? 'is-open' : ''}`}
+                onClick={() => setIsStep1Open(!isStep1Open)}
+              >
+                <div className="step-header-left">
+                  <div className="step-number-badge blue">01</div>
+                  <div className="step-header-info">
+                    <h3 className="step-title">
+                      <i className="ti ti-book-2" style={{ color: 'var(--primary)', fontSize: '18px' }}></i>
+                      Materi & Glosarium
+                    </h3>
+                    <p className="step-subtitle">Pelajari konsep dasar, tujuan, dan istilah kunci</p>
                   </div>
                 </div>
-              )}
-              
-              <div className="alert alert-warning" style={{ marginBottom: '14px', display: activeGameId !== null ? 'none' : 'flex' }}>
-                <i className="ti ti-alert-triangle"></i>
-                Mainkan <strong>semua game</strong> di bawah ini sebelum menandai modul selesai.
+
+                <div className="step-toggle-btn">
+                  <span>{isStep1Open ? 'Tutup' : 'Buka'}</span>
+                  <i className={`ti ${isStep1Open ? 'ti-chevron-up' : 'ti-chevron-down'}`}></i>
+                </div>
               </div>
-              
-              <div className="games-list">
-                {module.games.length === 0 ? (
-                  <div className="empty-state">
-                    <div className="empty-icon"><i className="ti ti-device-gamepad-2"></i></div>
-                    <p>Game akan segera tersedia.</p>
-                  </div>
-                ) : (
-                  module.games.map((game, idx) => {
-                    const isPlayed = playedGames.has(game.id) || isModuleCompleted;
-                    return (
-                      <div key={game.id} className={`game-card ${activeGameId === game.id ? 'active-game' : isPlayed ? 'played' : ''}`}>
-                        <div className="game-step-num">{idx + 1}</div>
-                        <div className="game-info">
-                          <div className="game-title">{game.title}</div>
-                          <div className="game-desc">{game.desc}</div>
-                        </div>
-                        <div className="game-card-actions">
-                          <button className="btn btn-primary btn-sm" onClick={() => onLaunchGame(game.id, game.title)}>
-                            <i className="ti ti-play"></i> Mainkan
-                          </button>
-                          {isPlayed && (
-                            <span className="played-badge">
-                              <i className="ti ti-check"></i> Selesai
-                            </span>
+
+              <AnimatePresence initial={false}>
+                {isStep1Open && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.22 }}
+                    style={{ overflow: 'hidden' }}
+                  >
+                    <div className="step-card-body">
+                      {/* Tab Switcher */}
+                      <div className="materi-tab-nav">
+                        <button 
+                          className={`materi-tab-btn ${materiTab === 'theory' ? 'active' : ''}`}
+                          onClick={() => setMateriTab('theory')}
+                        >
+                          <i className="ti ti-file-text"></i> Penjelasan Materi
+                        </button>
+                        <button 
+                          className={`materi-tab-btn ${materiTab === 'glossary' ? 'active' : ''}`}
+                          onClick={() => setMateriTab('glossary')}
+                        >
+                          <i className="ti ti-vocabulary"></i> Tujuan & Istilah Kunci
+                        </button>
+                      </div>
+
+                      {materiTab === 'theory' && (
+                        <div>
+                          {module.material && typeof module.material === 'object' && !Array.isArray(module.material) && module.material.theory ? (
+                            <div 
+                              className="theory-prose"
+                              dangerouslySetInnerHTML={{ __html: module.material.theory }}
+                            />
+                          ) : (
+                            <div style={{ textAlign: 'center', padding: '28px 16px', color: '#64748b' }}>
+                              <i className="ti ti-notes" style={{ fontSize: '32px', display: 'block', marginBottom: '8px', color: '#cbd5e1' }}></i>
+                              <p style={{ margin: 0, fontSize: '14px' }}>Belum ada modul teori khusus yang ditambahkan.</p>
+                            </div>
                           )}
                         </div>
-                      </div>
-                    );
-                  })
+                      )}
+
+                      {materiTab === 'glossary' && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                          {/* Objectives */}
+                          {module.material && typeof module.material === 'object' && !Array.isArray(module.material) && module.material.objectives && module.material.objectives.length > 0 && (
+                            <div>
+                              <h4 style={{ fontSize: '14px', fontWeight: 700, color: '#0f172a', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <i className="ti ti-target" style={{ color: 'var(--primary)' }}></i> Tujuan Pembelajaran
+                              </h4>
+                              <div>
+                                {module.material.objectives.map((obj: string, idx: number) => (
+                                  <div key={idx} className="objective-list-item">
+                                    <div className="objective-icon">
+                                      <i className="ti ti-check"></i>
+                                    </div>
+                                    <span style={{ fontSize: '13.5px', color: '#334155', lineHeight: 1.5 }}>{obj}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Key Terms */}
+                          {module.material && typeof module.material === 'object' && !Array.isArray(module.material) && module.material.keyTerms && module.material.keyTerms.length > 0 && (
+                            <div>
+                              <h4 style={{ fontSize: '14px', fontWeight: 700, color: '#0f172a', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <i className="ti ti-vocabulary" style={{ color: 'var(--primary)' }}></i> Istilah Kunci
+                              </h4>
+                              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '10px' }}>
+                                {module.material.keyTerms.map((item: any, idx: number) => (
+                                  <div key={idx} className="keyterm-card">
+                                    <div className="keyterm-title">{item.term}</div>
+                                    <div className="keyterm-def">{item.def}</div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {(!module.material || (!module.material.objectives?.length && !module.material.keyTerms?.length)) && (
+                            <div style={{ textAlign: 'center', padding: '24px 16px', color: '#64748b' }}>
+                              <p style={{ margin: 0, fontSize: '13.5px' }}>Tidak ada data tujuan pembelajaran atau istilah khusus.</p>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </motion.div>
                 )}
-              </div>
+              </AnimatePresence>
             </div>
-            
-            <div id="evaluation-section" className="section-card complete-card" style={{ 
-              borderRadius: '16px', 
-              border: '1.5px solid var(--border)', 
-              overflow: 'hidden', 
-              boxShadow: '0 4px 12px rgba(0,0,0,0.03)',
-              padding: 0
-            }}>
-              <div style={{ 
-                padding: '20px 24px', 
-                background: 'var(--surface-2)', 
-                borderBottom: '1px solid var(--border)',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center'
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <i className="ti ti-circle-check" style={{ color: 'var(--primary)', fontSize: '20px' }}></i>
-                  <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '16px', color: 'var(--text)' }}>Evaluasi & Penyelesaian</span>
-                </div>
-                <span className="step-chip" style={{ background: 'var(--primary)', color: '#fff', border: 'none' }}>Langkah 3</span>
-              </div>
-              
-              <div style={{ padding: '24px' }}>
-                {showQuestions ? (
-                  <QuestionsView questions={questions} onComplete={onCompleteModule} />
-                ) : (
-                  <div>
-                    {!allPlayed ? (
-                      <div style={{ 
-                        background: '#FFFBEB', 
-                        border: '1px solid #FEF3C7', 
-                        borderRadius: '12px', 
-                        padding: '18px', 
-                        display: 'flex', 
-                        gap: '14px', 
-                        marginBottom: '20px' 
-                      }}>
-                        <div style={{ 
-                          width: '40px', 
-                          height: '40px', 
-                          borderRadius: '50%', 
-                          background: '#FEF3C7', 
-                          color: '#D97706', 
-                          display: 'flex', 
-                          alignItems: 'center', 
-                          justifyContent: 'center', 
-                          fontSize: '20px', 
-                          flexShrink: 0 
-                        }}>
-                          <i className="ti ti-lock"></i>
-                        </div>
-                        <div>
-                          <h4 style={{ margin: '0 0 4px 0', fontSize: '14px', fontWeight: 700, color: '#92400E' }}>Simulasi Belum Selesai Dimainkan</h4>
-                          <p style={{ margin: 0, fontSize: '13px', lineHeight: 1.5, color: '#B45309' }}>
-                            Selesaikan dengan memainkan seluruh {totalGames} game simulasi pada <strong>Langkah 2</strong> terlebih dahulu untuk dapat memulai evaluasi atau menyelesaikan modul ini.
-                          </p>
-                        </div>
-                      </div>
-                    ) : (
-                      <div style={{ 
-                        background: '#ECFDF5', 
-                        border: '1px solid #A7F3D0', 
-                        borderRadius: '12px', 
-                        padding: '18px', 
-                        display: 'flex', 
-                        gap: '14px', 
-                        marginBottom: '20px' 
-                      }}>
-                        <div style={{ 
-                          width: '40px', 
-                          height: '40px', 
-                          borderRadius: '50%', 
-                          background: '#D1FAE5', 
-                          color: '#059669', 
-                          display: 'flex', 
-                          alignItems: 'center', 
-                          justifyContent: 'center', 
-                          fontSize: '20px', 
-                          flexShrink: 0 
-                        }}>
-                          <i className="ti ti-circle-check"></i>
-                        </div>
-                        <div>
-                          <h4 style={{ margin: '0 0 4px 0', fontSize: '14px', fontWeight: 700, color: '#065F46' }}>Seluruh Simulasi Selesai Dimainkan!</h4>
-                          <p style={{ margin: 0, fontSize: '13px', lineHeight: 1.5, color: '#047857' }}>
-                            Luar biasa! Anda telah menyelesaikan seluruh simulasi. Sekarang saatnya menguji pemahaman Anda dengan mengisi lembar refleksi dan evaluasi materi.
-                          </p>
-                        </div>
-                      </div>
-                    )}
 
-                    <p style={{ margin: '0 0 20px 0', fontSize: '14px', lineHeight: 1.6, color: 'var(--text-muted)' }}>
-                      {questions.length > 0 
-                        ? 'Evaluasi ini terdiri dari soal-soal interaktif yang berkaitan langsung dengan materi simulasi yang telah Anda pelajari.' 
-                        : 'Karena modul ini berfokus pada eksperimen mandiri, silakan klik tombol di bawah untuk menuliskan refleksi singkat Anda.'}
-                    </p>
-
-                    <button 
-                      className={`btn btn-primary btn-complete ${!allPlayed ? 'disabled' : ''}`}
-                      disabled={!allPlayed}
-                      style={{ 
-                        width: '100%', 
-                        justifyContent: 'center', 
-                        height: '48px', 
-                        fontSize: '15px', 
-                        fontWeight: 600,
-                        opacity: !allPlayed ? 0.6 : 1,
-                        cursor: !allPlayed ? 'not-allowed' : 'pointer'
-                      }}
-                      onClick={() => {
-                        setShowQuestions(true);
-                        setTimeout(() => {
-                          document.getElementById('evaluation-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                        }, 80);
-                      }}
-                    >
-                      <i className={`ti ${questions.length > 0 ? 'ti-notes' : 'ti-edit'}`}></i>
-                      {questions.length > 0 ? 'Mulai Evaluasi Materi' : 'Tulis Refleksi & Selesaikan Modul'}
-                    </button>
+            {/* LANGKAH 2: SIMULASI INTERAKTIF */}
+            <div className="modern-step-card">
+              <div 
+                className={`step-card-header ${isStep2Open ? 'is-open' : ''}`}
+                onClick={() => setIsStep2Open(!isStep2Open)}
+              >
+                <div className="step-header-left">
+                  <div className="step-number-badge emerald">02</div>
+                  <div className="step-header-info">
+                    <h3 className="step-title">
+                      <i className="ti ti-device-gamepad-2" style={{ color: '#15803d', fontSize: '18px' }}></i>
+                      Simulasi Interaktif
+                    </h3>
+                    <p className="step-subtitle">Eksplorasi virtual lab dan selesaikan semua simulasi</p>
                   </div>
-                )}
+                </div>
+
+                <div className="step-toggle-btn">
+                  <span>{isStep2Open ? 'Tutup' : 'Buka'}</span>
+                  <i className={`ti ${isStep2Open ? 'ti-chevron-up' : 'ti-chevron-down'}`}></i>
+                </div>
               </div>
+
+              <AnimatePresence initial={false}>
+                {isStep2Open && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.22 }}
+                    style={{ overflow: 'hidden' }}
+                  >
+                    <div className="step-card-body">
+                      {/* Active Game Player */}
+                      {activeGameId !== null && (
+                        <div id="webgl-simulation-player" className="modern-webgl-frame">
+                          <div className="webgl-frame-header">
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <span style={{ fontSize: '12px', color: '#94a3b8' }}>Memutar:</span>
+                              <strong style={{ fontSize: '13.5px', color: '#f8fafc' }}>{activeGame?.title}</strong>
+                              <span style={{ fontSize: '11px', background: '#15803d', color: '#fff', padding: '2px 8px', borderRadius: '4px', fontWeight: 700 }}>
+                                Aktif
+                              </span>
+                            </div>
+
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <button 
+                                className="btn btn-sm"
+                                onClick={() => {
+                                  const current = localGameSrc;
+                                  setLocalGameSrc(null);
+                                  setTimeout(() => setLocalGameSrc(current), 50);
+                                }}
+                                style={{ background: '#334155', color: '#f8fafc', border: 'none', padding: '4px 8px', fontSize: '12px', borderRadius: '6px' }}
+                                title="Muat Ulang Simulasi"
+                              >
+                                <i className="ti ti-reload"></i>
+                              </button>
+                              <button 
+                                className="btn btn-danger btn-sm"
+                                onClick={onCloseGame}
+                                style={{ padding: '4px 10px', fontSize: '12px', borderRadius: '6px', display: 'flex', alignItems: 'center', gap: '4px' }}
+                              >
+                                <i className="ti ti-x"></i> Tutup
+                              </button>
+                            </div>
+                          </div>
+
+                          <div style={{ width: '100%', aspectRatio: '16/9', background: '#020617', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            {activeGame?.path ? (
+                              downloadingGame && !localGameSrc ? (
+                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px', color: '#94a3b8' }}>
+                                  <div className="loading-spinner"></div>
+                                  <p style={{ fontSize: '13px', margin: 0 }}>{downloadProgress}</p>
+                                </div>
+                              ) : localGameSrc ? (
+                                <iframe 
+                                  src={localGameSrc}
+                                  style={{ width: '100%', height: '100%', border: 'none' }}
+                                  title={activeGame.title}
+                                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                  allowFullScreen
+                                />
+                              ) : null
+                            ) : (
+                              <div style={{ textAlign: 'center', color: '#64748b', padding: '24px' }}>
+                                <i className="ti ti-device-gamepad-2" style={{ fontSize: '36px', marginBottom: '8px', display: 'block', color: '#475569' }}></i>
+                                <p style={{ margin: '0 0 4px 0', fontWeight: 600, color: '#f8fafc' }}>Game Belum Tersedia</p>
+                                <span style={{ fontSize: '12px' }}>File simulasi game belum diunggah oleh guru/admin.</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* List of Game Simulations */}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                        {(!module.games || module.games.length === 0) ? (
+                          <div style={{ textAlign: 'center', padding: '24px 16px', color: '#64748b' }}>
+                            <i className="ti ti-device-gamepad-2" style={{ fontSize: '28px', color: '#cbd5e1', display: 'block', marginBottom: '6px' }}></i>
+                            <p style={{ margin: 0, fontSize: '13.5px' }}>Simulasi untuk modul ini belum tersedia.</p>
+                          </div>
+                        ) : (
+                          module.games.map((game, idx) => {
+                            const isPlayed = playedGames.has(game.id) || isModuleCompleted;
+                            const isActive = activeGameId === game.id;
+                            return (
+                              <div 
+                                key={game.id}
+                                className={`modern-game-card ${isActive ? 'active-game' : isPlayed ? 'played' : ''}`}
+                              >
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                                  <div className="game-icon-avatar" style={{ 
+                                    background: isPlayed ? '#15803d' : isActive ? '#2563eb' : 'var(--primary)'
+                                  }}>
+                                    <i className={isPlayed ? 'ti ti-check' : 'ti ti-device-gamepad-2'}></i>
+                                  </div>
+
+                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                      <span style={{ fontSize: '11px', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                        Simulasi {idx + 1}
+                                      </span>
+                                      {isPlayed && (
+                                        <span style={{ fontSize: '11px', fontWeight: 700, color: '#15803d', background: '#dcfce7', padding: '1px 6px', borderRadius: '4px' }}>
+                                          ✓ Selesai
+                                        </span>
+                                      )}
+                                    </div>
+                                    <h4 style={{ fontSize: '15px', fontWeight: 700, color: '#0f172a', margin: 0 }}>
+                                      {game.title}
+                                    </h4>
+                                    <p style={{ fontSize: '12.5px', color: '#64748b', margin: 0, lineHeight: 1.4 }}>
+                                      {game.desc}
+                                    </p>
+                                  </div>
+                                </div>
+
+                                <div>
+                                  <button 
+                                    className={`btn ${isActive ? 'btn-outline' : 'btn-primary'}`}
+                                    onClick={() => onLaunchGame(game.id, game.title)}
+                                    style={{ 
+                                      padding: '8px 16px', 
+                                      fontSize: '13px', 
+                                      fontWeight: 700, 
+                                      borderRadius: '10px',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      gap: '6px'
+                                    }}
+                                  >
+                                    <i className="ti ti-player-play"></i> 
+                                    {isActive ? 'Sedang Terbuka' : 'Mainkan'}
+                                  </button>
+                                </div>
+                              </div>
+                            );
+                          })
+                        )}
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           </div>
-          
-          <div className="detail-sidebar">
-            <div className="sidebar-card">
-              <div className="sidebar-card-title"><i className="ti ti-info-circle"></i> Informasi Modul</div>
-              <div className="info-list">
-                <div className="info-item">
-                  <span className="info-key">Nomor Modul</span>
-                  <span className="info-val">{module.id}</span>
+
+          {/* ========================================================= */}
+          {/* KOLOM KANAN: LANGKAH 3 (EVALUASI SOAL & REFLEKSI SISWA)  */}
+          {/* ========================================================= */}
+          <div className="module-right-col">
+            <div className="modern-step-card">
+              <div 
+                className={`step-card-header ${isStep3Open ? 'is-open' : ''}`}
+                onClick={() => setIsStep3Open(!isStep3Open)}
+              >
+                <div className="step-header-left">
+                  <div className="step-number-badge amber">03</div>
+                  <div className="step-header-info">
+                    <h3 className="step-title">
+                      <i className="ti ti-list-check" style={{ color: '#d97706', fontSize: '18px' }}></i>
+                      Evaluasi & Pembenaran Soal
+                    </h3>
+                    <p className="step-subtitle">Uji pemahaman dan periksa analisis kunci jawaban</p>
+                  </div>
                 </div>
-                <div className="info-item">
-                  <span className="info-key">Jenjang</span>
-                  <span className="info-val">{module.level}</span>
-                </div>
-                <div className="info-item">
-                  <span className="info-key">Estimasi Waktu</span>
-                  <span className="info-val">{module.duration}</span>
-                </div>
-                <div className="info-item">
-                  <span className="info-key">Jumlah Game</span>
-                  <span className="info-val">{module.gameCount} Game Simulasi</span>
+
+                <div className="step-toggle-btn">
+                  <span>{isStep3Open ? 'Tutup' : 'Buka'}</span>
+                  <i className={`ti ${isStep3Open ? 'ti-chevron-up' : 'ti-chevron-down'}`}></i>
                 </div>
               </div>
+
+              <AnimatePresence initial={false}>
+                {isStep3Open && (
+                  <motion.div 
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.22 }}
+                    style={{ overflow: 'hidden' }}
+                  >
+                    <div className="step-card-body" style={{ padding: '20px' }}>
+                      <QuestionsView 
+                        questions={questions}
+                        module={module}
+                        user={user}
+                        allPlayed={allPlayed}
+                        onComplete={onCompleteModule}
+                      />
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
-            
-            <div className="sidebar-card">
-              <div className="sidebar-card-title"><i className="ti ti-list-check"></i> Alur Belajar</div>
-              <div className="step-guide">
-                <div className={`step-guide-item ${!allPlayed && !isModuleCompleted ? 'active' : ''}`}>
-                  <div className="step-guide-num" style={{ background: 'var(--primary)', color: 'white' }}>
-                    <i className="ti ti-check"></i>
-                  </div>
-                  <div className="step-guide-text">Baca dan pahami materi pembelajaran</div>
-                </div>
-                <div className="step-guide-connector" style={{ background: 'var(--primary)' }}></div>
-                <div className="step-guide-item">
-                  <div className="step-guide-num" style={{ background: allPlayed ? 'var(--primary)' : 'var(--primary-light)', color: allPlayed ? 'white' : 'var(--primary)' }}>
-                    {allPlayed ? <i className="ti ti-check"></i> : '2'}
-                  </div>
-                  <div className="step-guide-text" style={{ color: allPlayed ? 'var(--text-muted)' : 'var(--text)' }}>Mainkan <strong>semua</strong> game simulasi</div>
-                </div>
-                <div className="step-guide-connector" style={{ background: allPlayed ? 'var(--primary)' : 'var(--border-dark)' }}></div>
-                <div className="step-guide-item">
-                  <div className="step-guide-num" style={{ background: isModuleCompleted ? 'var(--primary)' : (allPlayed ? 'var(--primary-light)' : 'var(--surface-2)'), color: isModuleCompleted ? 'white' : (allPlayed ? 'var(--primary)' : 'var(--text-muted)') }}>
-                    {isModuleCompleted ? <i className="ti ti-check"></i> : '3'}
-                  </div>
-                  <div className="step-guide-text" style={{ color: isModuleCompleted ? 'var(--text-muted)' : (allPlayed ? 'var(--text)' : 'var(--text-muted)') }}>Evaluasi & <strong>Selesaikan Modul</strong></div>
-                </div>
-              </div>
-            </div>
-            
-            <button className="btn btn-ghost btn-full" onClick={onBack}>
-              <i className="ti ti-arrow-left"></i> Kembali ke Daftar Modul
-            </button>
           </div>
         </div>
       </div>
