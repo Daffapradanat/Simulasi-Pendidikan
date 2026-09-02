@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Module, User } from '../../types';
-import { PdfReportModal } from '../components/PdfReportModal';
 
 export function QuestionsView({ 
   questions = [], 
@@ -21,7 +20,6 @@ export function QuestionsView({
   const [shuffledRights, setShuffledRights] = useState<Record<number, string[]>>({});
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [reflection, setReflection] = useState('');
-  const [isPdfModalOpen, setIsPdfModalOpen] = useState(false);
   const [showConfirmSubmit, setShowConfirmSubmit] = useState(false);
 
   useEffect(() => {
@@ -810,7 +808,7 @@ export function QuestionsView({
               <button 
                 id="btn-open-pdf-modal"
                 className="btn btn-outline"
-                onClick={() => setIsPdfModalOpen(true)}
+                onClick={() => window.print()}
                 style={{ 
                   background: '#ffffff', 
                   border: '1.5px solid #0d47a1', 
@@ -968,22 +966,6 @@ export function QuestionsView({
           </button>
         </div>
       )}
-
-      {/* ── MODAL PRATINJAU DOKUMEN PDF (LEMBAR SOAL & NILAI) ── */}
-      <PdfReportModal
-        isOpen={isPdfModalOpen}
-        onClose={() => setIsPdfModalOpen(false)}
-        module={module}
-        user={user}
-        questions={questions}
-        answers={answers}
-        score={score}
-        correctCount={correctCount}
-        reflection={reflection}
-        checkIsCorrect={checkIsCorrect}
-        getUserAnswerLabel={getUserAnswerLabel}
-        getCorrectAnswerLabel={getCorrectAnswerLabel}
-      />
     </div>
   );
 }

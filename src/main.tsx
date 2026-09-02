@@ -40,7 +40,7 @@ createRoot(document.getElementById('root')!).render(
 );
 
 // Register game service worker for local offline playing
-if ('serviceWorker' in navigator && !import.meta.env.DEV) {
+if ('serviceWorker' in navigator ) {
   navigator.serviceWorker.register(
     `${getBaseUrl()}game-sw.js`,
     {

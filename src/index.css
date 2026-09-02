@@ -2968,77 +2968,13 @@ select.form-input {
 }
 
 @media print {
-  html, body {
-    background: #ffffff !important;
-    color: #000000 !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    width: 100% !important;
-    height: auto !important;
-    font-size: 9.5pt !important;
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
-  }
-
-  /* Sembunyikan semua elemen web saat print dialog browser dibuka */
   .navbar,
   .mobile-nav,
-  .pdf-modal-toolbar,
-  .module-split-layout,
-  .module-hero-banner,
-  .breadcrumb,
-  .btn,
-  button,
   .no-print,
-  .toast-container,
-  .score-hero-dashboard {
+  button,
+  .btn,
+  .toast-container {
     display: none !important;
-  }
-
-  /* Modal Backdrop & Container dibuat transparan dan hanya menampilkan lembar A4 */
-  .pdf-modal-backdrop {
-    position: static !important;
-    background: transparent !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    display: block !important;
-    z-index: auto !important;
-  }
-
-  .pdf-modal-container {
-    background: #ffffff !important;
-    border: none !important;
-    box-shadow: none !important;
-    max-width: 100% !important;
-    height: auto !important;
-    overflow: visible !important;
-  }
-
-  .pdf-modal-viewport {
-    background: #ffffff !important;
-    padding: 0 !important;
-    overflow: visible !important;
-    display: block !important;
-  }
-
-  #printable-sheet,
-  .a4-clean-sheet {
-    display: block !important;
-    visibility: visible !important;
-    position: static !important;
-    width: 100% !important;
-    max-width: 100% !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    box-shadow: none !important;
-    border: none !important;
-    background: #ffffff !important;
-    color: #000000 !important;
-  }
-
-  .print-avoid-break {
-    page-break-inside: avoid !important;
-    break-inside: avoid !important;
   }
 }
 

@@ -121,40 +121,17 @@ export default function App() {
   }, [selectedCategoryId, filteredSubjects, location.pathname, navigate]);
 
   const computedModules = useMemo(() => {
-    // Group modules by category_id and subject_id
-    const grouped = new Map<string, typeof appModules>();
-    
-    for (const mod of appModules) {
-      const catId = mod.category_id || 0;
-      const subId = mod.subject_id || 0;
-      const key = `${catId}_${subId}`;
-      if (!grouped.has(key)) {
-        grouped.set(key, []);
+    let prevCompleted = true;
+    return appModules.map(mod => {
+      let status = 'locked';
+      if (completedModuleIds.has(mod.id)) {
+        status = 'completed';
+      } else if (prevCompleted) {
+        status = 'unlocked';
       }
-      grouped.get(key)!.push(mod);
-    }
-    
-    const moduleStatuses = new Map<number, string>();
-    
-    for (const [key, mods] of grouped.entries()) {
-      // Sort mods preserve their natural order in appModules
-      let prevCompleted = true;
-      for (const mod of mods) {
-         let status = 'locked';
-         if (completedModuleIds.has(mod.id)) {
-            status = 'completed';
-         } else if (prevCompleted) {
-            status = 'unlocked';
-         }
-         prevCompleted = (status === 'completed');
-         moduleStatuses.set(mod.id, status);
-      }
-    }
-    
-    return appModules.map(mod => ({
-      ...mod,
-      status: moduleStatuses.get(mod.id) || 'locked'
-    }));
+      prevCompleted = (status === 'completed');
+      return { ...mod, status };
+    });
   }, [completedModuleIds, appModules]);
 
 

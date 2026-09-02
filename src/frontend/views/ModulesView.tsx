@@ -206,7 +206,6 @@ export function ModulesView({ modules, subjects, user, onOpenModule, lastModuleI
                           )}
                           <div className="module-card-inner">
                             <div className="module-card-top">
-                              <div className="module-number">{modules.findIndex(m => m.id === mod.id) + 1}</div>
                               {mod.is_restricted && <span className="badge" style={{ background: '#f59e0b', color: 'white', position: 'absolute', top: '12px', right: '12px', zIndex: 10, border: 'none', padding: '4px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 'bold' }}><i className="ti ti-lock"></i> Terbatas</span>}
                               {mod.status === 'locked' && (!mod.is_restricted || !user?.isGuest) && <span className="module-lock-icon"><i className="ti ti-lock"></i></span>}
                               {mod.status === 'completed' && <span className="badge badge-success"><i className="ti ti-check"></i> Selesai</span>}
@@ -251,7 +250,6 @@ export function ModulesView({ modules, subjects, user, onOpenModule, lastModuleI
                   }} style={{ cursor: (mod.status === 'locked' && (!mod.is_restricted || !user?.isGuest)) ? 'not-allowed' : 'pointer', opacity: (mod.status === 'locked' && (!mod.is_restricted || !user?.isGuest)) ? 0.7 : 1 }}>
                     <div className="module-card-inner">
                       <div className="module-card-top">
-                        <div className="module-number">{modules.findIndex(m => m.id === mod.id) + 1}</div>
                         {mod.is_restricted && <span className="badge" style={{ background: '#f59e0b', color: 'white', position: 'absolute', top: '12px', right: '12px', zIndex: 10, border: 'none', padding: '4px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 'bold' }}><i className="ti ti-lock"></i> Terbatas</span>}
                         {mod.status === 'locked' && (!mod.is_restricted || !user?.isGuest) && <span className="module-lock-icon"><i className="ti ti-lock"></i></span>}
                       </div>
