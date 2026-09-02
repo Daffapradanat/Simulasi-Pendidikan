@@ -178,7 +178,7 @@ export function ModulesView({ modules, subjects, user, onOpenModule, lastModuleI
           ) : (
             (subjects && subjects.length > 0) ? (
               subjects.map(subject => {
-                const subjectModules = currentModules.filter(m => m.subject_id === subject.id);
+                const subjectModules = currentModules.filter(m => Number(m.subject_id) === Number(subject.id));
                 if (subjectModules.length === 0) return null;
                 return (
                   <div key={subject.id} style={{ marginBottom: '40px' }}>

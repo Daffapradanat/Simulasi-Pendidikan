@@ -121,18 +121,41 @@ export default function App() {
   }, [selectedCategoryId, filteredSubjects, location.pathname, navigate]);
 
   const computedModules = useMemo(() => {
-    let prevCompleted = true;
-    return appModules.map(mod => {
-      let status = 'locked';
-      if (completedModuleIds.has(mod.id)) {
-        status = 'completed';
-      } else if (prevCompleted) {
-        status = 'unlocked';
+    const isAdminOrGuru = currentUser?.role === 'admin' || currentUser?.role === 'guru';
+
+    // Group modules by subject_id (each mata pelajaran has its own progression starting with 1 open)
+    const grouped = new Map<string, typeof appModules>();
+    
+    for (const mod of appModules) {
+      const subKey = String(mod.subject_id ?? mod.category_id ?? 'general');
+      if (!grouped.has(subKey)) {
+        grouped.set(subKey, []);
       }
-      prevCompleted = (status === 'completed');
-      return { ...mod, status };
-    });
-  }, [completedModuleIds, appModules]);
+      grouped.get(subKey)!.push(mod);
+    }
+    
+    const moduleStatuses = new Map<number, string>();
+    
+    for (const [, mods] of grouped.entries()) {
+      let prevCompleted = true;
+      for (let i = 0; i < mods.length; i++) {
+        const mod = mods[i];
+        let status = 'locked';
+        if (completedModuleIds.has(Number(mod.id))) {
+          status = 'completed';
+        } else if (isAdminOrGuru || i === 0 || prevCompleted) {
+          status = 'unlocked';
+        }
+        prevCompleted = (status === 'completed');
+        moduleStatuses.set(Number(mod.id), status);
+      }
+    }
+    
+    return appModules.map(mod => ({
+      ...mod,
+      status: (moduleStatuses.get(Number(mod.id)) || (isAdminOrGuru ? 'unlocked' : 'locked')) as 'locked' | 'unlocked' | 'completed'
+    }));
+  }, [completedModuleIds, appModules, currentUser]);
 
 
   useEffect(() => {

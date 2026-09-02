@@ -1219,13 +1219,18 @@ app.get('/api/modules/:id/questions', authenticateToken, (req, res) => {
           if (gamesMeta[i].hasNewFile && fileIndex < files.length) {
             const file = files[fileIndex++];
             const gameDir = path.join(PUBLIC_GAMES_DIR, `game_${gamesMeta[i].id}`);
+            const zipPath = path.join(PUBLIC_GAMES_DIR, `game_${gamesMeta[i].id}.zip`);
             try {
               if (!fs.existsSync(gameDir)) {
                 fs.mkdirSync(gameDir, { recursive: true });
               }
-              // Save as zip
-              const zipPath = path.join(PUBLIC_GAMES_DIR, `game_${gamesMeta[i].id}.zip`);
+              // Save zip
               fs.copyFileSync(file.path, zipPath);
+              try {
+                await extract(file.path, { dir: gameDir });
+              } catch (ex) {
+                console.error("Server-side zip extraction warning:", ex);
+              }
               gamesMeta[i].path = `/games/game_${gamesMeta[i].id}.zip`;
             } catch (zipError) {
               console.error("Failed to extract zip:", zipError);
@@ -1273,13 +1278,18 @@ app.get('/api/modules/:id/questions', authenticateToken, (req, res) => {
           if (gamesMeta[i].hasNewFile && fileIndex < files.length) {
             const file = files[fileIndex++];
             const gameDir = path.join(PUBLIC_GAMES_DIR, `game_${gamesMeta[i].id}`);
+            const zipPath = path.join(PUBLIC_GAMES_DIR, `game_${gamesMeta[i].id}.zip`);
             try {
               if (!fs.existsSync(gameDir)) {
                 fs.mkdirSync(gameDir, { recursive: true });
               }
-              // Save as zip
-              const zipPath = path.join(PUBLIC_GAMES_DIR, `game_${gamesMeta[i].id}.zip`);
+              // Save zip
               fs.copyFileSync(file.path, zipPath);
+              try {
+                await extract(file.path, { dir: gameDir });
+              } catch (ex) {
+                console.error("Server-side zip extraction warning:", ex);
+              }
               gamesMeta[i].path = `/games/game_${gamesMeta[i].id}.zip`;
             } catch (zipError) {
               console.error("Failed to extract zip:", zipError);
