@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import { useNavigate } from 'react-router-dom';
 import { Module, User } from '../../types';
 
 export function QuestionsView({ 
@@ -15,6 +16,7 @@ export function QuestionsView({
   onComplete: (reflection: string) => void;
   allPlayed?: boolean;
 }) {
+  const navigate = useNavigate();
   const [currentIdx, setCurrentIdx] = useState(0);
   const [answers, setAnswers] = useState<Record<number, any>>({});
   const [shuffledRights, setShuffledRights] = useState<Record<number, string[]>>({});
@@ -861,7 +863,7 @@ export function QuestionsView({
             <button 
               className="btn btn-primary"
               onClick={() => {
-                if (module) window.location.href = `/hasil-modul/${module.id}`;
+                if (module) navigate(`/hasil-modul/${module.id}`);
               }}
               style={{ width: '100%', height: '44px', justifyContent: 'center', fontWeight: 700, borderRadius: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}
             >

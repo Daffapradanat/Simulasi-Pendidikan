@@ -28,9 +28,14 @@ export function ErrorView({ code: propCode }: { code?: number | string }) {
       </div>
       <h1 style={{ fontSize: '32px', fontWeight: 800, marginBottom: '16px', color: 'var(--text)' }}>{title}</h1>
       <p style={{ fontSize: '18px', color: 'var(--text-muted)', maxWidth: '500px', marginBottom: '32px', lineHeight: 1.6 }}>{desc}</p>
-      <button className="btn btn-primary" onClick={() => navigate('/')}>
-        <i className="ti ti-home" style={{ marginRight: '8px' }}></i> Kembali ke Beranda
-      </button>
+      <div style={{ display: 'flex', gap: '12px' }}>
+        <button className="btn btn-outline" onClick={() => navigate(-1)}>
+          <i className="ti ti-arrow-left" style={{ marginRight: '8px' }}></i> Kembali
+        </button>
+        <button className="btn btn-primary" onClick={() => navigate('/')}>
+          <i className="ti ti-home" style={{ marginRight: '8px' }}></i> Kembali ke Beranda
+        </button>
+      </div>
     </div>
   );
 }

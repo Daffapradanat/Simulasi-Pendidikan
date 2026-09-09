@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 // --- LOGIN VIEW ---
 interface LoginViewProps {
@@ -8,6 +9,7 @@ interface LoginViewProps {
 }
 
 export function LoginView({ onLogin, onGuestLogin, defaultMode = 'siswa-guest' }: LoginViewProps) {
+  const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [pass, setPass] = useState('');
   const [guestName, setGuestName] = useState('');
@@ -277,7 +279,7 @@ export function LoginView({ onLogin, onGuestLogin, defaultMode = 'siswa-guest' }
               type="button"
               className="btn btn-ghost"
               style={{ fontSize: '13px', color: 'var(--text-muted)' }}
-              onClick={() => window.location.href = '/'}
+              onClick={() => navigate('/')}
             >
               <i className="ti ti-arrow-left"></i> Halaman Siswa
             </button>
