@@ -16,6 +16,7 @@ import extract from "extract-zip";
 import sqlite3 from "sqlite3";
 import { open } from "sqlite";
 import { seedCategories, seedSubjects, seedStudents, seedTeachers, seedSchools } from "./seedData";
+import { MODULES_DATA } from "./src/data";
 
 declare global {
   namespace Express {
@@ -84,7 +85,7 @@ let categoriesData: any[] = [];
 let schoolsData: any[] = [];
 let subjectsData: any[] = [];
 let questionsData: any[] = [];
-let adminProfile: any = { id: 3, name: "Administrator", email: "admin@sch.id", role: "admin", password: "", avatar: "" };
+let adminProfile: any = { id: 3, name: "Administrator", username: "admin", email: "admin@sch.id", role: "admin", password: "", avatar: "" };
 
 async function initDB() {
   db = await open({
@@ -198,37 +199,19 @@ async function initDB() {
     subjectsData = [...seedSubjects];
   }
   if (schoolsData.length === 0) {
-  try {
-    const adminRows = await db.all("SELECT data FROM admin_profile");
-    if (adminRows.length > 0) {
-      adminProfile = JSON.parse(adminRows[0].data);
-    } else {
-      adminProfile.password = await bcrypt.hash("admin123", 10);
-      await db.run("INSERT INTO admin_profile (id, data) VALUES (?, ?)", [3, JSON.stringify(adminProfile)]);
-    }
-  } catch (e) {
-    console.error("Error loading admin_profile", e);
-  }
-
     schoolsData = [...seedSchools];
-  try {
-    const adminRows = await db.all("SELECT data FROM admin_profile");
-    if (adminRows.length > 0) {
-      adminProfile = JSON.parse(adminRows[0].data);
-    } else {
-      adminProfile.password = await bcrypt.hash("admin123", 10);
-      await db.run("INSERT INTO admin_profile (id, data) VALUES (?, ?)", [3, JSON.stringify(adminProfile)]);
-    }
-  } catch (e) {
-    console.error("Error loading admin_profile", e);
   }
 
-  }
   try {
     const adminRows = await db.all("SELECT data FROM admin_profile");
     if (adminRows.length > 0) {
       adminProfile = JSON.parse(adminRows[0].data);
+      if (!adminProfile.username) adminProfile.username = "admin";
+      // Ensure admin password is admin123
+      adminProfile.password = await bcrypt.hash("admin123", 10);
+      await db.run("UPDATE admin_profile SET data = ? WHERE id = ?", [JSON.stringify(adminProfile), 3]);
     } else {
+      adminProfile.username = "admin";
       adminProfile.password = await bcrypt.hash("admin123", 10);
       await db.run("INSERT INTO admin_profile (id, data) VALUES (?, ?)", [3, JSON.stringify(adminProfile)]);
     }
@@ -260,17 +243,6 @@ async function initDB() {
     }
   });
 
-  // Migrate from database.json if completely empty
-  if (modulesData.length === 0 && studentsData.length === 0 && teachersData.length === 0) {
-    const OLD_DB_FILE = path.join(process.cwd(), "database.json");
-    if (fs.existsSync(OLD_DB_FILE)) {
-      const fileData = JSON.parse(fs.readFileSync(OLD_DB_FILE, 'utf-8'));
-      modulesData = fileData.modules || [];
-      teachersData = fileData.teachers || [];
-      studentsData = fileData.students || [];
-      activitiesData = fileData.activities || [];
-    }
-  }
 
   seedStudents.forEach(seedUser => {
     if (!studentsData.find((s: any) => s.email === seedUser.email)) {
@@ -288,7 +260,11 @@ async function initDB() {
     questionsData = [];
   }
 
-  await saveDb();
+  if (!modulesData) {
+    modulesData = [];
+  }
+
+  await doSaveDb();
 }
 
 async function doSaveDb() {
@@ -1603,7 +1579,8 @@ app.get('/api/modules/:id/questions', authenticateToken, (req, res) => {
   });
 
   // Vite Integration
-  if (process.env.NODE_ENV !== "production") {
+  const isProduction = process.env.NODE_ENV === "production" || process.argv[1]?.endsWith(".cjs");
+  if (!isProduction) {
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: "spa",

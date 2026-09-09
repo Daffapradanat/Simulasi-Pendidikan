@@ -82,7 +82,7 @@ export function SubjectSelectionView({ subjects, onSelectSubject, onBack }: { su
         variants={containerVariants}
         initial="hidden"
         animate="show"
-        className="selection-grid"
+        className={`selection-grid ${subjects.length === 4 ? 'selection-grid-4' : subjects.length === 3 ? 'selection-grid-3' : ''}`}
       >
         {subjects.map(subject => {
           const style = getSubjectStyles(subject);

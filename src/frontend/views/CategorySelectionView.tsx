@@ -33,7 +33,7 @@ export function CategorySelectionView({ categories, onSelectCategory }: { catego
         variants={containerVariants}
         initial="hidden"
         animate="show"
-        className="selection-grid"
+        className={`selection-grid ${categories.length === 3 ? 'selection-grid-3' : categories.length === 4 ? 'selection-grid-4' : ''}`}
       >
         {categories.map((cat, i) => {
           const colors = [
@@ -74,6 +74,17 @@ export function CategorySelectionView({ categories, onSelectCategory }: { catego
             </motion.div>
           );
         })}
+        {categories.length === 0 && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '64px', background: 'white', borderRadius: '24px', border: '1px dashed var(--border)' }}
+          >
+            <div style={{ fontSize: '48px', color: 'var(--text-muted)', marginBottom: '16px' }}><i className="ti ti-school"></i></div>
+            <h3 style={{ fontSize: '20px', fontWeight: 600, color: 'var(--text)', marginBottom: '8px' }}>Belum Ada Fase Pembelajaran</h3>
+            <p style={{ color: 'var(--text-light)' }}>Kategori atau fase pembelajaran belum tersedia saat ini.</p>
+          </motion.div>
+        )}
       </motion.div>
     </div>
   );

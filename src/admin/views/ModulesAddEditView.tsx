@@ -118,10 +118,11 @@ export default function ModulesAddEditView({
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px', marginBottom: '16px' }}>
                   <div>
                     <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: 500 }}>Kategori (Jenjang)</label>
-                    <select className="form-input" required value={moduleForm.category_id} onChange={e => {
+                    <select className="form-input" required={categories.length > 0} value={moduleForm.category_id || ''} onChange={e => {
                         const cat = categories.find((c: any) => c.id === parseInt(e.target.value));
                         setModuleForm({...moduleForm, category_id: parseInt(e.target.value), level: cat ? cat.name : moduleForm.level});
                       }}>
+                      <option value="" disabled>{categories.length > 0 ? 'Pilih Kategori' : 'Belum ada kategori (buat di menu Kategori & Mapel)'}</option>
                       {categories.map((c: any) => (
                         <option key={c.id} value={c.id}>{c.name}</option>
                       ))}
@@ -129,7 +130,8 @@ export default function ModulesAddEditView({
                   </div>
                   <div>
                     <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: 500 }}>Mata Pelajaran</label>
-                    <select className="form-input" required value={moduleForm.subject_id} onChange={e => setModuleForm({...moduleForm, subject_id: parseInt(e.target.value)})}>
+                    <select className="form-input" required={subjects.length > 0} value={moduleForm.subject_id || ''} onChange={e => setModuleForm({...moduleForm, subject_id: parseInt(e.target.value)})}>
+                      <option value="" disabled>{subjects.length > 0 ? 'Pilih Mata Pelajaran' : 'Belum ada mata pelajaran (buat di menu Kategori & Mapel)'}</option>
                       {subjects.map((s: any) => (
                         <option key={s.id} value={s.id}>{s.name}</option>
                       ))}
@@ -587,7 +589,8 @@ export default function ModulesAddEditView({
 
                 <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
                   <button type="button" className="btn btn-ghost" onClick={() => setView('modules')} disabled={isSaving}>Batal</button>
-                  <button type="submit" className="btn btn-primary" disabled={isSaving}>
+                  <button type="submit" className="btn btn-primary" disabled={isSaving} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    {isSaving && <div className="loading-spinner" style={{ width: '16px', height: '16px', borderWidth: '2px' }}></div>}
                     {isSaving ? 'Menyimpan...' : (editingModule ? 'Simpan Perubahan' : 'Tambah Modul')}
                   </button>
                 </div>

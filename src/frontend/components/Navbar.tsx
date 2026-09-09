@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 // --- NAVBAR COMPONENT ---
-export function Navbar({ user, onLogout, viewMode, inDetail, onNavigate }: { user: User | null, onLogout: () => void, viewMode: 'main' | 'profile', inDetail: boolean, onNavigate: (mode: 'main' | 'profile', resetModule_?: boolean) => void }) {
+export function Navbar({ user, onLogout, viewMode, inDetail, onNavigate }: { user: User | null, onLogout: () => void, viewMode: 'main' | 'profile' | 'result', inDetail: boolean, onNavigate: (mode: 'main' | 'profile' | 'result', resetModule_?: boolean) => void }) {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const navigate = useNavigate();
   

@@ -110,15 +110,18 @@ export function DetailView({
                  .then(blob => JSZip.loadAsync(blob))
                  .then(async (zip) => {
                    setDownloadProgress('Mengekstrak simulasi...');
-                   let indexPath = 'index.html';
+                   let indexPath = '';
                    
                    let foundIndex = false;
-                   for (const filename of Object.keys(zip.files)) {
-                     if (filename.endsWith('index.html') && !filename.includes('__MACOSX')) {
-                       indexPath = filename;
-                       foundIndex = true;
-                       break;
-                     }
+                   const filenames = Object.keys(zip.files);
+                   const possibleIndexFiles = filenames.filter(f => f.toLowerCase().endsWith('index.html') && !f.includes('__MACOSX'));
+                   
+                   if (possibleIndexFiles.length > 0) {
+                     possibleIndexFiles.sort((a, b) => a.length - b.length);
+                     indexPath = possibleIndexFiles[0];
+                     foundIndex = true;
+                   } else {
+                     throw new Error('index.html not found in the ZIP package');
                    }
                    
                    const openCache = await caches.open(cacheName);
@@ -131,6 +134,10 @@ export function DetailView({
                          zipEntry.async('blob').then(fileBlob => {
                            const headers = new Headers();
                            headers.set('Content-Type', getMimeType(filename));
+                           const cleanName = filename.toLowerCase();
+                           if (cleanName.endsWith('.gz')) headers.set('Content-Encoding', 'gzip');
+                           if (cleanName.endsWith('.br')) headers.set('Content-Encoding', 'br');
+                           
                            const res = new Response(fileBlob, { headers });
                            return openCache.put(new Request(fullPath), res);
                          })
@@ -144,10 +151,9 @@ export function DetailView({
                    setLocalGameSrc(gamePrefix + indexPath);
                  })
                  .catch(err => {
-                   console.warn('Local zip extraction fallback to server static:', err);
-                   const fallbackUrl = `${getBaseUrl()}games/game_${game.id}/index.html`;
-                   setLocalGameSrc(fallbackUrl);
+                   console.error('ZIP extraction failed:', err);
                    setDownloadingGame(false);
+                   setLocalGameSrc(null); // Do not fallback to React app
                  });
             }
           });
@@ -177,20 +183,41 @@ export function DetailView({
   }, [activeGameId]);
 
   return (
-    <div className="page active" style={{ paddingBottom: '60px' }}>
+    <div className="page active" style={{ paddingBottom: '60px', paddingTop: '24px' }}>
       <div className="main-wrapper">
         {/* Navigation & Header */}
         <div style={{ marginBottom: '24px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px', flexWrap: 'wrap', gap: '10px' }}>
-            <div className="breadcrumb" style={{ margin: 0 }}>
-              <span style={{ cursor: 'pointer', color: 'var(--primary)', fontWeight: 600 }} onClick={onBack}>
-                <i className="ti ti-arrow-left" style={{ marginRight: '4px' }}></i> Daftar Modul
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
+            <nav aria-label="Breadcrumb" className="breadcrumb" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13.5px' }}>
+              <button 
+                id="btn-breadcrumb-back"
+                onClick={onBack}
+                style={{ 
+                  background: 'transparent', 
+                  border: 'none', 
+                  padding: 0, 
+                  cursor: 'pointer', 
+                  color: 'var(--primary)', 
+                  fontWeight: 600,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  fontSize: '13.5px'
+                }}
+              >
+                <i className="ti ti-layout-grid" style={{ fontSize: '16px' }}></i>
+                <span>Daftar Modul</span>
+              </button>
+
+              <span className="sep" style={{ color: '#94a3b8', margin: '0 4px', fontSize: '15px' }}>›</span>
+
+              <span className="current" style={{ color: '#475569', fontWeight: 600 }}>
+                {module.title}
               </span>
-              <span className="sep">›</span>
-              <span className="current" style={{ color: '#64748b' }}>{module.title}</span>
-            </div>
+            </nav>
 
             <button 
+              id="btn-back-to-modules"
               className="btn btn-outline" 
               onClick={onBack}
               style={{ padding: '6px 14px', fontSize: '13px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}
@@ -224,10 +251,10 @@ export function DetailView({
                 <i className="ti ti-school" style={{ color: 'var(--primary)' }}></i> {module.level || 'Semua Jenjang'}
               </span>
               <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                <i className="ti ti-clock" style={{ color: 'var(--primary)' }}></i> {module.duration || '30 Menit'}
+                <i className="ti ti-category" style={{ color: 'var(--primary)' }}></i> {module.subject || 'Sains Terpadu'}
               </span>
               <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                <i className="ti ti-device-gamepad-2" style={{ color: 'var(--primary)' }}></i> {module.games?.length || 0} Simulasi Interaktif
+                <i className="ti ti-device-gamepad-2" style={{ color: 'var(--primary)' }}></i> {module.games?.length || 0} Simulasi Game
               </span>
             </div>
           </div>
@@ -240,8 +267,8 @@ export function DetailView({
           {/* KOLOM KIRI: MATERI & GLOSARIUM & SIMULASI INTERAKTIF     */}
           {/* ========================================================= */}
           <div className="module-left-col">
-            
-            {/* MATERI & GLOSARIUM */}
+
+          {/* MATERI & GLOSARIUM */}
             <div className="modern-step-card">
               <div 
                 className={`step-card-header ${isMateriOpen ? 'is-open' : ''}`}
@@ -522,8 +549,8 @@ export function DetailView({
                   </motion.div>
                 )}
               </AnimatePresence>
-            </div>
           </div>
+        </div>
 
           {/* ========================================================= */}
           {/* KOLOM KANAN: EVALUASI & PEMBENARAN SOAL                   */}
@@ -539,7 +566,7 @@ export function DetailView({
                   <div className="step-header-info">
                     <h3 className="step-title">
                       <i className="ti ti-list-check" style={{ color: '#d97706', fontSize: '18px' }}></i>
-                      Evaluasi & Pembenaran Soal
+                      Evaluasi &amp; Pembenaran Soal
                     </h3>
                     <p className="step-subtitle">Uji pemahaman dan periksa analisis kunci jawaban</p>
                   </div>

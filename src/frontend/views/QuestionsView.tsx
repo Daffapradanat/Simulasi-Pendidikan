@@ -34,10 +34,36 @@ export function QuestionsView({
       }
     });
     setShuffledRights(rights);
-    setAnswers(initialAns);
-    setIsSubmitted(false);
+    
+    // Load saved draft
+    const storageKey = module && user ? `draft_answers_${user.id}_${module.id}` : null;
+    let savedState = null;
+    if (storageKey) {
+      try {
+        const raw = localStorage.getItem(storageKey);
+        if (raw) savedState = JSON.parse(raw);
+      } catch (e) {}
+    }
+
+    if (savedState) {
+      setAnswers(savedState.answers || initialAns);
+      setReflection(savedState.reflection || '');
+      setIsSubmitted(savedState.isSubmitted || false);
+    } else {
+      setAnswers(initialAns);
+      setIsSubmitted(false);
+      setReflection('');
+    }
+    
     setCurrentIdx(0);
-  }, [questions]);
+  }, [questions, module, user]);
+
+  useEffect(() => {
+    if (module && user && Object.keys(answers).length > 0) {
+      const storageKey = `draft_answers_${user.id}_${module.id}`;
+      localStorage.setItem(storageKey, JSON.stringify({ answers, reflection, isSubmitted }));
+    }
+  }, [answers, reflection, isSubmitted, module, user]);
 
   const handleSelect = (qIndex: number, answer: any) => {
     if (isSubmitted) return;
@@ -66,6 +92,12 @@ export function QuestionsView({
     setAnswers(initialAns);
     setIsSubmitted(false);
     setCurrentIdx(0);
+    if (module && user) {
+      const storageKey = `draft_answers_${user.id}_${module.id}`;
+      try {
+        localStorage.setItem(storageKey, JSON.stringify({ answers: initialAns, reflection: '', isSubmitted: false }));
+      } catch (e) {}
+    }
   };
 
   const checkIsCorrect = (q: any, ans: any) => {
@@ -200,7 +232,7 @@ export function QuestionsView({
   return (
     <div>
       {/* ── MODE 1: PENGERJAAN SATU PER SATU DENGAN NAVIGASI NOMOR SOAL ── */}
-      {!isSubmitted ? (
+      { !isSubmitted && (
         <div>
           {/* Header Status Bar Pengerjaan */}
           <div style={{ 
@@ -744,11 +776,24 @@ export function QuestionsView({
                     </span>
                   )}
                 </p>
+                <div style={{ textAlign: 'left', marginBottom: '16px' }}>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, marginBottom: '6px', color: '#0f172a' }}>Catatan Refleksi (Opsional):</label>
+                  <textarea 
+                    className="form-input" 
+                    rows={2} 
+                    value={reflection}
+                    onChange={(e) => setReflection(e.target.value)}
+                    placeholder="Apa yang kamu pelajari dari kuis ini?"
+                    style={{ width: '100%', resize: 'vertical', borderRadius: '8px', padding: '10px 12px', fontSize: '13px' }}
+                  />
+                </div>
                 <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
                   <button 
-                    className="btn btn-ghost"
+                    id="btn-confirm-submit-cancel"
+                    type="button"
+                    className="btn btn-outline"
                     onClick={() => setShowConfirmSubmit(false)}
-                    style={{ flex: 1, padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', fontWeight: 600 }}
+                    style={{ flex: 1, padding: "10px", borderRadius: "8px", fontWeight: 600 }}
                   >
                     Periksa Lagi
                   </button>
@@ -758,9 +803,20 @@ export function QuestionsView({
                     onClick={() => {
                       setShowConfirmSubmit(false);
                       setIsSubmitted(true);
-                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                      if (module && user) {
+                        const storageKey = `draft_answers_${user.id}_${module.id}`;
+                        try {
+                          localStorage.setItem(storageKey, JSON.stringify({ 
+                            answers, 
+                            reflection, 
+                            isSubmitted: true,
+                            submittedAt: new Date().toISOString()
+                          }));
+                        } catch (e) {}
+                      }
+                      onComplete(reflection);
                     }}
-                    style={{ flex: 1, padding: '10px', borderRadius: '8px', background: '#0d47a1', color: '#ffffff', border: 'none', fontWeight: 700 }}
+                    style={{ flex: 1, padding: "10px", borderRadius: "8px", background: "#0d47a1", color: "#ffffff", border: "none", fontWeight: 700 }}
                   >
                     Ya, Kumpulkan
                   </button>
@@ -769,201 +825,56 @@ export function QuestionsView({
             </div>
           )}
         </div>
-      ) : (
-        /* ── MODE 2: HASIL EVALUASI & DAFTAR SELURUH PEMBAHASAN ── */
-        <div>
-          {/* Dashboard Skor Evaluasi Bersih */}
-          <div className="score-hero-dashboard">
-            <span style={{ 
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '6px',
-              background: score >= 70 ? '#dcfce7' : '#fef3c7', 
-              color: score >= 70 ? '#15803d' : '#b45309',
-              padding: '5px 14px',
-              borderRadius: '16px',
-              fontSize: '12px',
-              fontWeight: 800,
-              marginBottom: '14px'
-            }}>
-              <i className={score >= 70 ? 'ti ti-check' : 'ti ti-refresh'}></i>
-              {score >= 70 ? 'KOMPETENSI TUNTAS' : 'PERLU LATIHAN ULANG'}
-            </span>
+      )}
 
-            {/* Circular Score Badge */}
-            <div className={`score-circular-badge ${score >= 70 ? 'passed' : 'failed'}`}>
-              <span style={{ fontSize: '34px', fontWeight: 900, lineHeight: 1 }}>{score}</span>
-              <span style={{ fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.9 }}>Nilai</span>
-            </div>
-
-            <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#0f172a', margin: '0 0 4px 0' }}>
-              {score >= 70 ? 'Pencapaian Belajar Sangat Baik' : 'Tetap Semangat! Pelajari Kembali Modul Ini'}
-            </h3>
-            <p style={{ fontSize: '13px', color: '#64748b', margin: 0 }}>
-              Menjawab benar <strong>{correctCount}</strong> dari <strong>{questions.length}</strong> butir soal.
-            </p>
-
-            {/* Tombol Cetak PDF & Ulangi */}
-            <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap', marginTop: '16px' }}>
-              <button 
-                id="btn-open-pdf-modal"
-                className="btn btn-outline"
-                onClick={() => window.print()}
-                style={{ 
-                  background: '#ffffff', 
-                  border: '1.5px solid #0d47a1', 
-                  color: '#0d47a1', 
-                  fontWeight: 700, 
-                  fontSize: '13px', 
-                  padding: '9px 18px',
-                  borderRadius: '8px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px'
-                }}
-              >
-                <i className="ti ti-printer" style={{ fontSize: '17px' }}></i> Cetak / Simpan PDF (Lembar Soal & Nilai)
-              </button>
-
-              <button 
-                id="btn-retry-eval"
-                className="btn btn-ghost"
-                onClick={handleRetry}
-                style={{ 
-                  border: '1.5px solid #cbd5e1', 
-                  color: '#475569', 
-                  fontWeight: 600, 
-                  fontSize: '13px', 
-                  padding: '9px 18px',
-                  borderRadius: '8px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px'
-                }}
-              >
-                <i className="ti ti-rotate-clockwise" style={{ fontSize: '17px' }}></i> Ulangi Evaluasi
-              </button>
-            </div>
-          </div>
-
-          {/* Pembahasan & Pembenaran Soal */}
-          <div style={{ marginBottom: '24px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '14px' }}>
-              <i className="ti ti-list-check" style={{ color: '#0d47a1', fontSize: '20px' }}></i>
-              <h3 style={{ fontSize: '16px', fontWeight: 800, color: '#0f172a', margin: 0 }}>
-                Daftar Analisis Jawaban & Pembahasan
-              </h3>
-            </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-              {questions.map((q, i) => {
-                const ans = answers[i];
-                const isCorrect = checkIsCorrect(q, ans);
-                return (
-                  <div key={i} style={{ 
-                    border: `1.5px solid ${isCorrect ? '#86efac' : '#fca5a5'}`, 
-                    borderRadius: '12px', 
-                    padding: '16px 18px',
-                    background: isCorrect ? '#fafffc' : '#fffbfa'
-                  }}>
-                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
-                      <div style={{ 
-                        width: '26px', height: '26px', borderRadius: '6px', flexShrink: 0,
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        background: isCorrect ? '#15803d' : '#be123c', color: '#ffffff',
-                        fontSize: '13px', fontWeight: 800
-                      }}>
-                        {i + 1}
-                      </div>
-
-                      <div style={{ flex: 1 }}>
-                        <p style={{ margin: '0 0 8px 0', fontSize: '14.5px', fontWeight: 700, color: '#0f172a', lineHeight: 1.5 }}>
-                          {q.text}
-                        </p>
-                        
-                        <div style={{ fontSize: '13px', marginBottom: '4px', lineHeight: 1.4 }}>
-                          <span style={{ color: '#64748b' }}>Jawaban Anda: </span>
-                          <strong style={{ color: isCorrect ? '#15803d' : '#be123c' }}>
-                            {getUserAnswerLabel(q, ans)} {isCorrect ? '✓ (Benar)' : '✗ (Salah)'}
-                          </strong>
-                        </div>
-
-                        {!isCorrect && (
-                          <div style={{ fontSize: '13px', marginBottom: '4px', lineHeight: 1.4 }}>
-                            <span style={{ color: '#64748b' }}>Kunci Jawaban Benar: </span>
-                            <strong style={{ color: '#15803d' }}>
-                              {getCorrectAnswerLabel(q)}
-                            </strong>
-                          </div>
-                        )}
-
-                        {q.explanation && (
-                          <div style={{ 
-                            marginTop: '10px', 
-                            padding: '10px 12px', 
-                            background: '#ffffff', 
-                            borderRadius: '8px', 
-                            border: '1px solid #e2e8f0',
-                            fontSize: '13px', 
-                            color: '#334155',
-                            lineHeight: 1.5
-                          }}>
-                            <strong style={{ color: '#0d47a1', display: 'block', marginBottom: '2px' }}>
-                              Pembahasan Konsep:
-                            </strong>
-                            <span>{q.explanation}</span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Form Refleksi Pembelajaran */}
+      {/* ── MODE 2: TAMPILAN JIKA EVALUASI SUDAH DIKUMPULKAN ── */}
+      {isSubmitted && (
+        <div style={{ 
+          background: '#ffffff', 
+          border: '1.5px solid #bbf7d0', 
+          borderRadius: '14px', 
+          padding: '28px 22px', 
+          textAlign: 'center',
+          boxShadow: '0 4px 14px rgba(0,0,0,0.03)'
+        }}>
           <div style={{ 
-            background: '#f8fafc', 
-            padding: '18px 20px', 
-            borderRadius: '12px', 
-            border: '1px solid #e2e8f0', 
-            marginBottom: '20px' 
+            width: '54px', 
+            height: '54px', 
+            borderRadius: '50%', 
+            background: '#dcfce7', 
+            color: '#15803d', 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center', 
+            fontSize: '28px', 
+            margin: '0 auto 14px' 
           }}>
-            <h4 style={{ fontSize: '14px', fontWeight: 800, color: '#0f172a', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <i className="ti ti-notebook" style={{ color: '#0d47a1' }}></i> Catatan Refleksi Siswa
-            </h4>
-            <p style={{ color: '#64748b', fontSize: '12.5px', marginBottom: '10px', lineHeight: 1.45 }}>
-              Tuliskan kesimpulan atau pemahaman sains yang Anda dapatkan setelah menyelesaikan modul ini.
-            </p>
-            <textarea 
-              className="form-input" 
-              rows={3} 
-              value={reflection}
-              onChange={(e) => setReflection(e.target.value)}
-              placeholder="Contoh: Saya memahami prinsip kerja dan variabel yang mempengaruhi eksperimen..."
-              style={{ 
-                width: '100%', 
-                resize: 'vertical', 
-                background: '#ffffff', 
-                borderRadius: '8px', 
-                border: '1px solid #cbd5e1', 
-                padding: '10px 12px', 
-                fontSize: '13.5px', 
-                minHeight: '75px'
-              }}
-            />
+            <i className="ti ti-check"></i>
           </div>
-
-          {/* Tombol Simpan & Selesaikan Modul */}
-          <button 
-            id="btn-finish-module"
-            className="btn btn-primary" 
-            onClick={() => onComplete(reflection)} 
-            style={{ width: '100%', justifyContent: 'center', height: '46px', fontWeight: 800, fontSize: '14.5px', borderRadius: '10px', background: '#0d47a1', color: '#ffffff', border: 'none' }}
-          >
-            <i className="ti ti-circle-check"></i> Simpan Hasil & Selesaikan Modul
-          </button>
+          <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#0f172a', margin: '0 0 8px 0' }}>
+            Evaluasi Berhasil Diselesaikan!
+          </h3>
+          <p style={{ fontSize: '13.5px', color: '#64748b', margin: '0 0 22px 0', lineHeight: 1.55 }}>
+            Seluruh jawaban dan refleksi belajar Anda telah tersimpan. Buka lembar hasil untuk melihat nilai, analisis kunci jawaban, dan mencetak dokumen.
+          </p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <button 
+              className="btn btn-primary"
+              onClick={() => {
+                if (module) window.location.href = `/hasil-modul/${module.id}`;
+              }}
+              style={{ width: '100%', height: '44px', justifyContent: 'center', fontWeight: 700, borderRadius: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}
+            >
+              <i className="ti ti-printer"></i> Buka Lembar Hasil &amp; Cetak
+            </button>
+            <button 
+              className="btn btn-outline"
+              onClick={handleRetry}
+              style={{ width: '100%', height: '42px', justifyContent: 'center', fontWeight: 600, borderRadius: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}
+            >
+              <i className="ti ti-rotate-clockwise"></i> Kerjakan Ulang Soal
+            </button>
+          </div>
         </div>
       )}
     </div>

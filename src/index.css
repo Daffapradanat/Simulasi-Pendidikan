@@ -44,7 +44,7 @@
 
 /* ── Reset ── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html { scroll-behavior: smooth; overflow-x: hidden; }
+html { scroll-behavior: smooth; overflow-x: clip; }
 body {
   font-family: var(--font-body);
   overflow-wrap: break-word;
@@ -54,7 +54,7 @@ body {
   color: var(--text);
   line-height: 1.6;
   min-height: 100vh;
-  overflow-x: hidden;
+  overflow-x: clip;
 }
 img { max-width: 100%; display: block; }
 a { text-decoration: none; color: inherit; }
@@ -217,6 +217,7 @@ input, textarea { font-family: inherit; }
   margin-bottom: 32px;
 }
 
+.breadcrumb,
 .page-header .breadcrumb {
   display: flex;
   align-items: center;
@@ -226,8 +227,18 @@ input, textarea { font-family: inherit; }
   margin-bottom: 8px;
 }
 
-.breadcrumb .sep { color: var(--text-light); }
-.breadcrumb .current { color: var(--primary); font-weight: 600; }
+.breadcrumb .sep { 
+  color: #94a3b8;
+  font-size: 14px;
+  user-select: none;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 2px;
+}
+.breadcrumb .current { 
+  color: #475569; 
+  font-weight: 600; 
+}
 
 .page-title {
   font-family: var(--font-display);
@@ -366,8 +377,8 @@ input, textarea { font-family: inherit; }
 /* ── Module Card ── */
 .modules-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 20px;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
 }
 
 .module-card {
@@ -617,19 +628,19 @@ input, textarea { font-family: inherit; }
 /* ── Tabler Icons ── */
 .stats-row {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 24px;
-  margin-bottom: 32px;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
 }
 
 .stat-card {
   background: var(--white);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  padding: 24px;
+  padding: 18px 16px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
   transition: transform var(--transition), box-shadow var(--transition);
   box-shadow: var(--shadow-sm);
 }
@@ -1438,15 +1449,18 @@ select.form-input {
 @media (min-width: 1280px) {
   .modules-grid {
     grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
   }
 }
 
 @media (min-width: 1536px) {
   .modules-grid {
-    grid-template-columns: repeat(5, 1fr);
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
   }
   .stats-row {
     grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
   }
 }
 
@@ -1454,10 +1468,12 @@ select.form-input {
 @media (max-width: 1023px) {
   .modules-grid {
     grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
   }
 
   .stats-row {
     grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
   }
 
   .detail-layout {
@@ -1992,32 +2008,59 @@ select.form-input {
 /* ── Selection Grid (Category/Subject) ── */
 .selection-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 32px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px;
+}
+
+#root .selection-grid-4,
+.selection-grid-4 {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.selection-grid-3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+@media (max-width: 1024px) {
+  #root .selection-grid-4,
+  .selection-grid-4 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+  }
+}
+
+@media (max-width: 860px) {
+  .selection-grid-3 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+  }
 }
 
 .selection-card {
   cursor: pointer;
   background: white;
-  border-radius: 24px;
-  padding: 32px;
+  border-radius: 16px;
+  padding: 18px 16px;
   border: 1px solid #e2e8f0;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+  box-shadow: 0 4px 14px rgba(0,0,0,0.03);
   display: flex;
   align-items: center;
-  gap: 24px;
+  gap: 14px;
   position: relative;
   overflow: hidden;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
 }
 
 .selection-icon-wrap {
-  width: 80px;
-  height: 80px;
-  border-radius: 20px;
+  width: 54px;
+  height: 54px;
+  border-radius: 14px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 36px;
+  font-size: 30px;
   flex-shrink: 0;
   color: #ffffff !important;
 }
@@ -2026,16 +2069,17 @@ select.form-input {
 .selection-icon-wrap svg,
 .selection-icon-wrap span {
   color: #ffffff !important;
-  font-size: 36px;
+  font-size: 30px;
   line-height: 1;
   display: inline-flex;
 }
 
 .selection-card-title {
-  font-size: 22px;
+  font-size: 18px;
   font-weight: 700;
   color: var(--text);
-  margin-bottom: 8px;
+  margin-bottom: 6px;
+  line-height: 1.35;
 }
 
 .selection-card-link {
@@ -2214,19 +2258,31 @@ select.form-input {
   color: #ffffff;
 }
 
-.module-split-layout,
+/* ── Module Detail 2-Column Responsive Layout ── */
 .module-detail-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1.18fr) minmax(0, 0.92fr);
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
   gap: 24px;
   align-items: start;
 }
 
-.module-left-col,
+.module-left-col {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
 .module-right-col {
   display: flex;
   flex-direction: column;
   gap: 20px;
+}
+
+@media (max-width: 1023px) {
+  .module-detail-grid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
 }
 
 /* ── Modern Step Card Container ── */
@@ -2965,17 +3021,66 @@ select.form-input {
 /* ── STRICT PRINT ISOLATION RULES (NO BLANK PAGES) ── */
 @page {
   size: A4 portrait;
-  margin: 10mm 12mm 12mm 12mm;
+  margin: 12mm 15mm 15mm 15mm;
+}
+
+.print-only {
+  display: none !important;
 }
 
 @media print {
+  html, body {
+    background: #ffffff !important;
+    color: #0f172a !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
   .navbar,
   .mobile-nav,
   .no-print,
+  .breadcrumb,
   button,
   .btn,
-  .toast-container {
+  .toast-container,
+  .modal-overlay,
+  .pdf-modal-backdrop {
     display: none !important;
+  }
+
+  .print-only {
+    display: block !important;
+  }
+
+  .print-flex-only {
+    display: flex !important;
+  }
+
+  .page {
+    padding: 0 !important;
+    margin: 0 !important;
+    background: #ffffff !important;
+  }
+
+  .main-wrapper {
+    max-width: 100% !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .print-area {
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .print-card-break {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+    margin-bottom: 14px !important;
   }
 }
 

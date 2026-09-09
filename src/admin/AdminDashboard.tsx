@@ -158,6 +158,7 @@ export default function AdminDashboard({ user, onLogout, onNavigate, onUpdateUse
     e.preventDefault();
     if (isSavingModule) return;
     setIsSavingModule(true);
+    toast.info('Sedang menyimpan modul, mohon tunggu...');
     try {
       const material = {
         objectives: moduleForm.objectives.split('\n').filter(s => s.trim()),
@@ -732,11 +733,11 @@ export default function AdminDashboard({ user, onLogout, onNavigate, onUpdateUse
                   <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: 500 }}>Asal Sekolah</label>
                   <select 
                     className="form-input" 
-                    required 
+                    required={schools.length > 0} 
                     value={studentForm.school_id || ''} 
                     onChange={e => setStudentForm({...studentForm, school_id: Number(e.target.value)})}
                   >
-                    <option value="" disabled>Pilih Sekolah</option>
+                    <option value="">{schools.length > 0 ? 'Pilih Sekolah' : 'Pilih Sekolah (Opsional - Belum ada data sekolah)'}</option>
                     {schools.map(s => (
                       <option key={s.id} value={s.id}>{s.name}</option>
                     ))}

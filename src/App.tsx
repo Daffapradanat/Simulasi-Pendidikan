@@ -4,6 +4,7 @@ import { LoginView } from './frontend/views/LoginView';
 import { ModulesView } from './frontend/views/ModulesView';
 import { DetailView } from './frontend/views/DetailView';
 import { ProfileView } from './frontend/views/ProfileView';
+import { ModuleResultView } from './frontend/views/ModuleResultView';
 import { SubjectSelectionView } from './frontend/views/SubjectSelectionView';
 import { CategorySelectionView } from './frontend/views/CategorySelectionView';
 import { User, Toast, Module } from './types';
@@ -23,7 +24,7 @@ export default function App() {
   console.log("App render", Date.now());
   const navigate = useNavigate();
   const location = useLocation();
-  const [viewMode, setViewMode] = useState<'main' | 'profile'>('main');
+  const [viewMode, setViewMode] = useState<'main' | 'profile' | 'result'>('main');
   const [currentUser, setCurrentUser] = useState<User | null>(() => {
     const saved = localStorage.getItem('simpend_current_user');
     if (saved) {
@@ -50,6 +51,13 @@ export default function App() {
     if (location.pathname === '/profile') {
       setViewMode('profile');
       setCurrentModuleId(null);
+    } else if (location.pathname.startsWith('/hasil-modul/')) {
+      const parts = location.pathname.split('/');
+      const modId = parseInt(parts[2]);
+      if (modId) {
+        setViewMode('result');
+        setCurrentModuleId(modId);
+      }
     } else if (location.pathname.startsWith('/module/')) {
       const parts = location.pathname.split('/');
       const modId = parseInt(parts[2]);
@@ -444,6 +452,14 @@ export default function App() {
     localStorage.removeItem('simpend_auto_login');
     localStorage.removeItem('simpend_current_user');
     
+    // Clear auto-save drafts
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith('draft_answers_')) {
+        localStorage.removeItem(key);
+      }
+    }
+    
     setCurrentUser(null);
     setCurrentModuleId(null);
     setActiveGameId(null);
@@ -546,17 +562,11 @@ export default function App() {
       }));
     }
 
-    setCompletedModuleIds(prev => {
-      const next = new Set(prev).add(currentModule.id);
-      if (next.size === appModules.length) {
-         setShowAllDoneModal(true);
-      } else {
-         setCompletedModulePopup(currentModule);
-      }
-      return next;
-    });
+    const finishedModuleId = currentModule.id;
+    setCompletedModuleIds(prev => new Set(prev).add(finishedModuleId));
     setActiveGameId(null);
-    setCurrentModuleId(null); // Return to module list immediately
+    showToast('Evaluasi berhasil dikumpulkan!', 'success');
+    navigate(`/hasil-modul/${finishedModuleId}`);
   };
 
   if (!isProgressLoaded) {
@@ -631,6 +641,7 @@ export default function App() {
                 user={currentUser} 
                 onLogout={() => setShowLogoutConfirm(true)} 
                 viewMode={viewMode}
+                inDetail={!!currentModuleId}
                 onNavigate={(mode, resetModule) => {
                   if (mode === 'profile') {
                     navigate('/profile');
@@ -641,7 +652,6 @@ export default function App() {
                     setActiveGameId(null);
                   }
                 }} 
-                inDetail={!!currentModuleId} 
               />
 
               <AnimatePresence mode="wait">
@@ -678,6 +688,16 @@ export default function App() {
                 {viewMode === 'profile' && (
                   <motion.div key="profile" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}>
                      <ProfileView user={currentUser} completedModuleIds={completedModuleIds} modules={appModules} subjects={appSubjects} setUser={handleUpdateUser} reflections={reflections} />
+                  </motion.div>
+                )}
+                
+                {viewMode === 'result' && (
+                  <motion.div key="result" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}>
+                     <ModuleResultView 
+                       module={currentModule || appModules.find(m => m.id === currentModuleId)} 
+                       moduleId={currentModuleId || undefined} 
+                       user={currentUser} 
+                     />
                   </motion.div>
                 )}
               </AnimatePresence>
