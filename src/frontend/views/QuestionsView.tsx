@@ -605,10 +605,11 @@ export function QuestionsView({
               <button
                 id="btn-finish-exam-direct"
                 className="btn btn-primary"
+                disabled={answeredCount < questions.length}
                 onClick={() => setShowConfirmSubmit(true)}
                 style={{
-                  background: '#15803d',
-                  color: '#ffffff',
+                  background: answeredCount < questions.length ? '#cbd5e1' : '#15803d',
+                  color: answeredCount < questions.length ? '#64748b' : '#ffffff',
                   border: 'none',
                   padding: '10px 20px',
                   borderRadius: '10px',
@@ -617,10 +618,10 @@ export function QuestionsView({
                   display: 'inline-flex',
                   alignItems: 'center',
                   gap: '8px',
-                  cursor: 'pointer'
+                  cursor: answeredCount < questions.length ? 'not-allowed' : 'pointer'
                 }}
               >
-                <i className="ti ti-check"></i> Selesai & Kumpulkan Jawaban
+                <i className="ti ti-check"></i> {answeredCount < questions.length ? `Selesai (${questions.length - answeredCount} Belum Dijawab)` : 'Selesai & Kumpulkan Jawaban'}
               </button>
             )}
           </div>
@@ -737,6 +738,7 @@ export function QuestionsView({
             <button 
               id="btn-submit-exam"
               className="btn btn-primary"
+              disabled={answeredCount < questions.length}
               onClick={() => setShowConfirmSubmit(true)}
               style={{
                 width: '100%',
@@ -746,13 +748,13 @@ export function QuestionsView({
                 fontSize: '14.5px',
                 fontWeight: 800,
                 borderRadius: '10px',
-                background: '#0d47a1',
-                color: '#ffffff',
+                background: answeredCount < questions.length ? '#cbd5e1' : '#0d47a1',
+                color: answeredCount < questions.length ? '#64748b' : '#ffffff',
                 border: 'none',
-                cursor: 'pointer'
+                cursor: answeredCount < questions.length ? 'not-allowed' : 'pointer'
               }}
             >
-              <i className="ti ti-send"></i> Kumpulkan & Periksa Jawaban
+              <i className="ti ti-send"></i> {answeredCount < questions.length ? `Jawab ${questions.length - answeredCount} Soal Lagi Untuk Kumpul` : 'Kumpulkan & Periksa Jawaban'}
             </button>
           </div>
 

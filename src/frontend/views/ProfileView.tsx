@@ -1,12 +1,13 @@
 import { getBaseUrl } from '../../lib/basePath';
 import { toast } from '../../components/Toast';
-
+import { useNavigate } from 'react-router-dom';
 import React, { useState } from 'react';
 import { Module, User, Subject } from '../../types';
 import { fetchAuth } from '../../lib/fetchAuth';
 
 // --- PROFILE VIEW ---
 export function ProfileView({ user, completedModuleIds, modules, subjects = [], setUser, reflections = {} }: { user: User, completedModuleIds: Set<number>, modules: Module[], subjects?: Subject[], setUser: (u: User) => void, reflections?: Record<number, string> }) {
+  const navigate = useNavigate();
   const completedCount = completedModuleIds.size;
   const pct = modules.length ? Math.round((completedCount / modules.length) * 100) : 0;
   
@@ -145,7 +146,17 @@ export function ProfileView({ user, completedModuleIds, modules, subjects = [], 
                     <div key={modId} style={{ padding: '16px', background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0', textAlign: 'left' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                         <span style={{ fontWeight: 600, fontSize: '14px', color: 'var(--text)' }}>{mod ? mod.title : `Modul #${modId}`}</span>
-                        <span className="badge badge-success" style={{ fontSize: '11px', padding: '4px 8px' }}><i className="ti ti-circle-check"></i> Selesai</span>
+                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                          <button 
+                            className="btn btn-outline" 
+                            onClick={() => navigate(`/hasil-modul/${modId}`)}
+                            style={{ padding: '4px 8px', fontSize: '11px', height: 'auto', borderRadius: '6px' }}
+                            title="Buka Lembar Hasil & Cetak"
+                          >
+                            <i className="ti ti-printer"></i> Cetak Hasil
+                          </button>
+                          <span className="badge badge-success" style={{ fontSize: '11px', padding: '4px 8px' }}><i className="ti ti-circle-check"></i> Selesai</span>
+                        </div>
                       </div>
                       <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-muted)', fontStyle: reflectionText ? 'normal' : 'italic', lineHeight: 1.5 }}>
                         {reflectionText ? `"${reflectionText}"` : 'Belum menuliskan refleksi.'}

@@ -546,14 +546,6 @@ export default function App() {
 
   const handleCompleteModule = (reflection?: string) => {
     if (!currentModule) return;
-    const totalGames = currentModule.games.length;
-    const unplayed = currentModule.games.filter(g => !playedGames.has(g.id));
-    
-    if (totalGames > 0 && unplayed.length > 0) {
-      const names = unplayed.map(g => `"${g.title}"`).join(', ');
-      showToast(`Mainkan dulu game: ${names}`, 'error');
-      return;
-    }
 
     if (reflection) {
       setReflections(prev => ({

@@ -596,6 +596,14 @@ export default function ModulesAddEditView({
                 </div>
               </form>
             </div>
+
+            {isSaving && (
+              <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(255,255,255,0.7)', backdropFilter: 'blur(8px)', zIndex: 9999, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                <div className="loading-spinner" style={{ width: '48px', height: '48px', borderWidth: '4px', borderColor: 'var(--primary)', borderTopColor: 'transparent', marginBottom: '24px' }}></div>
+                <h3 style={{ fontSize: '20px', fontWeight: 700, color: 'var(--text)', marginBottom: '8px' }}>Sedang Menyimpan Modul...</h3>
+                <p style={{ color: 'var(--text-muted)', fontSize: '15px' }}>Mohon tunggu sebentar, file simulasi dan data sedang diunggah.</p>
+              </div>
+            )}
           </div>
         );
 }
