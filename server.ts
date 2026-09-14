@@ -267,8 +267,18 @@ async function initDB() {
   await doSaveDb();
 }
 
+let isSavingDb = false;
+let pendingSaveDb = false;
+
 async function doSaveDb() {
   if (!db) return;
+  if (isSavingDb) {
+    pendingSaveDb = true;
+    return;
+  }
+  isSavingDb = true;
+  pendingSaveDb = false;
+  
   await db.exec("BEGIN TRANSACTION");
   try {
     await db.run("DELETE FROM admin_profile");
@@ -325,6 +335,11 @@ async function doSaveDb() {
   } catch (error) {
     await db.exec("ROLLBACK");
     console.error("Failed to save database:", error);
+  } finally {
+    isSavingDb = false;
+    if (pendingSaveDb) {
+      doSaveDb().catch(console.error);
+    }
   }
 }
 
