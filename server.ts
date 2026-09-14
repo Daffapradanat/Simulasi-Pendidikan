@@ -399,6 +399,11 @@ app.use(cookieParser());
   };
 
   
+// API routes go here FIRST
+  app.get("/api/health", (req, res) => {
+    res.json({ status: "ok" });
+  });
+
   app.get("/api/banners/:filename", (req, res) => {
     const filename = req.params.filename;
     if (filename.includes('/') || filename.includes('..') || filename.includes('\\')) {
