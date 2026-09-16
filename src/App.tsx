@@ -1,4 +1,4 @@
-import { SimulationPlayerView } from './frontend/views/SimulationPlayerView';
+
 import { getBaseUrl } from './lib/basePath';
 import { ToastContainer, toast } from "./components/Toast";
 import { LoginView } from './frontend/views/LoginView';
@@ -694,16 +694,7 @@ export default function App() {
                   </motion.div>
                 )}
 
-                {viewMode === 'player' && activeGameId !== null && (
-                  <motion.div key="player" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }} style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', zIndex: 1000, background: '#000' }}>
-                    <SimulationPlayerView 
-                      game={currentModule?.games?.find(g => g.id === activeGameId) as any}
-                      onBack={() => {
-                        setViewMode('main');
-                      }}
-                    />
-                  </motion.div>
-                )}
+                
 
               </AnimatePresence>
       <ToastContainer />

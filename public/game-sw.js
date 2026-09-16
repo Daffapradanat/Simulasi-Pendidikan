@@ -10,8 +10,8 @@ const getMimeType = (filename) => {
   let cleanName = filename.toLowerCase();
   if (cleanName.endsWith('.gz')) cleanName = cleanName.slice(0, -3);
   if (cleanName.endsWith('.br')) cleanName = cleanName.slice(0, -3);
-
   const ext = cleanName.split('.').pop() || '';
+  
   const types = {
     'html': 'text/html; charset=utf-8',
     'htm': 'text/html; charset=utf-8',
@@ -42,12 +42,13 @@ const getMimeType = (filename) => {
 
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
+  
   if (url.pathname.startsWith('/local-game-play/')) {
     event.respondWith(
       caches.open('local-games-cache').then(async (cache) => {
         // 1. Direct match
         let response = await cache.match(event.request, { ignoreSearch: true });
-
+        
         // 2. Fallback matching for gzip / brotli / unityweb variants
         if (!response) {
           const rawUrl = url.origin + url.pathname;
@@ -59,6 +60,7 @@ self.addEventListener('fetch', (event) => {
             rawUrl.replace(/\.(wasm|data|js|json)$/, '.$1.br'),
             rawUrl.replace(/\.(wasm|data|js|json)$/, '.$1.unityweb')
           ];
+          
           for (const cand of candidates) {
             response = await cache.match(cand, { ignoreSearch: true });
             if (response) break;
@@ -68,28 +70,30 @@ self.addEventListener('fetch', (event) => {
         if (response) {
           const reqPath = url.pathname.toLowerCase();
           const resHeaders = new Headers(response.headers);
-
+          
           // Ensure proper Content-Encoding if matched a .gz or .br file
           if (reqPath.endsWith('.gz') || (response.url && response.url.toLowerCase().endsWith('.gz'))) {
             resHeaders.set('Content-Encoding', 'gzip');
           } else if (reqPath.endsWith('.br') || (response.url && response.url.toLowerCase().endsWith('.br'))) {
             resHeaders.set('Content-Encoding', 'br');
           }
-
+          
           // Ensure valid Content-Type
           const mime = getMimeType(url.pathname);
           resHeaders.set('Content-Type', mime);
+          
           resHeaders.set('Accept-Ranges', 'bytes');
-          resHeaders.set('Cross-Origin-Embedder-Policy', 'credentialless');
+          resHeaders.set('Cross-Origin-Embedder-Policy', 'require-corp');
+          resHeaders.set('Cross-Origin-Opener-Policy', 'same-origin');
           resHeaders.set('Cross-Origin-Resource-Policy', 'cross-origin');
-
+          
           return new Response(response.body, {
             status: response.status || 200,
             statusText: response.statusText || 'OK',
             headers: resHeaders
           });
         }
-
+        
         return new Response('Not found in local game cache', { 
           status: 404,
           statusText: 'Not Found',

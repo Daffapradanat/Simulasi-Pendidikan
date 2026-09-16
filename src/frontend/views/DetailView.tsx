@@ -2,7 +2,8 @@ import { getBaseUrl } from '../../lib/basePath';
 import { QuestionsView } from './QuestionsView';
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Module, User } from '../../types';
+import { Module, User, Game } from '../../types';
+import JSZip from 'jszip';
 
 import { fetchAuth } from '../../lib/fetchAuth';
 
@@ -28,6 +29,130 @@ export function DetailView({
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'instant' });
   }, [module.id]);
+
+  
+  const [downloadingGame, setDownloadingGame] = useState(false);
+  const [downloadProgress, setDownloadProgress] = useState('');
+  const [localGameSrc, setLocalGameSrc] = useState<string | null>(null);
+
+  const getMimeType = (filename: string) => {
+    let cleanName = filename.toLowerCase();
+    if (cleanName.endsWith('.gz')) cleanName = cleanName.slice(0, -3);
+    if (cleanName.endsWith('.br')) cleanName = cleanName.slice(0, -3);
+    const ext = cleanName.split('.').pop() || '';
+    const types: Record<string, string> = {
+      'html': 'text/html; charset=utf-8',
+      'htm': 'text/html; charset=utf-8',
+      'js': 'text/javascript; charset=utf-8',
+      'mjs': 'text/javascript; charset=utf-8',
+      'css': 'text/css; charset=utf-8',
+      'json': 'application/json',
+      'png': 'image/png',
+      'jpg': 'image/jpeg',
+      'jpeg': 'image/jpeg',
+      'svg': 'image/svg+xml',
+      'gif': 'image/gif',
+      'webp': 'image/webp',
+      'ico': 'image/x-icon',
+      'wav': 'audio/wav',
+      'mp3': 'audio/mpeg',
+      'ogg': 'audio/ogg',
+      'mp4': 'video/mp4',
+      'webm': 'video/webm',
+      'wasm': 'application/wasm',
+      'data': 'application/octet-stream',
+      'unityweb': 'application/octet-stream',
+      'mem': 'application/octet-stream',
+      'symbols': 'application/json'
+    };
+    return types[ext] || 'application/octet-stream';
+  };
+
+  useEffect(() => {
+    const activeGame = module.games?.find(g => g.id === activeGameId);
+    if (!activeGameId || !activeGame) {
+      setLocalGameSrc(null);
+      return;
+    }
+    
+    let isMounted = true;
+    
+    if (activeGame.path?.endsWith('.zip')) {
+      const cacheName = 'local-games-cache';
+      const gamePrefix = `/local-game-play/game_${activeGameId}/`;
+      
+      const loadFromZip = async () => {
+        try {
+          const cache = await caches.open(cacheName);
+          let response = await cache.match(gamePrefix + 'index.html', { ignoreSearch: true });
+          
+          if (response) {
+            if (isMounted) setLocalGameSrc(gamePrefix + 'index.html');
+            return;
+          }
+
+          if (isMounted) {
+            setDownloadingGame(true);
+            setDownloadProgress('Mengunduh simulasi...');
+          }
+          
+          let fetchUrl = activeGame.path;
+          if (fetchUrl.startsWith('/')) {
+            fetchUrl = fetchUrl.substring(1);
+          }
+          const zipResponse = await fetch(`/${fetchUrl}`);
+          if (!zipResponse.ok) throw new Error('Zip file not found on server');
+          
+          const blob = await zipResponse.blob();
+          
+          if (isMounted) setDownloadProgress('Mengekstrak simulasi...');
+          
+          const zip = await JSZip.loadAsync(blob);
+          const promises = [];
+          
+          for (const [filename, zipEntry] of Object.entries(zip.files)) {
+            if (!zipEntry.dir) {
+              promises.push(
+                zipEntry.async('blob').then(fileBlob => {
+                  const headers = new Headers();
+                  headers.set('Content-Type', getMimeType(filename));
+                  
+                  const cleanName = filename.toLowerCase();
+                  if (cleanName.endsWith('.gz')) headers.set('Content-Encoding', 'gzip');
+                  if (cleanName.endsWith('.br')) headers.set('Content-Encoding', 'br');
+                  
+                  const res = new Response(fileBlob, { headers });
+                  return cache.put(new Request(gamePrefix + filename), res);
+                })
+              );
+            }
+          }
+          
+          await Promise.all(promises);
+          if (isMounted) {
+            setDownloadingGame(false);
+            setLocalGameSrc(gamePrefix + 'index.html');
+          }
+        } catch (err) {
+          console.error(err);
+          if (isMounted) {
+            setDownloadingGame(false);
+            setLocalGameSrc(null);
+          }
+        }
+      };
+      
+      loadFromZip();
+    } else if (activeGame.path) {
+      setLocalGameSrc(activeGame.path.startsWith('/') ? activeGame.path : `/${activeGame.path}`);
+    } else {
+      setLocalGameSrc(null);
+    }
+    
+    return () => {
+      isMounted = false;
+    };
+  }, [activeGameId, module.games]);
 
   const activeGame = module.games?.find(g => g.id === activeGameId);
   const totalGames = module.games?.length || 0;
@@ -291,7 +416,69 @@ export function DetailView({
                   >
                     <div className="step-card-body">
                       {/* Active Game Player */}
-                      {/* Player moved */}
+                      
+                      {activeGameId !== null && (
+                        <div id="webgl-simulation-player" className="modern-webgl-frame">
+                          <div className="webgl-frame-header">
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <span style={{ fontSize: '12px', color: '#94a3b8' }}>Memutar:</span>
+                              <strong style={{ fontSize: '13.5px', color: '#f8fafc' }}>{activeGame?.title}</strong>
+                              <span style={{ fontSize: '11px', background: '#15803d', color: '#fff', padding: '2px 8px', borderRadius: '4px', fontWeight: 700 }}>
+                                Aktif
+                              </span>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <button 
+                                className="btn btn-sm"
+                                onClick={() => {
+                                  const current = localGameSrc;
+                                  setLocalGameSrc(null);
+                                  setTimeout(() => setLocalGameSrc(current), 50);
+                                }}
+                                style={{ background: '#334155', color: '#f8fafc', border: 'none', padding: '4px 8px', fontSize: '12px', borderRadius: '6px' }}
+                                title="Muat Ulang Simulasi"
+                              >
+                                <i className="ti ti-reload"></i>
+                              </button>
+                              <button 
+                                className="btn btn-danger btn-sm"
+                                onClick={onCloseGame}
+                                style={{ padding: '4px 10px', fontSize: '12px', borderRadius: '6px', display: 'flex', alignItems: 'center', gap: '4px' }}
+                              >
+                                <i className="ti ti-x"></i> Tutup
+                              </button>
+                            </div>
+                          </div>
+                          <div style={{ width: '100%', aspectRatio: '16/9', background: '#020617', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            {activeGame?.path ? (
+                              downloadingGame && !localGameSrc ? (
+                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px', color: '#94a3b8' }}>
+                                  <div className="loading-spinner"></div>
+                                  <p style={{ fontSize: '13px', margin: 0 }}>{downloadProgress}</p>
+                                </div>
+                              ) : localGameSrc ? (
+                                <iframe 
+                                  src={localGameSrc}
+                                  style={{ width: '100%', height: '100%', border: 'none' }}
+                                  title={activeGame.title}
+                                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                ></iframe>
+                              ) : (
+                                <div style={{ textAlign: 'center', color: '#ef4444', padding: '24px' }}>
+                                  <i className="ti ti-alert-triangle" style={{ fontSize: '36px', marginBottom: '8px', display: 'block' }}></i>
+                                  <p style={{ margin: '0 0 4px 0', fontWeight: 600 }}>Gagal Memuat Simulasi</p>
+                                </div>
+                              )
+                            ) : (
+                              <div style={{ textAlign: 'center', color: '#64748b', padding: '24px' }}>
+                                <i className="ti ti-device-gamepad-2" style={{ fontSize: '36px', marginBottom: '8px', display: 'block', color: '#475569' }}></i>
+                                <p style={{ margin: '0 0 4px 0', fontWeight: 600, color: '#f8fafc' }}>Game Belum Tersedia</p>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
 
                       {/* List of Game Simulations */}
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
