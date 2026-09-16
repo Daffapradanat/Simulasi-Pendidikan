@@ -84,11 +84,18 @@ export function DetailView({
       const loadFromZip = async () => {
         try {
           const cache = await caches.open(cacheName);
-          let response = await cache.match(gamePrefix + 'index.html', { ignoreSearch: true });
-          
-          if (response) {
-            if (isMounted) setLocalGameSrc(gamePrefix + 'index.html');
-            return;
+          // Validate using a manifest file to ensure full extraction was successful
+          const manifestResponse = await cache.match(gamePrefix + 'manifest.json');
+          if (manifestResponse) {
+            try {
+              const manifest = await manifestResponse.json();
+              if (manifest.status === 'ready' && manifest.entryPoint) {
+                if (isMounted) setLocalGameSrc(gamePrefix + manifest.entryPoint);
+                return;
+              }
+            } catch(e) {
+              // Manifest corrupted, proceed to re-download
+            }
           }
 
           if (isMounted) {
@@ -108,10 +115,31 @@ export function DetailView({
           if (isMounted) setDownloadProgress('Mengekstrak simulasi...');
           
           const zip = await JSZip.loadAsync(blob);
-          const promises = [];
           
+          let indexPath = '';
+          const filenames = Object.keys(zip.files);
+          const possibleIndexFiles = filenames.filter(f => f.toLowerCase().endsWith('index.html') && !f.includes('__MACOSX'));
+          
+          if (possibleIndexFiles.length > 0) {
+            possibleIndexFiles.sort((a, b) => {
+              const depthA = a.split('/').length;
+              const depthB = b.split('/').length;
+              if (depthA !== depthB) return depthA - depthB;
+              return a.length - b.length;
+            });
+            indexPath = possibleIndexFiles[0];
+          } else {
+            throw new Error('index.html not found in the ZIP package');
+          }
+
+          const promises = [];
+          const extractedFilesCount = [];
           for (const [filename, zipEntry] of Object.entries(zip.files)) {
-            if (!zipEntry.dir) {
+            if (!zipEntry.dir && !filename.includes('__MACOSX')) {
+              extractedFilesCount.push(filename);
+              const encodedFilename = filename.split('/').map(encodeURIComponent).join('/');
+              const fullPath = gamePrefix + encodedFilename;
+              
               promises.push(
                 zipEntry.async('blob').then(fileBlob => {
                   const headers = new Headers();
@@ -122,16 +150,29 @@ export function DetailView({
                   if (cleanName.endsWith('.br')) headers.set('Content-Encoding', 'br');
                   
                   const res = new Response(fileBlob, { headers });
-                  return cache.put(new Request(gamePrefix + filename), res);
+                  return cache.put(new Request(fullPath), res);
                 })
               );
             }
           }
           
           await Promise.all(promises);
+          
+          // Create and store manifest AFTER all files are successfully cached
+          const encodedEntryPoint = indexPath.split('/').map(encodeURIComponent).join('/');
+          const manifestData = {
+            simulationId: activeGameId,
+            status: 'ready',
+            entryPoint: encodedEntryPoint,
+            filesCount: extractedFilesCount.length,
+            timestamp: Date.now()
+          };
+          const manifestBlob = new Blob([JSON.stringify(manifestData)], { type: 'application/json' });
+          await cache.put(new Request(gamePrefix + 'manifest.json'), new Response(manifestBlob));
+
           if (isMounted) {
             setDownloadingGame(false);
-            setLocalGameSrc(gamePrefix + 'index.html');
+            setLocalGameSrc(gamePrefix + encodedEntryPoint);
           }
         } catch (err) {
           console.error(err);
@@ -418,37 +459,7 @@ export function DetailView({
                       {/* Active Game Player */}
                       
                       {activeGameId !== null && (
-                        <div id="webgl-simulation-player" className="modern-webgl-frame">
-                          <div className="webgl-frame-header">
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                              <span style={{ fontSize: '12px', color: '#94a3b8' }}>Memutar:</span>
-                              <strong style={{ fontSize: '13.5px', color: '#f8fafc' }}>{activeGame?.title}</strong>
-                              <span style={{ fontSize: '11px', background: '#15803d', color: '#fff', padding: '2px 8px', borderRadius: '4px', fontWeight: 700 }}>
-                                Aktif
-                              </span>
-                            </div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                              <button 
-                                className="btn btn-sm"
-                                onClick={() => {
-                                  const current = localGameSrc;
-                                  setLocalGameSrc(null);
-                                  setTimeout(() => setLocalGameSrc(current), 50);
-                                }}
-                                style={{ background: '#334155', color: '#f8fafc', border: 'none', padding: '4px 8px', fontSize: '12px', borderRadius: '6px' }}
-                                title="Muat Ulang Simulasi"
-                              >
-                                <i className="ti ti-reload"></i>
-                              </button>
-                              <button 
-                                className="btn btn-danger btn-sm"
-                                onClick={onCloseGame}
-                                style={{ padding: '4px 10px', fontSize: '12px', borderRadius: '6px', display: 'flex', alignItems: 'center', gap: '4px' }}
-                              >
-                                <i className="ti ti-x"></i> Tutup
-                              </button>
-                            </div>
-                          </div>
+                        <div id="webgl-simulation-player" className="modern-webgl-frame" style={{ border: 'none', overflow: 'hidden', borderRadius: '12px' }}>
                           <div style={{ width: '100%', aspectRatio: '16/9', background: '#020617', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                             {activeGame?.path ? (
                               downloadingGame && !localGameSrc ? (
