@@ -46,11 +46,11 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(
       caches.open('local-games-cache').then(async (cache) => {
         // 1. Direct match
-        let response = await cache.match(event.request);
+        let response = await cache.match(event.request, { ignoreSearch: true });
 
         // 2. Fallback matching for gzip / brotli / unityweb variants
         if (!response) {
-          const rawUrl = event.request.url;
+          const rawUrl = url.origin + url.pathname;
           const candidates = [
             rawUrl + '.gz',
             rawUrl + '.br',
@@ -60,7 +60,7 @@ self.addEventListener('fetch', (event) => {
             rawUrl.replace(/\.(wasm|data|js|json)$/, '.$1.unityweb')
           ];
           for (const cand of candidates) {
-            response = await cache.match(cand);
+            response = await cache.match(cand, { ignoreSearch: true });
             if (response) break;
           }
         }

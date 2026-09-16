@@ -3,7 +3,7 @@ import { QuestionsView } from './QuestionsView';
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Module, User } from '../../types';
-import JSZip from 'jszip';
+
 import { fetchAuth } from '../../lib/fetchAuth';
 
 export function DetailView({ 
@@ -40,134 +40,7 @@ export function DetailView({
   const [isQuestionsOpen, setIsQuestionsOpen] = useState(true);
   const [materiTab, setMateriTab] = useState<'theory' | 'glossary'>('theory');
 
-  const [downloadingGame, setDownloadingGame] = useState(false);
-  const [downloadProgress, setDownloadProgress] = useState('');
-  const [localGameSrc, setLocalGameSrc] = useState<string | null>(null);
-
-  const getMimeType = (filename: string) => {
-    let cleanName = filename.toLowerCase();
-    if (cleanName.endsWith('.gz')) cleanName = cleanName.slice(0, -3);
-    if (cleanName.endsWith('.br')) cleanName = cleanName.slice(0, -3);
-
-    const ext = cleanName.split('.').pop() || '';
-    const types: Record<string, string> = {
-      'html': 'text/html; charset=utf-8',
-      'htm': 'text/html; charset=utf-8',
-      'js': 'text/javascript; charset=utf-8',
-      'mjs': 'text/javascript; charset=utf-8',
-      'css': 'text/css; charset=utf-8',
-      'json': 'application/json',
-      'png': 'image/png',
-      'jpg': 'image/jpeg',
-      'jpeg': 'image/jpeg',
-      'svg': 'image/svg+xml',
-      'gif': 'image/gif',
-      'webp': 'image/webp',
-      'ico': 'image/x-icon',
-      'wav': 'audio/wav',
-      'mp3': 'audio/mpeg',
-      'ogg': 'audio/ogg',
-      'mp4': 'video/mp4',
-      'webm': 'video/webm',
-      'wasm': 'application/wasm',
-      'data': 'application/octet-stream',
-      'unityweb': 'application/octet-stream',
-      'mem': 'application/octet-stream',
-      'symbols': 'application/json'
-    };
-    return types[ext] || 'application/octet-stream';
-  };
-
-  useEffect(() => {
-    if (activeGameId) {
-      const game = module.games?.find((g: any) => g.id === activeGameId);
-      if (!game) {
-        setLocalGameSrc(null);
-        return;
-      }
-
-      if (game.path?.endsWith('.zip')) {
-        const cacheName = 'local-games-cache';
-        const gamePrefix = `${getBaseUrl()}local-game-play/game_${game.id}/`;
-        
-        caches.open(cacheName).then(cache => {
-          cache.match(gamePrefix + 'index.html').then(res => {
-            if (res) {
-               setLocalGameSrc(gamePrefix + 'index.html');
-            } else {
-               setDownloadingGame(true);
-               setDownloadProgress('Mengunduh simulasi...');
-               
-               let fetchUrl = game.path || '';
-               if (fetchUrl.startsWith('/')) {
-                 fetchUrl = `${getBaseUrl()}${fetchUrl.substring(1)}`;
-               }
-               fetch(fetchUrl)
-                 .then(res => {
-                   if (!res.ok) throw new Error('Zip file not found on server');
-                   return res.blob();
-                 })
-                 .then(blob => JSZip.loadAsync(blob))
-                 .then(async (zip) => {
-                   setDownloadProgress('Mengekstrak simulasi...');
-                   let indexPath = '';
-                   
-                   let foundIndex = false;
-                   const filenames = Object.keys(zip.files);
-                   const possibleIndexFiles = filenames.filter(f => f.toLowerCase().endsWith('index.html') && !f.includes('__MACOSX'));
-                   
-                   if (possibleIndexFiles.length > 0) {
-                     possibleIndexFiles.sort((a, b) => a.length - b.length);
-                     indexPath = possibleIndexFiles[0];
-                     foundIndex = true;
-                   } else {
-                     throw new Error('index.html not found in the ZIP package');
-                   }
-                   
-                   const openCache = await caches.open(cacheName);
-                   
-                   const promises = [];
-                   for (const [filename, zipEntry] of Object.entries(zip.files)) {
-                     if (!zipEntry.dir && !filename.includes('__MACOSX')) {
-                       const fullPath = gamePrefix + filename;
-                       promises.push(
-                         zipEntry.async('blob').then(fileBlob => {
-                           const headers = new Headers();
-                           headers.set('Content-Type', getMimeType(filename));
-                           const cleanName = filename.toLowerCase();
-                           if (cleanName.endsWith('.gz')) headers.set('Content-Encoding', 'gzip');
-                           if (cleanName.endsWith('.br')) headers.set('Content-Encoding', 'br');
-                           
-                           const res = new Response(fileBlob, { headers });
-                           return openCache.put(new Request(fullPath), res);
-                         })
-                       );
-                     }
-                   }
-                   
-                   await Promise.all(promises);
-                   
-                   setDownloadingGame(false);
-                   setLocalGameSrc(gamePrefix + indexPath);
-                 })
-                 .catch(err => {
-                   console.error('ZIP extraction failed:', err);
-                   setDownloadingGame(false);
-                   setLocalGameSrc(null); // Do not fallback to React app
-                 });
-            }
-          });
-        });
-      } else if (game.path) {
-        const fullSrc = game.path.startsWith('/') ? `${getBaseUrl()}${game.path.substring(1)}` : game.path;
-        setLocalGameSrc(fullSrc);
-      } else {
-        setLocalGameSrc(null);
-      }
-    } else {
-      setLocalGameSrc(null);
-    }
-  }, [activeGameId, module.games]);
+  
   
   useEffect(() => {
     fetchAuth(`/api/modules/${module.id}/questions`)
@@ -418,66 +291,7 @@ export function DetailView({
                   >
                     <div className="step-card-body">
                       {/* Active Game Player */}
-                      {activeGameId !== null && (
-                        <div id="webgl-simulation-player" className="modern-webgl-frame">
-                          <div className="webgl-frame-header">
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                              <span style={{ fontSize: '12px', color: '#94a3b8' }}>Memutar:</span>
-                              <strong style={{ fontSize: '13.5px', color: '#f8fafc' }}>{activeGame?.title}</strong>
-                              <span style={{ fontSize: '11px', background: '#15803d', color: '#fff', padding: '2px 8px', borderRadius: '4px', fontWeight: 700 }}>
-                                Aktif
-                              </span>
-                            </div>
-
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                              <button 
-                                className="btn btn-sm"
-                                onClick={() => {
-                                  const current = localGameSrc;
-                                  setLocalGameSrc(null);
-                                  setTimeout(() => setLocalGameSrc(current), 50);
-                                }}
-                                style={{ background: '#334155', color: '#f8fafc', border: 'none', padding: '4px 8px', fontSize: '12px', borderRadius: '6px' }}
-                                title="Muat Ulang Simulasi"
-                              >
-                                <i className="ti ti-reload"></i>
-                              </button>
-                              <button 
-                                className="btn btn-danger btn-sm"
-                                onClick={onCloseGame}
-                                style={{ padding: '4px 10px', fontSize: '12px', borderRadius: '6px', display: 'flex', alignItems: 'center', gap: '4px' }}
-                              >
-                                <i className="ti ti-x"></i> Tutup
-                              </button>
-                            </div>
-                          </div>
-
-                          <div style={{ width: '100%', aspectRatio: '16/9', background: '#020617', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            {activeGame?.path ? (
-                              downloadingGame && !localGameSrc ? (
-                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px', color: '#94a3b8' }}>
-                                  <div className="loading-spinner"></div>
-                                  <p style={{ fontSize: '13px', margin: 0 }}>{downloadProgress}</p>
-                                </div>
-                              ) : localGameSrc ? (
-                                <iframe 
-                                  src={localGameSrc}
-                                  style={{ width: '100%', height: '100%', border: 'none' }}
-                                  title={activeGame.title}
-                                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                  allowFullScreen
-                                />
-                              ) : null
-                            ) : (
-                              <div style={{ textAlign: 'center', color: '#64748b', padding: '24px' }}>
-                                <i className="ti ti-device-gamepad-2" style={{ fontSize: '36px', marginBottom: '8px', display: 'block', color: '#475569' }}></i>
-                                <p style={{ margin: '0 0 4px 0', fontWeight: 600, color: '#f8fafc' }}>Game Belum Tersedia</p>
-                                <span style={{ fontSize: '12px' }}>File simulasi game belum diunggah oleh guru/admin.</span>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      )}
+                      {/* Player moved */}
 
                       {/* List of Game Simulations */}
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>

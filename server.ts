@@ -8,7 +8,6 @@ import cookieParser from "cookie-parser";
 import jwt from "jsonwebtoken";
 import multer from "multer";
 import * as XLSX from "xlsx";
-import { createServer as createViteServer } from "vite";
 import fs from "fs";
 import { configureSecurity } from "./serverSecurity";
 import compression from "compression";
@@ -27,14 +26,10 @@ declare global {
 }
 
 const PUBLIC_GAMES_DIR = path.join(process.cwd(), "public", "games");
-if (!fs.existsSync(PUBLIC_GAMES_DIR)) {
-  fs.mkdirSync(PUBLIC_GAMES_DIR, { recursive: true });
-}
+try { if (!fs.existsSync(PUBLIC_GAMES_DIR)) { fs.mkdirSync(PUBLIC_GAMES_DIR, { recursive: true }); } } catch(e) {}
 
 const UPLOADS_DIR = path.join(process.cwd(), "uploads");
-if (!fs.existsSync(UPLOADS_DIR)) {
-  fs.mkdirSync(UPLOADS_DIR, { recursive: true });
-}
+try { if (!fs.existsSync(UPLOADS_DIR)) { fs.mkdirSync(UPLOADS_DIR, { recursive: true }); } } catch(e) {}
 
 const AVATAR_DIR = path.join(process.cwd(), "uploads", "avatars");
 const BANNERS_DIR = path.join(process.cwd(), "uploads", "banners");
@@ -372,7 +367,7 @@ async function startServer() {
   const app = express();
   const httpServer = http.createServer(app);
   app.use(compression({ level: 9, threshold: 0 }) as any);
-  const PORT = 3000;
+  const PORT = process.env.PORT || 3000;
 
   // Security controls are moved to /serverSecurity.ts
   configureSecurity(app);
@@ -1601,12 +1596,13 @@ app.get('/api/modules/:id/questions', authenticateToken, (req, res) => {
   // Vite Integration
   const isProduction = process.env.NODE_ENV === "production" || process.argv[1]?.endsWith(".cjs");
   if (!isProduction) {
-    const vite = await createViteServer({
+    const vite = await import("vite");
+    const viteServer = await vite.createServer({
       server: { middlewareMode: true },
       appType: "spa",
     });
-    app.use('/digital/simulasisains', vite.middlewares);
-    app.use(vite.middlewares);
+    app.use('/digital/simulasisains', viteServer.middlewares);
+    app.use(viteServer.middlewares);
   } else {
     const distPath = path.join(process.cwd(), "dist");
     app.use('/digital/simulasisains', express.static(distPath));
