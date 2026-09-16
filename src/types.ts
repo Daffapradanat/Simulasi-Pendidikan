@@ -16,6 +16,7 @@ export type Game = {
   desc: string; 
   path?: string;
   entryPoint?: string;
+  extractedPath?: string;
 };
 
 export type Module = {

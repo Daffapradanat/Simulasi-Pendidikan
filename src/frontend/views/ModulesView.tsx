@@ -171,9 +171,21 @@ export function ModulesView({ modules, subjects, user, onOpenModule, lastModuleI
         
         <div>
           {currentModules.length === 0 ? (
-            <div className="empty-state" style={{ gridColumn: '1 / -1' }}>
-              <div className="empty-icon"><i className="ti ti-search"></i></div>
-              <p>Modul tidak ditemukan untuk pencarian "{searchQuery}".</p>
+            <div className="empty-state" style={{ gridColumn: '1 / -1', padding: '48px 24px', textAlign: 'center', background: 'var(--card-bg, #ffffff)', borderRadius: '12px', border: '1px dashed var(--border, #e2e8f0)', marginTop: '20px' }}>
+              <div className="empty-icon" style={{ fontSize: '36px', marginBottom: '12px', color: 'var(--text-muted)' }}>
+                <i className={searchQuery ? "ti ti-search" : "ti ti-books"}></i>
+              </div>
+              <h3 style={{ fontSize: '18px', fontWeight: 700, marginBottom: '8px', color: 'var(--text)' }}>
+                {searchQuery ? 'Modul Tidak Ditemukan' : 'Belum Ada Modul Pembelajaran'}
+              </h3>
+              <p style={{ color: 'var(--text-muted)', fontSize: '14px', maxWidth: '460px', margin: '0 auto', lineHeight: '1.6' }}>
+                {searchQuery 
+                  ? `Tidak ada modul yang cocok dengan kata kunci "${searchQuery}".` 
+                  : (user?.role === 'admin' || user?.role === 'guru' 
+                      ? 'Belum ada modul simulasi sains di sistem. Anda dapat membuat dan mengunggah modul baru melalui menu Dashboard.'
+                      : 'Belum ada modul pembelajaran yang tersedia saat ini. Silakan hubungi guru atau admin pengampu.')
+                }
+              </p>
             </div>
           ) : (
             (subjects && subjects.length > 0) ? (

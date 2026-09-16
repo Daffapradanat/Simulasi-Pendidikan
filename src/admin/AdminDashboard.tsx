@@ -20,7 +20,7 @@ const SchoolsView = lazy(() => import('./views/SchoolsView'));
 // Types for Admin
 type AdminViewMode = 'dashboard' | 'modules' | 'modules_add_edit' | 'students' | 'teachers' | 'profile' | 'audit' | 'categories_subjects' | 'schools';
 
-export default function AdminDashboard({ user, onLogout, onNavigate, onUpdateUser }: { user: any, onLogout: () => void, onNavigate: (v: 'main' | 'profile') => void, onUpdateUser?: (u: any) => void }) {
+export default function AdminDashboard({ user, onLogout, onNavigate, onUpdateUser, onModulesUpdated }: { user: any, onLogout: () => void, onNavigate: (v: 'main' | 'profile') => void, onUpdateUser?: (u: any) => void, onModulesUpdated?: () => void }) {
   const navigate = useNavigate();
   const location = useLocation();
   const [view, setView] = useState<AdminViewMode>(() => {
@@ -221,11 +221,15 @@ export default function AdminDashboard({ user, onLogout, onNavigate, onUpdateUse
       }
 
       // Re-fetch all modules with fresh and accurate question counts from the server
-      const modulesRes = await fetchAuth('/api/modules');
+      const modulesRes = await fetchAuth('/api/modules?_t=' + Date.now());
       if (modulesRes.ok) {
         const allMods = await modulesRes.json();
         setModules(Array.isArray(allMods) ? allMods : []);
       }
+      
+      // Instantly notify parent and any listening views
+      window.dispatchEvent(new CustomEvent('simpend-modules-updated'));
+      onModulesUpdated?.();
       
       if (editingModule) {
         toast.success('Modul dan soal berhasil diperbarui!');
@@ -354,6 +358,8 @@ export default function AdminDashboard({ user, onLogout, onNavigate, onUpdateUse
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Gagal memulihkan');
       setModules(modules.map(m => m.id === id ? { ...m, isDeleted: false } : m));
+      window.dispatchEvent(new CustomEvent('simpend-modules-updated'));
+      onModulesUpdated?.();
       toast.success('Modul berhasil dipulihkan!');
     } catch (err: any) {
       toast.error(`Error: ${err.message}`);
@@ -395,6 +401,8 @@ export default function AdminDashboard({ user, onLogout, onNavigate, onUpdateUse
         const res = await fetchAuth(`/api/modules/${id}`, { method: 'DELETE' });
         if (!res.ok) throw new Error('Gagal menghapus modul');
         setModules(modules.filter(m => m.id !== id));
+        window.dispatchEvent(new CustomEvent('simpend-modules-updated'));
+        onModulesUpdated?.();
         toast.success('Modul berhasil dihapus!');
       } else if (type === 'student') {
         const res = await fetchAuth(`/api/students/${id}`, { method: 'DELETE' });

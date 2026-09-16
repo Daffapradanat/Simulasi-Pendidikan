@@ -11,9 +11,25 @@ export function ToastContainer() {
   const [toasts, setToasts] = useState<any[]>([]);
 
   useEffect(() => {
+    let lastMsg = '';
+    let lastTime = 0;
+
     const handler = (e: any) => {
+      const now = Date.now();
+      const msg = e.detail?.msg;
+      // Debounce duplicate messages arriving within 1200ms
+      if (msg && msg === lastMsg && (now - lastTime) < 1200) {
+        return;
+      }
+      lastMsg = msg;
+      lastTime = now;
+
       const id = Date.now() + Math.random();
-      setToasts(prev => [...prev, { id, ...e.detail }]);
+      setToasts(prev => {
+        // Prevent duplicate if already in active toast list
+        if (prev.some(t => t.msg === msg)) return prev;
+        return [...prev, { id, ...e.detail }];
+      });
       setTimeout(() => {
         setToasts(prev => prev.filter(t => t.id !== id));
       }, 4000);

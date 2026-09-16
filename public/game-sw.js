@@ -43,13 +43,19 @@ const getMimeType = (filename) => {
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
   
-  if (url.pathname.startsWith('/local-game-play/')) {
+  const isSimulationRequest = 
+    url.pathname.startsWith('/local-game-play/') ||
+    url.pathname.startsWith('/digital/simulasisains/local-game-play/') ||
+    url.pathname.startsWith('/games/') ||
+    url.pathname.startsWith('/digital/simulasisains/games/');
+
+  if (isSimulationRequest) {
     event.respondWith(
       caches.open('local-games-cache').then(async (cache) => {
-        // 1. Direct match
+        // 1. Direct match in offline cache
         let response = await cache.match(event.request, { ignoreSearch: true });
         
-        // 2. Fallback matching for gzip / brotli / unityweb variants
+        // 2. Fallback matching for gzip / brotli / unityweb variants in offline cache
         if (!response) {
           const rawUrl = url.origin + url.pathname;
           const candidates = [
@@ -94,18 +100,32 @@ self.addEventListener('fetch', (event) => {
           });
         }
         
-        // 3. Fallback to server: Fetch from /games/ or direct server route
+        // 3. Fetch from network
         try {
-          const serverFallbackUrl = url.pathname.replace(/^\/local-game-play\//, '/games/');
-          const networkResponse = await fetch(serverFallbackUrl + url.search);
+          const networkResponse = await fetch(event.request);
           if (networkResponse && networkResponse.ok) {
-            // Save to cache for offline usage
+            // Background cache for offline use
             try {
               cache.put(event.request, networkResponse.clone());
             } catch (err) {}
             return networkResponse;
           }
         } catch (netErr) {}
+
+        // 4. Server route translation fallback: if /local-game-play/ was requested, try /games/
+        try {
+          const fallbackPath = url.pathname
+            .replace(/^\/digital\/simulasisains/, '')
+            .replace(/^\/local-game-play\//, '/games/');
+          const serverFallbackUrl = url.origin + fallbackPath + url.search;
+          const networkResponse2 = await fetch(serverFallbackUrl);
+          if (networkResponse2 && networkResponse2.ok) {
+            try {
+              cache.put(event.request, networkResponse2.clone());
+            } catch (err) {}
+            return networkResponse2;
+          }
+        } catch (netErr2) {}
 
         return new Response('File simulasi belum tersedia di cache lokal maupun server.', { 
           status: 404,

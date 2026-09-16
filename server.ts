@@ -255,211 +255,8 @@ async function initDB() {
     questionsData = [];
   }
 
-  if (!modulesData || modulesData.length === 0) {
-    modulesData = [...MODULES_DATA];
-  }
-
-  // Ensure initial sample game package exists so generic loader does not 404
-  const game1Dir = path.join(PUBLIC_GAMES_DIR, "game_1");
-  const zipPath = path.join(PUBLIC_GAMES_DIR, "game_1.zip");
-  if (!fs.existsSync(game1Dir) || !fs.existsSync(path.join(game1Dir, "index.html"))) {
-    try {
-      fs.mkdirSync(game1Dir, { recursive: true });
-      const htmlContent = `<!DOCTYPE html>
-<html lang="id">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Simulasi Konversi Bilangan Biner</title>
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: #0f172a;
-      color: #f8fafc;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 24px;
-    }
-    .card {
-      background: #1e293b;
-      border: 1px solid #334155;
-      border-radius: 16px;
-      padding: 32px;
-      max-width: 620px;
-      width: 100%;
-      box-shadow: 0 10px 25px -5px rgba(0,0,0,0.3);
-      text-align: center;
-    }
-    h1 { font-size: 22px; font-weight: 700; color: #38bdf8; margin-bottom: 8px; }
-    p.subtitle { color: #94a3b8; font-size: 14px; margin-bottom: 24px; }
-    .bits-container {
-      display: flex;
-      justify-content: center;
-      gap: 8px;
-      margin-bottom: 28px;
-      flex-wrap: wrap;
-    }
-    .bit-box {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 8px;
-    }
-    .bit-val {
-      font-size: 12px;
-      font-weight: 600;
-      color: #64748b;
-    }
-    .bit-btn {
-      width: 48px;
-      height: 60px;
-      font-size: 26px;
-      font-weight: 800;
-      font-family: monospace;
-      border: 2px solid #475569;
-      border-radius: 8px;
-      background: #0f172a;
-      color: #94a3b8;
-      cursor: pointer;
-      transition: all 0.2s ease;
-    }
-    .bit-btn.active {
-      background: #0284c7;
-      border-color: #38bdf8;
-      color: #ffffff;
-      box-shadow: 0 0 15px rgba(56, 189, 248, 0.4);
-      transform: translateY(-2px);
-    }
-    .results-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 12px;
-      margin-top: 16px;
-    }
-    .res-card {
-      background: #0f172a;
-      border: 1px solid #334155;
-      border-radius: 12px;
-      padding: 14px 8px;
-    }
-    .res-label { font-size: 11px; text-transform: uppercase; color: #64748b; font-weight: 700; margin-bottom: 4px; }
-    .res-value { font-size: 20px; font-weight: 700; font-family: monospace; color: #f1f5f9; }
-    .res-value.accent { color: #38bdf8; }
-    .btn-reset {
-      margin-top: 24px;
-      padding: 10px 20px;
-      background: #334155;
-      color: #f8fafc;
-      border: none;
-      border-radius: 8px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: background 0.2s;
-    }
-    .btn-reset:hover { background: #475569; }
-  </style>
-</head>
-<body>
-  <div class="card">
-    <h1>🔬 Laboratorium Interaktif Sistem Bilangan</h1>
-    <p class="subtitle">Klik switch register 8-bit di bawah untuk mempelajari konversi nilai secara interaktif.</p>
-    
-    <div class="bits-container" id="bitsRow"></div>
-
-    <div class="results-grid">
-      <div class="res-card">
-        <div class="res-label">Desimal (Base 10)</div>
-        <div class="res-value accent" id="valDec">0</div>
-      </div>
-      <div class="res-card">
-        <div class="res-label">Heksadesimal (Base 16)</div>
-        <div class="res-value" id="valHex">0x00</div>
-      </div>
-      <div class="res-card">
-        <div class="res-label">Oktal (Base 8)</div>
-        <div class="res-value" id="valOct">000</div>
-      </div>
-    </div>
-
-    <button class="btn-reset" onclick="resetBits()">Reset Register</button>
-  </div>
-
-  <script>
-    const weights = [128, 64, 32, 16, 8, 4, 2, 1];
-    let bits = [0, 0, 0, 0, 0, 0, 0, 0];
-
-    function render() {
-      const container = document.getElementById('bitsRow');
-      container.innerHTML = '';
-      let total = 0;
-
-      weights.forEach((w, i) => {
-        if (bits[i]) total += w;
-
-        const box = document.createElement('div');
-        box.className = 'bit-box';
-
-        const label = document.createElement('div');
-        label.className = 'bit-val';
-        label.innerText = w;
-
-        const btn = document.createElement('button');
-        btn.className = 'bit-btn' + (bits[i] ? ' active' : '');
-        btn.innerText = bits[i];
-        btn.onclick = () => {
-          bits[i] = bits[i] ? 0 : 1;
-          render();
-        };
-
-        box.appendChild(label);
-        box.appendChild(btn);
-        container.appendChild(box);
-      });
-
-      document.getElementById('valDec').innerText = total;
-      document.getElementById('valHex').innerText = '0x' + total.toString(16).toUpperCase().padStart(2, '0');
-      document.getElementById('valOct').innerText = total.toString(8).padStart(3, '0');
-    }
-
-    function resetBits() {
-      bits = [0, 0, 0, 0, 0, 0, 0, 0];
-      render();
-    }
-
-    render();
-  </script>
-</body>
-</html>`;
-      fs.writeFileSync(path.join(game1Dir, "index.html"), htmlContent, "utf-8");
-      fs.writeFileSync(path.join(game1Dir, "manifest.json"), JSON.stringify({
-        simulationId: 1,
-        status: "ready",
-        entryPoint: "index.html",
-        hasGzip: true,
-        hasBrotli: true,
-        updatedAt: Date.now()
-      }, null, 2), "utf-8");
-
-      const AdmZip = (await import("adm-zip")).default;
-      const zip = new AdmZip();
-      zip.addLocalFile(path.join(game1Dir, "index.html"));
-      zip.addLocalFile(path.join(game1Dir, "manifest.json"));
-      zip.writeZip(zipPath);
-    } catch(seedErr) {
-      console.error("Failed to seed sample simulation:", seedErr);
-    }
-  }
-
-  // Link game_1 metadata
-  if (modulesData.length > 0 && modulesData[0].games && modulesData[0].games.length > 0) {
-    if (!modulesData[0].games[0].path) {
-      modulesData[0].games[0].path = '/games/game_1.zip';
-      modulesData[0].games[0].entryPoint = 'index.html';
-    }
+  if (!modulesData) {
+    modulesData = [];
   }
 
   await doSaveDb();
@@ -546,7 +343,45 @@ function saveDb() {
   if (saveDbTimeout) clearTimeout(saveDbTimeout);
   saveDbTimeout = setTimeout(() => {
     doSaveDb().catch(console.error);
-  }, 1000);
+  }, 200);
+}
+
+async function syncModuleToDb(module: any) {
+  if (!db) return;
+  try {
+    await db.run("INSERT OR REPLACE INTO modules (id, data) VALUES (?, ?)", [module.id, JSON.stringify(module)]);
+  } catch (err) {
+    console.error("Failed to directly sync module to SQLite:", err);
+  }
+}
+
+async function removeModuleFromDb(moduleId: number) {
+  if (!db) return;
+  try {
+    await db.run("DELETE FROM modules WHERE id = ?", [moduleId]);
+    await db.run("DELETE FROM questions WHERE module_id = ?", [moduleId]);
+  } catch (err) {
+    console.error("Failed to directly remove module from SQLite:", err);
+  }
+}
+
+async function syncQuestionsToDb(moduleId: number, questions: any[]) {
+  if (!db) return;
+  try {
+    await db.run("DELETE FROM questions WHERE module_id = ?", [moduleId]);
+    for (let i = 0; i < questions.length; i++) {
+      const q = questions[i];
+      const qId = q.id ? parseInt(q.id) : (Date.now() + i);
+      await db.run("INSERT INTO questions (id, module_id, type_id, data) VALUES (?, ?, ?, ?)", [
+        qId,
+        moduleId,
+        null,
+        JSON.stringify(q)
+      ]);
+    }
+  } catch (err) {
+    console.error("Failed to directly sync questions to SQLite:", err);
+  }
 }
 
 function logActivity(action: string, user: string, desc: string) {
@@ -569,7 +404,46 @@ async function startServer() {
   await initDB();
   const app = express();
   const httpServer = http.createServer(app);
-  app.use(compression({ level: 9, threshold: 0 }) as any);
+
+  // Subpath URL normalization: ensure API, simulation files, assets, and service worker route reliably
+  app.use((req, res, next) => {
+    if (req.url.startsWith('/digital/simulasisains')) {
+      const remainder = req.url.slice('/digital/simulasisains'.length);
+      if (
+        remainder.startsWith('/api') ||
+        remainder.startsWith('/games') ||
+        remainder.startsWith('/local-game-play') ||
+        remainder.startsWith('/avatars') ||
+        remainder.startsWith('/banners') ||
+        remainder.startsWith('/game-sw.js')
+      ) {
+        req.url = remainder;
+      }
+    }
+    next();
+  });
+
+  // Compression middleware with strict exclusion for pre-compressed WebGL/Unity assets
+  app.use(compression({
+    level: 9,
+    threshold: 0,
+    filter: (req: any, res: any) => {
+      const p = (req.path || '').toLowerCase();
+      if (
+        p.includes('/games/') ||
+        p.includes('/local-game-play/') ||
+        p.endsWith('.br') ||
+        p.endsWith('.gz') ||
+        p.endsWith('.wasm') ||
+        p.endsWith('.unityweb') ||
+        p.endsWith('.data') ||
+        p.endsWith('.zip')
+      ) {
+        return false;
+      }
+      return compression.filter(req, res);
+    }
+  }) as any);
   const PORT = process.env.PORT || 3000;
 
   // Security controls are moved to /serverSecurity.ts
@@ -1028,15 +902,16 @@ app.get('/api/modules/:id/questions', authenticateToken, (req, res) => {
     res.json({ questions });
   });
 
-  app.post('/api/modules/:id/questions', authenticateToken, isAdmin, (req, res) => {
+  app.post('/api/modules/:id/questions', authenticateToken, isAdmin, async (req, res) => {
     const moduleId = parseInt(req.params.id as string);
     const newQuestions = req.body.questions;
     
     questionsData = questionsData.filter(q => Number(q.module_id) !== moduleId);
     
+    const formattedQuestions: any[] = [];
     if (Array.isArray(newQuestions)) {
        newQuestions.forEach((q, idx) => {
-          questionsData.push({
+          const item = {
              id: q.id ? parseInt(q.id) : (Date.now() + idx + Math.floor(Math.random() * 100000)),
              module_id: moduleId,
              type: q.type || 'multiple_choice',
@@ -1048,10 +923,13 @@ app.get('/api/modules/:id/questions', authenticateToken, (req, res) => {
              correctAnswers: Array.isArray(q.correctAnswers) ? q.correctAnswers : [],
              pairs: Array.isArray(q.pairs) ? q.pairs : [],
              explanation: q.explanation || ''
-          });
+          };
+          questionsData.push(item);
+          formattedQuestions.push(item);
        });
     }
     
+    await syncQuestionsToDb(moduleId, formattedQuestions);
     saveDb();
     const count = questionsData.filter(q => Number(q.module_id) === moduleId).length;
     res.json({ success: true, count });
@@ -1378,11 +1256,25 @@ app.get('/api/modules/:id/questions', authenticateToken, (req, res) => {
   });
 
   app.get("/api/modules", (req, res) => {
+    res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+    res.setHeader("Pragma", "no-cache");
+    res.setHeader("Expires", "0");
     const modulesWithQuestionCount = modulesData.map((m: any) => ({
       ...m,
       questionCount: questionsData.filter(q => Number(q.module_id) === Number(m.id)).length
     }));
     res.json(modulesWithQuestionCount);
+  });
+
+  app.get("/api/modules/:id", (req, res) => {
+    res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+    res.setHeader("Pragma", "no-cache");
+    res.setHeader("Expires", "0");
+    const id = parseInt(req.params.id as string);
+    const mod = modulesData.find((m: any) => Number(m.id) === id);
+    if (!mod) return res.status(404).json({ error: "Modul tidak ditemukan" });
+    const qCount = questionsData.filter(q => Number(q.module_id) === id).length;
+    res.json({ ...mod, questionCount: qCount });
   });
 
   function findIndexPath(dir: string): string | null {
@@ -1398,6 +1290,30 @@ app.get('/api/modules/:id/questions', authenticateToken, (req, res) => {
       }
     }
     return null;
+  }
+
+  // Safe simulation zip extractor with extract-zip and adm-zip fallback
+  async function safeExtractZip(zipFilePath: string, destDir: string): Promise<boolean> {
+    if (!fs.existsSync(destDir)) {
+      fs.mkdirSync(destDir, { recursive: true });
+    }
+    // 1. Try extract-zip
+    try {
+      await extract(zipFilePath, { dir: destDir });
+      return true;
+    } catch (err1) {
+      console.warn("extract-zip issue, trying adm-zip fallback:", err1);
+      // 2. Try adm-zip fallback
+      try {
+        const AdmZip = (await import("adm-zip")).default;
+        const zip = new AdmZip(zipFilePath);
+        zip.extractAllTo(destDir, true);
+        return true;
+      } catch (err2) {
+        console.error("Both extract-zip and adm-zip failed:", err2);
+        return false;
+      }
+    }
   }
 
   app.post("/api/modules", authenticateToken, isAdmin, upload.array('gameFiles') as any, async (req, res) => {
@@ -1418,30 +1334,28 @@ app.get('/api/modules/:id/questions', authenticateToken, (req, res) => {
               if (!fs.existsSync(gameDir)) {
                 fs.mkdirSync(gameDir, { recursive: true });
               }
-              // Save zip
+              // Save raw zip for client-side offline download
               fs.copyFileSync(file.path, zipPath);
-              try {
-                await extract(file.path, { dir: gameDir });
-                const entryRel = findIndexHtmlRelative(gameDir);
-                if (entryRel) {
-                  gamesMeta[i].entryPoint = entryRel.split(path.sep).map(encodeURIComponent).join('/');
-                  try {
-                    fs.writeFileSync(path.join(gameDir, 'manifest.json'), JSON.stringify({
-                      simulationId: gamesMeta[i].id,
-                      status: 'ready',
-                      entryPoint: gamesMeta[i].entryPoint,
-                      updatedAt: Date.now()
-                    }, null, 2));
-                    const rootIndex = path.join(gameDir, 'index.html');
-                    if (!fs.existsSync(rootIndex)) {
-                      fs.writeFileSync(rootIndex, `<!DOCTYPE html><html><head><meta charset="utf-8"><meta http-equiv="refresh" content="0; url=./${gamesMeta[i].entryPoint}"><script>location.replace('./' + ${JSON.stringify(gamesMeta[i].entryPoint)});</script></head><body>Redirecting to simulation...</body></html>`, 'utf-8');
-                    }
-                  } catch(e) {}
-                }
-              } catch (ex) {
-                console.error("Server-side zip extraction warning:", ex);
+              // Extract on server for direct playback fallback & instant load
+              await safeExtractZip(file.path, gameDir);
+              const entryRel = findIndexHtmlRelative(gameDir);
+              if (entryRel) {
+                gamesMeta[i].entryPoint = entryRel.split(path.sep).map(encodeURIComponent).join('/');
+                try {
+                  fs.writeFileSync(path.join(gameDir, 'manifest.json'), JSON.stringify({
+                    simulationId: gamesMeta[i].id,
+                    status: 'ready',
+                    entryPoint: gamesMeta[i].entryPoint,
+                    updatedAt: Date.now()
+                  }, null, 2));
+                  const rootIndex = path.join(gameDir, 'index.html');
+                  if (!fs.existsSync(rootIndex)) {
+                    fs.writeFileSync(rootIndex, `<!DOCTYPE html><html><head><meta charset="utf-8"><meta http-equiv="refresh" content="0; url=./${gamesMeta[i].entryPoint}"><script>location.replace('./' + ${JSON.stringify(gamesMeta[i].entryPoint)});</script></head><body>Redirecting to simulation...</body></html>`, 'utf-8');
+                  }
+                } catch(e) {}
               }
               gamesMeta[i].path = `/games/game_${gamesMeta[i].id}.zip`;
+              gamesMeta[i].extractedPath = `/games/game_${gamesMeta[i].id}/`;
             } catch (zipError) {
               console.error("Failed to extract zip:", zipError);
             } finally {
@@ -1461,6 +1375,7 @@ app.get('/api/modules/:id/questions', authenticateToken, (req, res) => {
         status: 'locked', banner_url, is_restricted: is_restricted === 'true' || is_restricted === true
       };
       modulesData.push(newModule);
+      await syncModuleToDb(newModule);
       logActivity('module', 'Admin', `Menambahkan modul baru "${title}"`);
       saveDb();
       const qCount = questionsData.filter(q => Number(q.module_id) === Number(newModule.id)).length;
@@ -1493,30 +1408,28 @@ app.get('/api/modules/:id/questions', authenticateToken, (req, res) => {
               if (!fs.existsSync(gameDir)) {
                 fs.mkdirSync(gameDir, { recursive: true });
               }
-              // Save zip
+              // Save raw zip for client-side offline download
               fs.copyFileSync(file.path, zipPath);
-              try {
-                await extract(file.path, { dir: gameDir });
-                const entryRel = findIndexHtmlRelative(gameDir);
-                if (entryRel) {
-                  gamesMeta[i].entryPoint = entryRel.split(path.sep).map(encodeURIComponent).join('/');
-                  try {
-                    fs.writeFileSync(path.join(gameDir, 'manifest.json'), JSON.stringify({
-                      simulationId: gamesMeta[i].id,
-                      status: 'ready',
-                      entryPoint: gamesMeta[i].entryPoint,
-                      updatedAt: Date.now()
-                    }, null, 2));
-                    const rootIndex = path.join(gameDir, 'index.html');
-                    if (!fs.existsSync(rootIndex)) {
-                      fs.writeFileSync(rootIndex, `<!DOCTYPE html><html><head><meta charset="utf-8"><meta http-equiv="refresh" content="0; url=./${gamesMeta[i].entryPoint}"><script>location.replace('./' + ${JSON.stringify(gamesMeta[i].entryPoint)});</script></head><body>Redirecting to simulation...</body></html>`, 'utf-8');
-                    }
-                  } catch(e) {}
-                }
-              } catch (ex) {
-                console.error("Server-side zip extraction warning:", ex);
+              // Extract on server for direct playback fallback & instant load
+              await safeExtractZip(file.path, gameDir);
+              const entryRel = findIndexHtmlRelative(gameDir);
+              if (entryRel) {
+                gamesMeta[i].entryPoint = entryRel.split(path.sep).map(encodeURIComponent).join('/');
+                try {
+                  fs.writeFileSync(path.join(gameDir, 'manifest.json'), JSON.stringify({
+                    simulationId: gamesMeta[i].id,
+                    status: 'ready',
+                    entryPoint: gamesMeta[i].entryPoint,
+                    updatedAt: Date.now()
+                  }, null, 2));
+                  const rootIndex = path.join(gameDir, 'index.html');
+                  if (!fs.existsSync(rootIndex)) {
+                    fs.writeFileSync(rootIndex, `<!DOCTYPE html><html><head><meta charset="utf-8"><meta http-equiv="refresh" content="0; url=./${gamesMeta[i].entryPoint}"><script>location.replace('./' + ${JSON.stringify(gamesMeta[i].entryPoint)});</script></head><body>Redirecting to simulation...</body></html>`, 'utf-8');
+                  }
+                } catch(e) {}
               }
               gamesMeta[i].path = `/games/game_${gamesMeta[i].id}.zip`;
+              gamesMeta[i].extractedPath = `/games/game_${gamesMeta[i].id}/`;
             } catch (zipError) {
               console.error("Failed to extract zip:", zipError);
             } finally {
@@ -1546,6 +1459,7 @@ app.get('/api/modules/:id/questions', authenticateToken, (req, res) => {
         subject_id: parseInt(subject_id) || null,
         duration, material, games: gamesMeta, gameCount: gamesMeta?.length || 0, banner_url, is_restricted: is_restricted === 'true' || is_restricted === true
       };
+      await syncModuleToDb(modulesData[index]);
       logActivity('module', 'Admin', `Mengubah modul "${title}"`);
       saveDb();
       const qCount = questionsData.filter(q => Number(q.module_id) === Number(modulesData[index].id)).length;
@@ -1556,7 +1470,7 @@ app.get('/api/modules/:id/questions', authenticateToken, (req, res) => {
     }
   });
 
-  app.delete("/api/modules/:id", authenticateToken, isAdmin, (req, res) => {
+  app.delete("/api/modules/:id", authenticateToken, isAdmin, async (req, res) => {
     const id = parseInt(req.params.id);
     const index = modulesData.findIndex(m => m.id === id);
     if (index !== -1) {
@@ -1580,16 +1494,18 @@ app.get('/api/modules/:id/questions', authenticateToken, (req, res) => {
       }
       logActivity('module', 'Admin', `Menghapus modul "${module.title}" secara permanen`);
       modulesData.splice(index, 1);
+      await removeModuleFromDb(id);
       saveDb();
     }
     res.json({ success: true, id });
   });
 
-  app.put("/api/modules/:id/restore", authenticateToken, isAdmin, (req, res) => {
+  app.put("/api/modules/:id/restore", authenticateToken, isAdmin, async (req, res) => {
     const id = parseInt(req.params.id);
     const index = modulesData.findIndex(m => m.id === id);
     if (index !== -1) {
       modulesData[index].isDeleted = false;
+      await syncModuleToDb(modulesData[index]);
       logActivity('module', 'Admin', `Memulihkan modul "${modulesData[index].title}"`);
       saveDb();
     }
@@ -1922,11 +1838,17 @@ app.get('/api/modules/:id/questions', authenticateToken, (req, res) => {
     }
 
     if (!matchedFile) {
-      return res.status(404).send('Simulation asset not found: ' + path.basename(safeRelativePath));
+      return res.status(404).type('text/plain').send('Simulation asset not found: ' + path.basename(safeRelativePath));
     }
 
-    // Detect GZIP magic bytes if .unityweb or .data lacks encoding header
-    if (!matchedEncoding && (matchedFile.endsWith('.unityweb') || matchedFile.endsWith('.data'))) {
+    // Explicit encoding detection: if matched file ends with .br or .gz, it MUST have Content-Encoding
+    const lowerFile = matchedFile.toLowerCase();
+    if (lowerFile.endsWith('.br')) {
+      matchedEncoding = 'br';
+    } else if (lowerFile.endsWith('.gz')) {
+      matchedEncoding = 'gzip';
+    } else if (!matchedEncoding && (lowerFile.endsWith('.unityweb') || lowerFile.endsWith('.data'))) {
+      // Magic bytes check for GZIP (1f 8b)
       try {
         const fd = fs.openSync(matchedFile, 'r');
         const buf = Buffer.alloc(2);
@@ -1961,18 +1883,18 @@ app.get('/api/modules/:id/questions', authenticateToken, (req, res) => {
     return res.sendFile(matchedFile);
   }
 
-  // Register simulation routes for both /games and /local-game-play
-  app.get('/game-sw.js', (req, res, next) => {
+  // Register simulation routes for both root and /digital/simulasisains subpath
+  app.get(['/game-sw.js', '/digital/simulasisains/game-sw.js'], (req, res, next) => {
     res.setHeader('Service-Worker-Allowed', '/');
     res.setHeader('Cache-Control', 'no-cache');
-    next();
+    res.sendFile(path.join(process.cwd(), 'public', 'game-sw.js'));
   });
 
-  app.all('/games/*', (req, res) => {
+  app.all(['/games', '/games/*', '/digital/simulasisains/games', '/digital/simulasisains/games/*'], (req, res) => {
     serveSimulationFile(req, res, '/games');
   });
 
-  app.all('/local-game-play/*', (req, res) => {
+  app.all(['/local-game-play', '/local-game-play/*', '/digital/simulasisains/local-game-play', '/digital/simulasisains/local-game-play/*'], (req, res) => {
     serveSimulationFile(req, res, '/local-game-play');
   });
 

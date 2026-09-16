@@ -77,42 +77,78 @@ export function DetailView({
     
     let isMounted = true;
     
-    if (activeGame.path?.endsWith('.zip')) {
+    if (activeGame.path?.endsWith('.zip') || activeGame.extractedPath) {
       const cacheName = 'local-games-cache';
       const gamePrefix = `/local-game-play/game_${activeGameId}/`;
+      const serverGameUrl = `/games/game_${activeGameId}/`;
       
-      const loadFromZip = async () => {
+      const loadSimulation = async () => {
         try {
-          const cache = await caches.open(cacheName);
-          // Validate using a manifest file to ensure full extraction was successful
-          const manifestResponse = await cache.match(gamePrefix + 'manifest.json');
-          if (manifestResponse) {
+          // 1. Check if already extracted and ready in Service Worker cache (Offline-first)
+          if ('caches' in window) {
             try {
-              const manifest = await manifestResponse.json();
-              if (manifest.status === 'ready' && manifest.entryPoint) {
-                if (isMounted) setLocalGameSrc(gamePrefix + manifest.entryPoint);
-                return;
+              const cache = await caches.open(cacheName);
+              const manifestResponse = await cache.match(gamePrefix + 'manifest.json');
+              if (manifestResponse) {
+                const manifest = await manifestResponse.json();
+                if (manifest.status === 'ready' && manifest.entryPoint) {
+                  if (isMounted) setLocalGameSrc(gamePrefix + manifest.entryPoint);
+                  return;
+                }
               }
-            } catch(e) {
-              // Manifest corrupted, proceed to re-download
-            }
+            } catch(e) {}
           }
 
+          // 2. Check if direct server simulation folder is available (Instant load, high-performance streaming)
+          try {
+            const headCheck = await fetch(serverGameUrl, { method: 'HEAD' });
+            if (headCheck.ok) {
+              if (isMounted) {
+                setDownloadingGame(false);
+                setLocalGameSrc(serverGameUrl);
+              }
+              // Let the service worker cache assets in the background while playing
+              return;
+            }
+          } catch(e) {}
+
+          // 3. Download ZIP package for client-side extraction & offline preparation
           if (isMounted) {
             setDownloadingGame(true);
-            setDownloadProgress('Mengunduh simulasi...');
+            setDownloadProgress('Mengunduh paket simulasi...');
           }
           
-          let fetchUrl = activeGame.path;
-          if (fetchUrl.startsWith('/')) {
-            fetchUrl = fetchUrl.substring(1);
+          let fetchUrl = activeGame.path || `/games/game_${activeGameId}.zip`;
+          if (!fetchUrl.startsWith('/')) {
+            fetchUrl = `/${fetchUrl}`;
           }
-          const zipResponse = await fetch(`/${fetchUrl}`);
-          if (!zipResponse.ok) throw new Error('Zip file not found on server');
+          
+          const zipResponse = await fetch(fetchUrl);
+          if (!zipResponse.ok) {
+            // Fallback directly to server simulation url
+            if (isMounted) {
+              setDownloadingGame(false);
+              setLocalGameSrc(serverGameUrl);
+            }
+            return;
+          }
           
           const blob = await zipResponse.blob();
           
-          if (isMounted) setDownloadProgress('Mengekstrak simulasi...');
+          // Validate ZIP magic bytes (PK\x03\x04 = 0x50 0x4b 0x03 0x04)
+          const firstBytes = await blob.slice(0, 4).arrayBuffer().then(buf => new Uint8Array(buf)).catch(() => new Uint8Array(0));
+          const isZip = firstBytes.length >= 2 && firstBytes[0] === 0x50 && firstBytes[1] === 0x4b;
+          
+          if (!isZip) {
+            console.warn("Server returned non-zip response, streaming directly from server player.");
+            if (isMounted) {
+              setDownloadingGame(false);
+              setLocalGameSrc(serverGameUrl);
+            }
+            return;
+          }
+          
+          if (isMounted) setDownloadProgress('Mengekstrak aset simulasi...');
           
           const zip = await JSZip.loadAsync(blob);
           
@@ -129,61 +165,74 @@ export function DetailView({
             });
             indexPath = possibleIndexFiles[0];
           } else {
-            throw new Error('index.html not found in the ZIP package');
+            // If no index.html in root, try direct server playback
+            if (isMounted) {
+              setDownloadingGame(false);
+              setLocalGameSrc(serverGameUrl);
+            }
+            return;
           }
 
-          const promises = [];
-          const extractedFilesCount = [];
-          for (const [filename, zipEntry] of Object.entries(zip.files)) {
-            if (!zipEntry.dir && !filename.includes('__MACOSX')) {
-              extractedFilesCount.push(filename);
-              const encodedFilename = filename.split('/').map(encodeURIComponent).join('/');
-              const fullPath = gamePrefix + encodedFilename;
-              
-              promises.push(
-                zipEntry.async('blob').then(fileBlob => {
-                  const headers = new Headers();
-                  headers.set('Content-Type', getMimeType(filename));
-                  
-                  const cleanName = filename.toLowerCase();
-                  if (cleanName.endsWith('.gz')) headers.set('Content-Encoding', 'gzip');
-                  if (cleanName.endsWith('.br')) headers.set('Content-Encoding', 'br');
-                  
-                  const res = new Response(fileBlob, { headers });
-                  return cache.put(new Request(fullPath), res);
-                })
-              );
+          if ('caches' in window) {
+            const cache = await caches.open(cacheName);
+            const promises = [];
+            const extractedFilesCount: string[] = [];
+            for (const [filename, zipEntry] of Object.entries(zip.files)) {
+              if (!zipEntry.dir && !filename.includes('__MACOSX')) {
+                extractedFilesCount.push(filename);
+                const encodedFilename = filename.split('/').map(encodeURIComponent).join('/');
+                const fullPath = gamePrefix + encodedFilename;
+                
+                promises.push(
+                  zipEntry.async('blob').then(fileBlob => {
+                    const headers = new Headers();
+                    headers.set('Content-Type', getMimeType(filename));
+                    
+                    const cleanName = filename.toLowerCase();
+                    if (cleanName.endsWith('.gz')) headers.set('Content-Encoding', 'gzip');
+                    if (cleanName.endsWith('.br')) headers.set('Content-Encoding', 'br');
+                    
+                    const res = new Response(fileBlob, { headers });
+                    return cache.put(new Request(fullPath), res);
+                  })
+                );
+              }
+            }
+            
+            await Promise.all(promises);
+            
+            // Create and store manifest AFTER all files are successfully cached
+            const encodedEntryPoint = indexPath.split('/').map(encodeURIComponent).join('/');
+            const manifestData = {
+              simulationId: activeGameId,
+              status: 'ready',
+              entryPoint: encodedEntryPoint,
+              filesCount: extractedFilesCount.length,
+              timestamp: Date.now()
+            };
+            const manifestBlob = new Blob([JSON.stringify(manifestData)], { type: 'application/json' });
+            await cache.put(new Request(gamePrefix + 'manifest.json'), new Response(manifestBlob));
+
+            if (isMounted) {
+              setDownloadingGame(false);
+              setLocalGameSrc(gamePrefix + encodedEntryPoint);
+            }
+          } else {
+            if (isMounted) {
+              setDownloadingGame(false);
+              setLocalGameSrc(serverGameUrl);
             }
           }
-          
-          await Promise.all(promises);
-          
-          // Create and store manifest AFTER all files are successfully cached
-          const encodedEntryPoint = indexPath.split('/').map(encodeURIComponent).join('/');
-          const manifestData = {
-            simulationId: activeGameId,
-            status: 'ready',
-            entryPoint: encodedEntryPoint,
-            filesCount: extractedFilesCount.length,
-            timestamp: Date.now()
-          };
-          const manifestBlob = new Blob([JSON.stringify(manifestData)], { type: 'application/json' });
-          await cache.put(new Request(gamePrefix + 'manifest.json'), new Response(manifestBlob));
-
-          if (isMounted) {
-            setDownloadingGame(false);
-            setLocalGameSrc(gamePrefix + encodedEntryPoint);
-          }
         } catch (err) {
-          console.error(err);
+          console.warn("Zip extraction encountered issue, falling back to server simulation stream:", err);
           if (isMounted) {
             setDownloadingGame(false);
-            setLocalGameSrc(null);
+            setLocalGameSrc(serverGameUrl);
           }
         }
       };
       
-      loadFromZip();
+      loadSimulation();
     } else if (activeGame.path) {
       setLocalGameSrc(activeGame.path.startsWith('/') ? activeGame.path : `/${activeGame.path}`);
     } else {

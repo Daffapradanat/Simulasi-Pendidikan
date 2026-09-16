@@ -241,9 +241,21 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    // Only fetch once on mount
-    // visibility polling removed to prevent auto-refresh issues
-  }, [currentModuleId]);
+    const handleModulesUpdated = () => {
+      fetchModules();
+    };
+    window.addEventListener('simpend-modules-updated', handleModulesUpdated);
+    window.addEventListener('focus', handleModulesUpdated);
+    return () => {
+      window.removeEventListener('simpend-modules-updated', handleModulesUpdated);
+      window.removeEventListener('focus', handleModulesUpdated);
+    };
+  }, []);
+
+  useEffect(() => {
+    // Whenever route changes (e.g. from admin/guru to student view), refresh modules
+    fetchModules();
+  }, [location.pathname]);
 
   const refreshUserData = async (user: User) => {
     try {
@@ -276,30 +288,30 @@ export default function App() {
   };
 
   const fetchModules = () => {
-    fetchAuth('/api/modules')
+    fetchAuth('/api/modules?_t=' + Date.now())
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data)) {
           const newData = data.filter(m => !m.isDeleted);
-          setAppModules(prev => JSON.stringify(prev) === JSON.stringify(newData) ? prev : newData);
+          setAppModules(newData);
         }
       })
       .catch(() => {});
       
-    fetchAuth('/api/categories')
+    fetchAuth('/api/categories?_t=' + Date.now())
       .then(res => res.json())
       .then(data => { 
         if (Array.isArray(data)) {
-          setAppCategories(prev => JSON.stringify(prev) === JSON.stringify(data) ? prev : data);
+          setAppCategories(data);
         }
       })
       .catch(() => {});
       
-    fetchAuth('/api/subjects')
+    fetchAuth('/api/subjects?_t=' + Date.now())
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data)) {
-          setAppSubjects(prev => JSON.stringify(prev) === JSON.stringify(data) ? prev : data);
+          setAppSubjects(data);
         }
       })
       .catch(() => {});
@@ -607,8 +619,9 @@ export default function App() {
             <AdminDashboard 
               user={currentUser} 
               onLogout={handleLogout} 
-              onNavigate={() => { setViewMode('main'); navigate('/'); }} 
+              onNavigate={() => { fetchModules(); setViewMode('main'); navigate('/'); }} 
               onUpdateUser={handleUpdateUser}
+              onModulesUpdated={fetchModules}
             /> : 
             <Navigate to={currentUser.role === 'guru' ? "/guru" : "/"} replace />
           )
@@ -620,8 +633,9 @@ export default function App() {
             <AdminDashboard 
               user={currentUser} 
               onLogout={handleLogout} 
-              onNavigate={() => { setViewMode('main'); navigate('/'); }} 
+              onNavigate={() => { fetchModules(); setViewMode('main'); navigate('/'); }} 
               onUpdateUser={handleUpdateUser}
+              onModulesUpdated={fetchModules}
             /> : 
             <Navigate to={currentUser.role === 'admin' ? "/admin" : "/"} replace />
           )
@@ -697,7 +711,6 @@ export default function App() {
                 
 
               </AnimatePresence>
-      <ToastContainer />
             </>
         } />
         <Route path="/error/:code" element={<ErrorView />} />
@@ -760,7 +773,6 @@ export default function App() {
           </motion.div>
         )}
       </AnimatePresence>
-      <ToastContainer />
 
       <AnimatePresence>
         {showLogoutConfirm && (
