@@ -255,8 +255,211 @@ async function initDB() {
     questionsData = [];
   }
 
-  if (!modulesData) {
-    modulesData = [];
+  if (!modulesData || modulesData.length === 0) {
+    modulesData = [...MODULES_DATA];
+  }
+
+  // Ensure initial sample game package exists so generic loader does not 404
+  const game1Dir = path.join(PUBLIC_GAMES_DIR, "game_1");
+  const zipPath = path.join(PUBLIC_GAMES_DIR, "game_1.zip");
+  if (!fs.existsSync(game1Dir) || !fs.existsSync(path.join(game1Dir, "index.html"))) {
+    try {
+      fs.mkdirSync(game1Dir, { recursive: true });
+      const htmlContent = `<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Simulasi Konversi Bilangan Biner</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #0f172a;
+      color: #f8fafc;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    .card {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 16px;
+      padding: 32px;
+      max-width: 620px;
+      width: 100%;
+      box-shadow: 0 10px 25px -5px rgba(0,0,0,0.3);
+      text-align: center;
+    }
+    h1 { font-size: 22px; font-weight: 700; color: #38bdf8; margin-bottom: 8px; }
+    p.subtitle { color: #94a3b8; font-size: 14px; margin-bottom: 24px; }
+    .bits-container {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      margin-bottom: 28px;
+      flex-wrap: wrap;
+    }
+    .bit-box {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+    .bit-val {
+      font-size: 12px;
+      font-weight: 600;
+      color: #64748b;
+    }
+    .bit-btn {
+      width: 48px;
+      height: 60px;
+      font-size: 26px;
+      font-weight: 800;
+      font-family: monospace;
+      border: 2px solid #475569;
+      border-radius: 8px;
+      background: #0f172a;
+      color: #94a3b8;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .bit-btn.active {
+      background: #0284c7;
+      border-color: #38bdf8;
+      color: #ffffff;
+      box-shadow: 0 0 15px rgba(56, 189, 248, 0.4);
+      transform: translateY(-2px);
+    }
+    .results-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-top: 16px;
+    }
+    .res-card {
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 12px;
+      padding: 14px 8px;
+    }
+    .res-label { font-size: 11px; text-transform: uppercase; color: #64748b; font-weight: 700; margin-bottom: 4px; }
+    .res-value { font-size: 20px; font-weight: 700; font-family: monospace; color: #f1f5f9; }
+    .res-value.accent { color: #38bdf8; }
+    .btn-reset {
+      margin-top: 24px;
+      padding: 10px 20px;
+      background: #334155;
+      color: #f8fafc;
+      border: none;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .btn-reset:hover { background: #475569; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>🔬 Laboratorium Interaktif Sistem Bilangan</h1>
+    <p class="subtitle">Klik switch register 8-bit di bawah untuk mempelajari konversi nilai secara interaktif.</p>
+    
+    <div class="bits-container" id="bitsRow"></div>
+
+    <div class="results-grid">
+      <div class="res-card">
+        <div class="res-label">Desimal (Base 10)</div>
+        <div class="res-value accent" id="valDec">0</div>
+      </div>
+      <div class="res-card">
+        <div class="res-label">Heksadesimal (Base 16)</div>
+        <div class="res-value" id="valHex">0x00</div>
+      </div>
+      <div class="res-card">
+        <div class="res-label">Oktal (Base 8)</div>
+        <div class="res-value" id="valOct">000</div>
+      </div>
+    </div>
+
+    <button class="btn-reset" onclick="resetBits()">Reset Register</button>
+  </div>
+
+  <script>
+    const weights = [128, 64, 32, 16, 8, 4, 2, 1];
+    let bits = [0, 0, 0, 0, 0, 0, 0, 0];
+
+    function render() {
+      const container = document.getElementById('bitsRow');
+      container.innerHTML = '';
+      let total = 0;
+
+      weights.forEach((w, i) => {
+        if (bits[i]) total += w;
+
+        const box = document.createElement('div');
+        box.className = 'bit-box';
+
+        const label = document.createElement('div');
+        label.className = 'bit-val';
+        label.innerText = w;
+
+        const btn = document.createElement('button');
+        btn.className = 'bit-btn' + (bits[i] ? ' active' : '');
+        btn.innerText = bits[i];
+        btn.onclick = () => {
+          bits[i] = bits[i] ? 0 : 1;
+          render();
+        };
+
+        box.appendChild(label);
+        box.appendChild(btn);
+        container.appendChild(box);
+      });
+
+      document.getElementById('valDec').innerText = total;
+      document.getElementById('valHex').innerText = '0x' + total.toString(16).toUpperCase().padStart(2, '0');
+      document.getElementById('valOct').innerText = total.toString(8).padStart(3, '0');
+    }
+
+    function resetBits() {
+      bits = [0, 0, 0, 0, 0, 0, 0, 0];
+      render();
+    }
+
+    render();
+  </script>
+</body>
+</html>`;
+      fs.writeFileSync(path.join(game1Dir, "index.html"), htmlContent, "utf-8");
+      fs.writeFileSync(path.join(game1Dir, "manifest.json"), JSON.stringify({
+        simulationId: 1,
+        status: "ready",
+        entryPoint: "index.html",
+        hasGzip: true,
+        hasBrotli: true,
+        updatedAt: Date.now()
+      }, null, 2), "utf-8");
+
+      const AdmZip = (await import("adm-zip")).default;
+      const zip = new AdmZip();
+      zip.addLocalFile(path.join(game1Dir, "index.html"));
+      zip.addLocalFile(path.join(game1Dir, "manifest.json"));
+      zip.writeZip(zipPath);
+    } catch(seedErr) {
+      console.error("Failed to seed sample simulation:", seedErr);
+    }
+  }
+
+  // Link game_1 metadata
+  if (modulesData.length > 0 && modulesData[0].games && modulesData[0].games.length > 0) {
+    if (!modulesData[0].games[0].path) {
+      modulesData[0].games[0].path = '/games/game_1.zip';
+      modulesData[0].games[0].entryPoint = 'index.html';
+    }
   }
 
   await doSaveDb();
@@ -1219,6 +1422,22 @@ app.get('/api/modules/:id/questions', authenticateToken, (req, res) => {
               fs.copyFileSync(file.path, zipPath);
               try {
                 await extract(file.path, { dir: gameDir });
+                const entryRel = findIndexHtmlRelative(gameDir);
+                if (entryRel) {
+                  gamesMeta[i].entryPoint = entryRel.split(path.sep).map(encodeURIComponent).join('/');
+                  try {
+                    fs.writeFileSync(path.join(gameDir, 'manifest.json'), JSON.stringify({
+                      simulationId: gamesMeta[i].id,
+                      status: 'ready',
+                      entryPoint: gamesMeta[i].entryPoint,
+                      updatedAt: Date.now()
+                    }, null, 2));
+                    const rootIndex = path.join(gameDir, 'index.html');
+                    if (!fs.existsSync(rootIndex)) {
+                      fs.writeFileSync(rootIndex, `<!DOCTYPE html><html><head><meta charset="utf-8"><meta http-equiv="refresh" content="0; url=./${gamesMeta[i].entryPoint}"><script>location.replace('./' + ${JSON.stringify(gamesMeta[i].entryPoint)});</script></head><body>Redirecting to simulation...</body></html>`, 'utf-8');
+                    }
+                  } catch(e) {}
+                }
               } catch (ex) {
                 console.error("Server-side zip extraction warning:", ex);
               }
@@ -1278,6 +1497,22 @@ app.get('/api/modules/:id/questions', authenticateToken, (req, res) => {
               fs.copyFileSync(file.path, zipPath);
               try {
                 await extract(file.path, { dir: gameDir });
+                const entryRel = findIndexHtmlRelative(gameDir);
+                if (entryRel) {
+                  gamesMeta[i].entryPoint = entryRel.split(path.sep).map(encodeURIComponent).join('/');
+                  try {
+                    fs.writeFileSync(path.join(gameDir, 'manifest.json'), JSON.stringify({
+                      simulationId: gamesMeta[i].id,
+                      status: 'ready',
+                      entryPoint: gamesMeta[i].entryPoint,
+                      updatedAt: Date.now()
+                    }, null, 2));
+                    const rootIndex = path.join(gameDir, 'index.html');
+                    if (!fs.existsSync(rootIndex)) {
+                      fs.writeFileSync(rootIndex, `<!DOCTYPE html><html><head><meta charset="utf-8"><meta http-equiv="refresh" content="0; url=./${gamesMeta[i].entryPoint}"><script>location.replace('./' + ${JSON.stringify(gamesMeta[i].entryPoint)});</script></head><body>Redirecting to simulation...</body></html>`, 'utf-8');
+                    }
+                  } catch(e) {}
+                }
               } catch (ex) {
                 console.error("Server-side zip extraction warning:", ex);
               }
@@ -1534,58 +1769,211 @@ app.get('/api/modules/:id/questions', authenticateToken, (req, res) => {
     res.json({ success: true, id });
   });
 
-  // Fallback for compressed Unity/WebGL assets (.gz / .br)
-  app.get('/games/*', (req, res, next) => {
-    const cleanPath = req.path.replace(/^\/games\/?/, '');
-    const fullPath = path.join(PUBLIC_GAMES_DIR, cleanPath);
-    if (!fs.existsSync(fullPath)) {
-      if (fs.existsSync(fullPath + '.gz')) {
-        res.set('Content-Encoding', 'gzip');
-        res.set('Cache-Control', 'public, max-age=31536000, immutable');
-        if (cleanPath.endsWith('.wasm')) res.set('Content-Type', 'application/wasm');
-        else if (cleanPath.endsWith('.js')) res.set('Content-Type', 'application/javascript');
-        else if (cleanPath.endsWith('.data')) res.set('Content-Type', 'application/octet-stream');
-        else if (cleanPath.endsWith('.json')) res.set('Content-Type', 'application/json');
-        return res.sendFile(fullPath + '.gz');
+  // Helper: Find index.html recursively within simulation folder
+  function findIndexHtmlRelative(dir: string, maxDepth = 5, currentDepth = 0): string | null {
+    if (currentDepth > maxDepth || !fs.existsSync(dir)) return null;
+    try {
+      const entries = fs.readdirSync(dir, { withFileTypes: true });
+      // Priority 1: direct index.html in current directory
+      const indexFile = entries.find(e => e.isFile() && e.name.toLowerCase() === 'index.html');
+      if (indexFile) return indexFile.name;
+
+      // Priority 2: subdirectories (ignore hidden and macOS metadata)
+      const subdirs = entries.filter(e => e.isDirectory() && !e.name.startsWith('.') && !e.name.includes('__MACOSX'));
+      for (const subdir of subdirs) {
+        const subResult = findIndexHtmlRelative(path.join(dir, subdir.name), maxDepth, currentDepth + 1);
+        if (subResult) {
+          return path.join(subdir.name, subResult);
+        }
       }
-      if (fs.existsSync(fullPath + '.br')) {
-        res.set('Content-Encoding', 'br');
-        res.set('Cache-Control', 'public, max-age=31536000, immutable');
-        if (cleanPath.endsWith('.wasm')) res.set('Content-Type', 'application/wasm');
-        else if (cleanPath.endsWith('.js')) res.set('Content-Type', 'application/javascript');
-        else if (cleanPath.endsWith('.data')) res.set('Content-Type', 'application/octet-stream');
-        else if (cleanPath.endsWith('.json')) res.set('Content-Type', 'application/json');
-        return res.sendFile(fullPath + '.br');
+    } catch (e) {}
+    return null;
+  }
+
+  // Helper: MIME types for simulation assets
+  function getSimulationMimeType(filename: string): string {
+    let cleanName = filename.toLowerCase();
+    if (cleanName.endsWith('.gz')) cleanName = cleanName.slice(0, -3);
+    if (cleanName.endsWith('.br')) cleanName = cleanName.slice(0, -3);
+    const ext = cleanName.split('.').pop() || '';
+
+    const types: Record<string, string> = {
+      'html': 'text/html; charset=utf-8',
+      'htm': 'text/html; charset=utf-8',
+      'js': 'application/javascript; charset=utf-8',
+      'mjs': 'application/javascript; charset=utf-8',
+      'css': 'text/css; charset=utf-8',
+      'json': 'application/json',
+      'png': 'image/png',
+      'jpg': 'image/jpeg',
+      'jpeg': 'image/jpeg',
+      'svg': 'image/svg+xml',
+      'gif': 'image/gif',
+      'webp': 'image/webp',
+      'ico': 'image/x-icon',
+      'wav': 'audio/wav',
+      'mp3': 'audio/mpeg',
+      'ogg': 'audio/ogg',
+      'mp4': 'video/mp4',
+      'webm': 'video/webm',
+      'wasm': 'application/wasm',
+      'data': 'application/octet-stream',
+      'unityweb': 'application/octet-stream',
+      'mem': 'application/octet-stream',
+      'symbols': 'application/json',
+      'zip': 'application/zip'
+    };
+    return types[ext] || 'application/octet-stream';
+  }
+
+  // Core Simulation File Dispatcher with GZIP, BROTLI & Subfolder Resolution
+  function serveSimulationFile(req: express.Request, res: express.Response, baseRoute: string) {
+    const regex = new RegExp('^' + baseRoute.replace('/', '\\/') + '\\/?');
+    let cleanPath = req.path.replace(regex, '');
+    try {
+      cleanPath = decodeURIComponent(cleanPath);
+    } catch (e) {}
+
+    // Security: sanitize against path traversal
+    const safeRelativePath = path.normalize(cleanPath).replace(/^(\.\.[\/\\])+/, '');
+    const targetFullPath = path.join(PUBLIC_GAMES_DIR, safeRelativePath);
+
+    if (!targetFullPath.startsWith(PUBLIC_GAMES_DIR)) {
+      return res.status(403).send("Access Denied");
+    }
+
+    // Direct ZIP request handler
+    if (safeRelativePath.toLowerCase().endsWith('.zip')) {
+      if (fs.existsSync(targetFullPath) && fs.statSync(targetFullPath).isFile()) {
+        res.setHeader('Content-Type', 'application/zip');
+        res.setHeader('Accept-Ranges', 'bytes');
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        return res.sendFile(targetFullPath);
+      }
+      return res.status(404).send('Simulation ZIP package not found on server.');
+    }
+
+    // Directory / Entry point handler
+    if (fs.existsSync(targetFullPath) && fs.statSync(targetFullPath).isDirectory()) {
+      if (!req.path.endsWith('/')) {
+        const redirectUrl = req.originalUrl.split('?')[0] + '/' + (req.originalUrl.includes('?') ? '?' + req.originalUrl.split('?')[1] : '');
+        return res.redirect(301, redirectUrl);
+      }
+
+      // If direct index.html exists
+      const directIndex = path.join(targetFullPath, 'index.html');
+      if (fs.existsSync(directIndex) && fs.statSync(directIndex).isFile()) {
+        res.setHeader('Content-Type', 'text/html; charset=utf-8');
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        res.setHeader('Cross-Origin-Embedder-Policy', 'require-corp');
+        res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
+        res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+        res.setHeader('Cache-Control', 'no-cache');
+        return res.sendFile(directIndex);
+      }
+
+      // If nested in subfolder (e.g. DENYUT JANTUNG_640/index.html)
+      const relativeIndex = findIndexHtmlRelative(targetFullPath);
+      if (relativeIndex) {
+        const encodedSubPath = relativeIndex.split(path.sep).map(encodeURIComponent).join('/');
+        const destUrl = req.originalUrl.replace(/\/+$/, '') + '/' + encodedSubPath;
+        return res.redirect(302, destUrl);
+      }
+
+      return res.status(404).send('Simulation index.html not found inside package.');
+    }
+
+    // Asset file matching with GZIP & BROTLI variants
+    const candidates: { path: string; encoding?: string }[] = [];
+
+    // Exact path
+    candidates.push({ path: targetFullPath });
+
+    // Compressed variants
+    candidates.push({ path: targetFullPath + '.br', encoding: 'br' });
+    candidates.push({ path: targetFullPath + '.gz', encoding: 'gzip' });
+    candidates.push({ path: targetFullPath + '.unityweb' });
+
+    // Extension transforms for WebGL runtime requests (.wasm -> .wasm.br, .data -> .data.gz, etc)
+    if (/\.(wasm|data|js|json)$/i.test(targetFullPath)) {
+      candidates.push({ path: targetFullPath.replace(/\.(wasm|data|js|json)$/i, '.$1.br'), encoding: 'br' });
+      candidates.push({ path: targetFullPath.replace(/\.(wasm|data|js|json)$/i, '.$1.gz'), encoding: 'gzip' });
+      candidates.push({ path: targetFullPath.replace(/\.(wasm|data|js|json)$/i, '.$1.unityweb') });
+    }
+
+    if (targetFullPath.endsWith('.js')) {
+      candidates.push({ path: targetFullPath.replace(/\.js$/, '.framework.js.br'), encoding: 'br' });
+      candidates.push({ path: targetFullPath.replace(/\.js$/, '.framework.js.gz'), encoding: 'gzip' });
+    }
+
+    let matchedFile: string | null = null;
+    let matchedEncoding: string | undefined = undefined;
+
+    for (const cand of candidates) {
+      if (fs.existsSync(cand.path)) {
+        try {
+          if (fs.statSync(cand.path).isFile()) {
+            matchedFile = cand.path;
+            matchedEncoding = cand.encoding;
+            break;
+          }
+        } catch (e) {}
       }
     }
+
+    if (!matchedFile) {
+      return res.status(404).send('Simulation asset not found: ' + path.basename(safeRelativePath));
+    }
+
+    // Detect GZIP magic bytes if .unityweb or .data lacks encoding header
+    if (!matchedEncoding && (matchedFile.endsWith('.unityweb') || matchedFile.endsWith('.data'))) {
+      try {
+        const fd = fs.openSync(matchedFile, 'r');
+        const buf = Buffer.alloc(2);
+        fs.readSync(fd, buf, 0, 2, 0);
+        fs.closeSync(fd);
+        if (buf[0] === 0x1f && buf[1] === 0x8b) {
+          matchedEncoding = 'gzip';
+        }
+      } catch (e) {}
+    }
+
+    const mimeType = getSimulationMimeType(targetFullPath);
+    res.setHeader('Content-Type', mimeType);
+
+    if (matchedEncoding) {
+      res.setHeader('Content-Encoding', matchedEncoding);
+    }
+
+    res.setHeader('Accept-Ranges', 'bytes');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
+    res.setHeader('Cross-Origin-Embedder-Policy', 'require-corp');
+    res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
+    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+
+    if (matchedFile.toLowerCase().endsWith('.html') || matchedFile.toLowerCase().endsWith('.htm')) {
+      res.setHeader('Cache-Control', 'no-cache');
+    } else {
+      res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+    }
+
+    return res.sendFile(matchedFile);
+  }
+
+  // Register simulation routes for both /games and /local-game-play
+  app.get('/game-sw.js', (req, res, next) => {
+    res.setHeader('Service-Worker-Allowed', '/');
+    res.setHeader('Cache-Control', 'no-cache');
     next();
   });
 
-  // Serve extracted games explicitly
-  app.use('/games', express.static(PUBLIC_GAMES_DIR, {
-    maxAge: '1y', 
-    setHeaders: (res, filePath) => {
-      res.set('Cache-Control', 'public, max-age=31536000, immutable');
-      if (filePath.endsWith('.gz') || filePath.includes('.gz.')) {
-        res.set('Content-Encoding', 'gzip');
-        if (filePath.includes('.wasm')) res.set('Content-Type', 'application/wasm');
-        else if (filePath.includes('.js')) res.set('Content-Type', 'application/javascript');
-        else if (filePath.includes('.data')) res.set('Content-Type', 'application/octet-stream');
-        else if (filePath.includes('.json')) res.set('Content-Type', 'application/json');
-      } else if (filePath.endsWith('.br') || filePath.includes('.br.')) {
-        res.set('Content-Encoding', 'br');
-        if (filePath.includes('.wasm')) res.set('Content-Type', 'application/wasm');
-        else if (filePath.includes('.js')) res.set('Content-Type', 'application/javascript');
-        else if (filePath.includes('.data')) res.set('Content-Type', 'application/octet-stream');
-        else if (filePath.includes('.json')) res.set('Content-Type', 'application/json');
-      } else if (filePath.endsWith('.wasm')) {
-        res.set('Content-Type', 'application/wasm');
-      }
-    }
-  }));
+  app.all('/games/*', (req, res) => {
+    serveSimulationFile(req, res, '/games');
+  });
 
-  app.use('/games', (req, res) => {
-    res.status(404).send('Game file not found.');
+  app.all('/local-game-play/*', (req, res) => {
+    serveSimulationFile(req, res, '/local-game-play');
   });
 
   // Provide JSON 404 for unhandled API routes instead of falling back to Vite SPA
@@ -1618,7 +2006,7 @@ app.get('/api/modules/:id/questions', authenticateToken, (req, res) => {
     res.status(500).json({ success: false, error: "Internal Server Error" });
   });
 
-  httpServer.listen(PORT, "0.0.0.0", () => {
+  httpServer.listen(Number(PORT), "0.0.0.0", () => {
     console.log(`Server running on http://localhost:${PORT}`);
   });
 }

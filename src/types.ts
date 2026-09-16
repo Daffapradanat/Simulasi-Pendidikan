@@ -10,6 +10,14 @@ export type Subject = {
   icon?: string;
 };
 
+export type Game = { 
+  id: number; 
+  title: string; 
+  desc: string; 
+  path?: string;
+  entryPoint?: string;
+};
+
 export type Module = {
   id: number;
   title: string;
@@ -24,7 +32,7 @@ export type Module = {
     theory: string;
     keyTerms: { term: string; def: string }[];
   } | null;
-  games: { id: number; title: string; desc: string; path?: string }[];
+  games: Game[];
   duration: string;
   level: string;
   gameCount: number;

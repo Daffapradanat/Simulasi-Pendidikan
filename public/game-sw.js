@@ -94,10 +94,23 @@ self.addEventListener('fetch', (event) => {
           });
         }
         
-        return new Response('Not found in local game cache', { 
+        // 3. Fallback to server: Fetch from /games/ or direct server route
+        try {
+          const serverFallbackUrl = url.pathname.replace(/^\/local-game-play\//, '/games/');
+          const networkResponse = await fetch(serverFallbackUrl + url.search);
+          if (networkResponse && networkResponse.ok) {
+            // Save to cache for offline usage
+            try {
+              cache.put(event.request, networkResponse.clone());
+            } catch (err) {}
+            return networkResponse;
+          }
+        } catch (netErr) {}
+
+        return new Response('File simulasi belum tersedia di cache lokal maupun server.', { 
           status: 404,
           statusText: 'Not Found',
-          headers: { 'Content-Type': 'text/plain' }
+          headers: { 'Content-Type': 'text/plain; charset=utf-8' }
         });
       })
     );
