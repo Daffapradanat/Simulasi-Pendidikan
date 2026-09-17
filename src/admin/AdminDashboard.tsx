@@ -158,6 +158,7 @@ export default function AdminDashboard({ user, onLogout, onNavigate, onUpdateUse
     e.preventDefault();
     if (isSavingModule) return;
     setIsSavingModule(true);
+    toast.info('Sedang menyimpan modul, mohon tunggu...');
     try {
       const material = {
         objectives: moduleForm.objectives.split('\n').filter(s => s.trim()),

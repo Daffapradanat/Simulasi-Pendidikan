@@ -568,52 +568,7 @@ export function DetailView({
                       {/* Active Game Player */}
                       
                       {activeGameId !== null && (
-                        <div id="webgl-simulation-player" className="modern-webgl-frame" style={{ border: 'none', overflow: 'hidden', borderRadius: '12px', marginBottom: '16px' }}>
-                          {/* Player Header Bar with Title and Open in New Tab */}
-                          <div style={{ 
-                            background: '#0f172a', 
-                            padding: '10px 16px', 
-                            display: 'flex', 
-                            alignItems: 'center', 
-                            justifyContent: 'space-between',
-                            borderBottom: '1px solid #1e293b'
-                          }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#f8fafc' }}>
-                              <i className="ti ti-device-gamepad-2" style={{ color: '#38bdf8', fontSize: '18px' }}></i>
-                              <span style={{ fontSize: '13.5px', fontWeight: 700, letterSpacing: '0.2px' }}>
-                                {module.title}
-                              </span>
-                            </div>
-
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const targetUrl = localGameSrc || (activeGame?.path?.startsWith('http') ? activeGame.path : `${getBaseUrl()}games/game_${activeGameId}/`);
-                                if (targetUrl) {
-                                  window.open(targetUrl, '_blank');
-                                }
-                              }}
-                              className="btn btn-sm"
-                              style={{
-                                background: '#1e293b',
-                                color: '#38bdf8',
-                                border: '1px solid #334155',
-                                padding: '5px 12px',
-                                fontSize: '12px',
-                                fontWeight: 700,
-                                borderRadius: '6px',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '6px',
-                                cursor: 'pointer'
-                              }}
-                              title="Buka simulasi di tab baru"
-                            >
-                              <i className="ti ti-external-link" style={{ fontSize: '14px' }}></i>
-                              Buka di Tab Baru
-                            </button>
-                          </div>
-
+                        <div id="webgl-simulation-player" className="modern-webgl-frame" style={{ border: 'none', overflow: 'hidden', borderRadius: '12px' }}>
                           <div style={{ width: '100%', aspectRatio: '16/9', background: '#020617', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                             {activeGame?.path ? (
                               downloadingGame && !localGameSrc ? (
@@ -625,7 +580,7 @@ export function DetailView({
                                 <iframe 
                                   src={localGameSrc}
                                   style={{ width: '100%', height: '100%', border: 'none' }}
-                                  title={module.title}
+                                  title={activeGame.title}
                                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                                 ></iframe>
                               ) : (
@@ -633,7 +588,7 @@ export function DetailView({
                                   <i className="ti ti-device-gamepad-2" style={{ fontSize: '36px', marginBottom: '10px', display: 'block', color: '#94a3b8' }}></i>
                                   <p style={{ margin: '0 0 6px 0', fontWeight: 600, fontSize: '15px', color: '#f8fafc' }}>Paket Simulasi Belum Tersedia</p>
                                   <p style={{ margin: 0, fontSize: '13px', color: '#94a3b8', lineHeight: 1.5 }}>
-                                    File WebGL atau ZIP untuk simulasi &ldquo;{module.title}&rdquo; belum diunggah ke server. Guru atau Admin dapat mengunggah file ZIP game melalui menu Kelola Modul.
+                                    File WebGL atau ZIP untuk simulasi &ldquo;{activeGame.title}&rdquo; belum diunggah ke server. Guru atau Admin dapat mengunggah file ZIP game melalui menu Kelola Modul.
                                   </p>
                                 </div>
                               )
@@ -659,10 +614,6 @@ export function DetailView({
                           module.games.map((game, idx) => {
                             const isPlayed = playedGames.has(game.id) || isModuleCompleted;
                             const isActive = activeGameId === game.id;
-                            const displayTitle = (module.games && module.games.length > 1) 
-                              ? `${module.title} (Bagian ${idx + 1})` 
-                              : module.title;
-
                             return (
                               <div 
                                 key={game.id}
@@ -687,18 +638,18 @@ export function DetailView({
                                       )}
                                     </div>
                                     <h4 style={{ fontSize: '15px', fontWeight: 700, color: '#0f172a', margin: 0 }}>
-                                      {displayTitle}
+                                      {game.title}
                                     </h4>
                                     <p style={{ fontSize: '12.5px', color: '#64748b', margin: 0, lineHeight: 1.4 }}>
-                                      {game.desc || module.desc}
+                                      {game.desc}
                                     </p>
                                   </div>
                                 </div>
 
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <div>
                                   <button 
                                     className={`btn ${isActive ? 'btn-outline' : 'btn-primary'}`}
-                                    onClick={() => onLaunchGame(game.id, displayTitle)}
+                                    onClick={() => onLaunchGame(game.id, game.title)}
                                     style={{ 
                                       padding: '8px 16px', 
                                       fontSize: '13px', 
