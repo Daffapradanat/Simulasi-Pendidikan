@@ -1,39 +1,65 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 
+const recentMessages = new Map<string, number>();
+
 export const toast = {
-  success: (msg: string) => window.dispatchEvent(new CustomEvent('show-toast', { detail: { msg, type: 'success' } })),
-  error: (msg: string) => window.dispatchEvent(new CustomEvent('show-toast', { detail: { msg, type: 'error' } })),
-  info: (msg: string) => window.dispatchEvent(new CustomEvent('show-toast', { detail: { msg, type: 'info' } }))
+  success: (msg: string) => {
+    if (!msg) return;
+    const now = Date.now();
+    const last = recentMessages.get(msg) || 0;
+    if (now - last < 1800) return;
+    recentMessages.set(msg, now);
+    window.dispatchEvent(new CustomEvent('show-toast', { detail: { msg, type: 'success' } }));
+  },
+  error: (msg: string) => {
+    if (!msg) return;
+    const now = Date.now();
+    const last = recentMessages.get(msg) || 0;
+    if (now - last < 1800) return;
+    recentMessages.set(msg, now);
+    window.dispatchEvent(new CustomEvent('show-toast', { detail: { msg, type: 'error' } }));
+  },
+  info: (msg: string) => {
+    if (!msg) return;
+    const now = Date.now();
+    const last = recentMessages.get(msg) || 0;
+    if (now - last < 1800) return;
+    recentMessages.set(msg, now);
+    window.dispatchEvent(new CustomEvent('show-toast', { detail: { msg, type: 'info' } }));
+  }
 };
 
 export function ToastContainer() {
   const [toasts, setToasts] = useState<any[]>([]);
 
   useEffect(() => {
-    let lastMsg = '';
-    let lastTime = 0;
-
     const handler = (e: any) => {
-      const now = Date.now();
       const msg = e.detail?.msg;
-      // Debounce duplicate messages arriving within 1200ms
-      if (msg && msg === lastMsg && (now - lastTime) < 1200) {
-        return;
-      }
-      lastMsg = msg;
-      lastTime = now;
+      const type = e.detail?.type || 'info';
+      if (!msg) return;
 
       const id = Date.now() + Math.random();
       setToasts(prev => {
-        // Prevent duplicate if already in active toast list
-        if (prev.some(t => t.msg === msg)) return prev;
-        return [...prev, { id, ...e.detail }];
+        // If success or error arrives, clear any pending info/loading toasts
+        let filtered = prev;
+        if (type === 'success' || type === 'error') {
+          filtered = filtered.filter(t => t.type !== 'info');
+        }
+
+        // Prevent duplicate message if already visible
+        if (filtered.some(t => t.msg === msg)) return filtered;
+
+        // Keep at most 2 active toasts to prevent clutter
+        const next = [...filtered, { id, msg, type }];
+        return next.slice(-2);
       });
+
       setTimeout(() => {
         setToasts(prev => prev.filter(t => t.id !== id));
-      }, 4000);
+      }, 3500);
     };
+
     window.addEventListener('show-toast', handler);
     return () => window.removeEventListener('show-toast', handler);
   }, []);
@@ -43,18 +69,21 @@ export function ToastContainer() {
   };
 
   return (
-    <div style={{ 
-      position: 'fixed', 
-      top: 24, 
-      right: 24, 
-      zIndex: 999999, 
-      display: 'flex', 
-      flexDirection: 'column', 
-      gap: 10,
-      maxWidth: 'calc(100vw - 48px)',
-      width: '380px',
-      pointerEvents: 'none'
-    }}>
+    <div 
+      className="toast-container no-print"
+      style={{ 
+        position: 'fixed', 
+        top: 24, 
+        right: 24, 
+        zIndex: 999999, 
+        display: 'flex', 
+        flexDirection: 'column', 
+        gap: 10,
+        maxWidth: 'calc(100vw - 48px)',
+        width: '380px',
+        pointerEvents: 'none'
+      }}
+    >
       <AnimatePresence>
         {toasts.map(t => {
           const isSuccess = t.type === 'success';
@@ -65,6 +94,7 @@ export function ToastContainer() {
           return (
             <motion.div 
               key={t.id}
+              className="toast no-print"
               initial={{ opacity: 0, y: -20, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -20, scale: 0.95, transition: { duration: 0.15 } }}
