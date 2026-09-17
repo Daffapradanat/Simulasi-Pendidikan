@@ -370,6 +370,12 @@ export default function App() {
   };
 
   const handleLogin = async (email: string, pass: string, remember: boolean, mode: 'siswa' | 'guru' | 'admin') => {
+    // If student mode without password, log in as guest immediately
+    if (mode === 'siswa' && (!pass || pass.trim() === '')) {
+      await handleGuestLogin(email.trim() || 'Siswa Tamu');
+      return;
+    }
+
     if (loginBlockTime && Date.now() < loginBlockTime) {
       const waitTime = Math.ceil((loginBlockTime - Date.now()) / 1000);
       showToast(`Terlalu banyak percobaan. Coba lagi dalam ${waitTime} detik.`, 'error');
@@ -591,7 +597,7 @@ export default function App() {
         <Route path="/siswa/login" element={
           (currentUser && !currentUser.isGuest) ? <Navigate to="/" replace /> :
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}>
-            <LoginView onLogin={(e, p, r) => handleLogin(e, p, r, 'siswa')} defaultMode="siswa-full" />
+            <LoginView onLogin={(e, p, r) => handleLogin(e, p, r, 'siswa')} onGuestLogin={handleGuestLogin} defaultMode="siswa-full" />
           </motion.div>
         } />
         

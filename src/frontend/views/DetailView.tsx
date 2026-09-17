@@ -125,10 +125,21 @@ export function DetailView({
           
           const zipResponse = await fetch(fetchUrl);
           if (!zipResponse.ok) {
-            // Fallback directly to server simulation url
+            // Check if direct server simulation folder exists
+            try {
+              const headCheck = await fetch(serverGameUrl, { method: 'HEAD' });
+              if (headCheck.ok) {
+                if (isMounted) {
+                  setDownloadingGame(false);
+                  setLocalGameSrc(serverGameUrl);
+                }
+                return;
+              }
+            } catch(e) {}
+
             if (isMounted) {
               setDownloadingGame(false);
-              setLocalGameSrc(serverGameUrl);
+              setLocalGameSrc(null);
             }
             return;
           }
@@ -557,9 +568,12 @@ export function DetailView({
                                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                                 ></iframe>
                               ) : (
-                                <div style={{ textAlign: 'center', color: '#ef4444', padding: '24px' }}>
-                                  <i className="ti ti-alert-triangle" style={{ fontSize: '36px', marginBottom: '8px', display: 'block' }}></i>
-                                  <p style={{ margin: '0 0 4px 0', fontWeight: 600 }}>Gagal Memuat Simulasi</p>
+                                <div style={{ textAlign: 'center', color: '#cbd5e1', padding: '32px 20px', maxWidth: '460px' }}>
+                                  <i className="ti ti-device-gamepad-2" style={{ fontSize: '36px', marginBottom: '10px', display: 'block', color: '#94a3b8' }}></i>
+                                  <p style={{ margin: '0 0 6px 0', fontWeight: 600, fontSize: '15px', color: '#f8fafc' }}>Paket Simulasi Belum Tersedia</p>
+                                  <p style={{ margin: 0, fontSize: '13px', color: '#94a3b8', lineHeight: 1.5 }}>
+                                    File WebGL atau ZIP untuk simulasi &ldquo;{activeGame.title}&rdquo; belum diunggah ke server. Guru atau Admin dapat mengunggah file ZIP game melalui menu Kelola Modul.
+                                  </p>
                                 </div>
                               )
                             ) : (

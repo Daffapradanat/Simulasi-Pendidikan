@@ -694,25 +694,39 @@ app.post("/api/upload-image", authenticateToken, isAdmin, (req, res) => {
   }
 
   app.post("/api/auth/guest-login", (req, res) => {
-    const { name } = req.body;
-    if (!name) return res.status(400).json({ error: "Nama harus diisi" });
+    const rawName = (req.body && req.body.name ? req.body.name.toString().trim() : '') || 'Siswa Tamu';
     const user = {
       id: "guest_" + Date.now(),
-      name: name,
+      name: rawName,
       email: "guest@simulasisains.id",
       role: 'siswa',
       isGuest: true,
-      avatar: "https://ui-avatars.com/api/?name=" + encodeURIComponent(name) + "&background=random&color=fff&size=100"
+      avatar: "https://ui-avatars.com/api/?name=" + encodeURIComponent(rawName) + "&background=random&color=fff&size=100"
     };
     const token = jwt.sign(user, SECRET_KEY, { expiresIn: '24h' });
-    res.json({ token, user });
+    res.json({ success: true, token, user });
   });
 
   app.post("/api/auth/login", async (req, res) => {
-    const { email, password } = req.body;
+    const { email, password } = req.body || {};
 
-    if (!email || !password) {
-      return res.status(400).json({ success: false, error: "Username/Email dan password wajib diisi." });
+    // If password is not provided, treat as Guest student login
+    if (!password || password.toString().trim() === '') {
+      const guestName = (email || '').toString().trim() || 'Siswa Tamu';
+      const guestUser = {
+        id: "guest_" + Date.now(),
+        name: guestName,
+        email: "guest@simulasisains.id",
+        role: 'siswa',
+        isGuest: true,
+        avatar: "https://ui-avatars.com/api/?name=" + encodeURIComponent(guestName) + "&background=random&color=fff&size=100"
+      };
+      const token = jwt.sign(guestUser, SECRET_KEY, { expiresIn: '24h' });
+      return res.json({ success: true, token, user: guestUser });
+    }
+
+    if (!email) {
+      return res.status(400).json({ success: false, error: "Username atau email wajib diisi." });
     }
 
     const rawIdentifier = (email || '').toString().trim();

@@ -27,12 +27,28 @@ export function LoginView({ onLogin, onGuestLogin, defaultMode = 'siswa-guest' }
 
   const submit = () => {
     if (defaultMode === 'siswa-guest') {
-      const cleanName = guestName.trim();
-      if (!cleanName) {
-        setError('Silakan masukkan nama lengkap Anda.');
+      const cleanName = guestName.trim() || 'Siswa Tamu';
+      if (onGuestLogin) onGuestLogin(cleanName);
+    } else if (defaultMode === 'siswa-full') {
+      const cleanEmail = email.trim();
+      const cleanPass = pass.trim();
+      
+      // If student did not provide a password, log in as Guest automatically
+      if (!cleanPass) {
+        const guestDisplayName = cleanEmail || 'Siswa Tamu';
+        if (onGuestLogin) {
+          onGuestLogin(guestDisplayName);
+        } else if (onLogin) {
+          onLogin(guestDisplayName, '', rememberMe);
+        }
         return;
       }
-      if (onGuestLogin) onGuestLogin(cleanName);
+      
+      if (!cleanEmail) {
+        setError('Username atau email wajib diisi.');
+        return;
+      }
+      if (onLogin) onLogin(cleanEmail, cleanPass, rememberMe);
     } else {
       const cleanEmail = email.trim();
       const cleanPass = pass.trim();
@@ -167,19 +183,25 @@ export function LoginView({ onLogin, onGuestLogin, defaultMode = 'siswa-guest' }
         ) : (
           <>
             <div className="login-title">Masuk ke Akun {title}</div>
-            <div className="login-subtitle">Selamat datang! Silakan masuk untuk mengakses dashboard.</div>
+            <div className="login-subtitle">
+              {defaultMode === 'siswa-full' 
+                ? 'Silakan masuk dengan akun siswa atau langsung mulai belajar sebagai Tamu (Guest).' 
+                : 'Selamat datang! Silakan masuk untuk mengakses dashboard.'}
+            </div>
             <div className="form-group">
               <label className="form-label">Username / Email {title}</label>
               <input className="form-input" type="text" placeholder={`Masukkan username atau email ${title.toLowerCase()}`} value={email} onChange={e => setEmail(e.target.value)} onKeyDown={e => e.key === 'Enter' && submit()} />
             </div>
             
             <div className="form-group">
-              <label className="form-label">Password</label>
+              <label className="form-label">
+                Password {defaultMode === 'siswa-full' && <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 400 }}>(Opsional — kosongkan jika masuk sebagai Tamu)</span>}
+              </label>
               <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
                 <input 
                   className="form-input" 
                   type={showPassword ? 'text' : 'password'} 
-                  placeholder="Masukkan password" 
+                  placeholder={defaultMode === 'siswa-full' ? 'Masukkan password (opsional)' : 'Masukkan password'} 
                   value={pass} 
                   onChange={e => setPass(e.target.value)} 
                   onKeyDown={e => e.key === 'Enter' && submit()} 
@@ -273,6 +295,17 @@ export function LoginView({ onLogin, onGuestLogin, defaultMode = 'siswa-guest' }
         <button className="btn btn-primary btn-full btn-lg" onClick={submit}>
           {defaultMode === 'siswa-guest' ? 'Mulai Belajar' : 'Masuk'} <i className="ti ti-arrow-right"></i>
         </button>
+
+        {defaultMode === 'siswa-full' && (
+          <button 
+            type="button"
+            className="btn btn-secondary btn-full btn-lg" 
+            style={{ marginTop: '10px' }} 
+            onClick={() => onGuestLogin ? onGuestLogin(email.trim() || 'Siswa Tamu') : submit()}
+          >
+            <i className="ti ti-user"></i> Masuk Langsung sebagai Tamu
+          </button>
+        )}
         {defaultMode !== 'siswa-guest' && (
           <div style={{ marginTop: '20px', textAlign: 'center' }}>
             <button 
