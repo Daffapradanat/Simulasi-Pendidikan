@@ -184,16 +184,49 @@ export function DetailView({
                 const fullPath = gamePrefix + encodedFilename;
                 
                 promises.push(
-                  zipEntry.async('blob').then(fileBlob => {
+                  zipEntry.async('blob').then(async fileBlob => {
                     const headers = new Headers();
                     headers.set('Content-Type', getMimeType(filename));
                     
                     const cleanName = filename.toLowerCase();
-                    if (cleanName.endsWith('.gz')) headers.set('Content-Encoding', 'gzip');
-                    if (cleanName.endsWith('.br')) headers.set('Content-Encoding', 'br');
+                    let isGzip = cleanName.endsWith('.gz');
+                    let isBr = cleanName.endsWith('.br');
+
+                    if (!isGzip && !isBr && (cleanName.endsWith('.unityweb') || cleanName.endsWith('.data') || cleanName.endsWith('.wasm'))) {
+                      try {
+                        const headBuf = await fileBlob.slice(0, 2).arrayBuffer();
+                        const bytes = new Uint8Array(headBuf);
+                        if (bytes.length >= 2 && bytes[0] === 0x1f && bytes[1] === 0x8b) {
+                          isGzip = true;
+                        }
+                      } catch(e) {}
+                    }
+
+                    if (isGzip) headers.set('Content-Encoding', 'gzip');
+                    if (isBr) headers.set('Content-Encoding', 'br');
+                    headers.set('Accept-Ranges', 'bytes');
+                    headers.set('Cross-Origin-Embedder-Policy', 'require-corp');
+                    headers.set('Cross-Origin-Opener-Policy', 'same-origin');
+                    headers.set('Cross-Origin-Resource-Policy', 'cross-origin');
                     
                     const res = new Response(fileBlob, { headers });
-                    return cache.put(new Request(fullPath), res);
+                    const putPromises = [cache.put(new Request(fullPath), res.clone())];
+
+                    // Cache aliases: if filename ends with .gz / .br / .unityweb, also cache without extension
+                    if (cleanName.endsWith('.gz') || cleanName.endsWith('.br')) {
+                      const aliasName = filename.slice(0, -3);
+                      const aliasEncoded = aliasName.split('/').map(encodeURIComponent).join('/');
+                      putPromises.push(cache.put(new Request(gamePrefix + aliasEncoded), res.clone()));
+                    } else if (cleanName.endsWith('.unityweb')) {
+                      const aliasName = filename.slice(0, -9);
+                      const aliasEncoded = aliasName.split('/').map(encodeURIComponent).join('/');
+                      putPromises.push(cache.put(new Request(gamePrefix + aliasEncoded), res.clone()));
+                      putPromises.push(cache.put(new Request(gamePrefix + aliasEncoded + '.gz'), res.clone()));
+                    } else if (/\.(wasm|data|js|json|css|mem|symbols)$/i.test(filename)) {
+                      putPromises.push(cache.put(new Request(fullPath + '.gz'), res.clone()));
+                    }
+
+                    return Promise.all(putPromises);
                   })
                 );
               }

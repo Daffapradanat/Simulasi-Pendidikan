@@ -135,6 +135,22 @@ async function initDB() {
     await db.exec("ALTER TABLE questions ADD COLUMN type_id INTEGER REFERENCES question_types(id)");
   } catch (e) {}
 
+  // Ensure all tables have 'data' column if created previously without it
+  const tablesWithData = ['modules', 'teachers', 'students', 'activities', 'user_progress', 'categories', 'schools', 'subjects', 'admin_profile', 'questions'];
+  for (const tbl of tablesWithData) {
+    try {
+      const tableInfo = await db.all(`PRAGMA table_info(${tbl})`);
+      if (tableInfo && tableInfo.length > 0) {
+        const hasData = tableInfo.some((col: any) => col.name === 'data');
+        if (!hasData) {
+          await db.exec(`ALTER TABLE ${tbl} ADD COLUMN data TEXT`);
+        }
+      }
+    } catch (err) {
+      console.warn(`Schema check for ${tbl}:`, err);
+    }
+  }
+
   const tableCheck = await db.get("SELECT name FROM sqlite_master WHERE type='table' AND name='app_state'");
   if (tableCheck) {
     const row = await db.get('SELECT data FROM app_state WHERE id = 1');
@@ -148,40 +164,109 @@ async function initDB() {
       await db.exec("DROP TABLE app_state");
     }
   } else {
-
-    const mods = await db.all("SELECT data FROM modules");
-    modulesData = mods.map((r: any) => JSON.parse(r.data));
-
-    const teas = await db.all("SELECT data FROM teachers");
-    teachersData = teas.map((r: any) => JSON.parse(r.data));
-
-    const stus = await db.all("SELECT data FROM students");
-    studentsData = stus.map((r: any) => JSON.parse(r.data));
-
-    const acts = await db.all("SELECT data FROM activities ORDER BY id DESC LIMIT 100");
-    activitiesData = acts.map((r: any) => JSON.parse(r.data));
-
-    const progs = await db.all("SELECT id, data FROM user_progress");
-    progs.forEach((r: any) => {
-      userProgressData[r.id] = JSON.parse(r.data);
-    });
-
-    const cats = await db.all("SELECT data FROM categories");
-    categoriesData = cats.map((r: any) => JSON.parse(r.data));
+    try {
+      const mods = await db.all("SELECT * FROM modules");
+      modulesData = mods.map((r: any) => {
+        if (r.data) {
+          try { return JSON.parse(r.data); } catch { return r; }
+        }
+        return r;
+      }).filter((m: any) => m && (m.id !== undefined && m.id !== null));
+    } catch (e) {
+      modulesData = [];
+    }
 
     try {
-      const schs = await db.all("SELECT data FROM schools");
-      schoolsData = schs.map((r: any) => JSON.parse(r.data));
+      const teas = await db.all("SELECT * FROM teachers");
+      teachersData = teas.map((r: any) => {
+        if (r.data) {
+          try { return JSON.parse(r.data); } catch { return r; }
+        }
+        return r;
+      }).filter((t: any) => t && (t.id !== undefined && t.id !== null));
+    } catch (e) {
+      teachersData = [];
+    }
+
+    try {
+      const stus = await db.all("SELECT * FROM students");
+      studentsData = stus.map((r: any) => {
+        if (r.data) {
+          try { return JSON.parse(r.data); } catch { return r; }
+        }
+        return r;
+      }).filter((s: any) => s && (s.id !== undefined && s.id !== null));
+    } catch (e) {
+      studentsData = [];
+    }
+
+    try {
+      const acts = await db.all("SELECT * FROM activities ORDER BY id DESC LIMIT 100");
+      activitiesData = acts.map((r: any) => {
+        if (r.data) {
+          try { return JSON.parse(r.data); } catch { return r; }
+        }
+        return r;
+      });
+    } catch (e) {
+      activitiesData = [];
+    }
+
+    try {
+      const progs = await db.all("SELECT * FROM user_progress");
+      progs.forEach((r: any) => {
+        if (r.data) {
+          try { userProgressData[r.id] = JSON.parse(r.data); } catch { userProgressData[r.id] = r.data; }
+        }
+      });
+    } catch (e) {
+      userProgressData = {};
+    }
+
+    try {
+      const cats = await db.all("SELECT * FROM categories");
+      categoriesData = cats.map((r: any) => {
+        if (r.data) {
+          try { return JSON.parse(r.data); } catch { return r; }
+        }
+        return r;
+      }).filter((c: any) => c && (c.id !== undefined && c.id !== null));
+    } catch (e) {
+      categoriesData = [];
+    }
+
+    try {
+      const schs = await db.all("SELECT * FROM schools");
+      schoolsData = schs.map((r: any) => {
+        if (r.data) {
+          try { return JSON.parse(r.data); } catch { return r; }
+        }
+        return r;
+      }).filter((s: any) => s && (s.id !== undefined && s.id !== null));
     } catch (e) {
       schoolsData = [];
     }
 
-    const subs = await db.all("SELECT data FROM subjects");
-    subjectsData = subs.map((r: any) => JSON.parse(r.data));
+    try {
+      const subs = await db.all("SELECT * FROM subjects");
+      subjectsData = subs.map((r: any) => {
+        if (r.data) {
+          try { return JSON.parse(r.data); } catch { return r; }
+        }
+        return r;
+      }).filter((s: any) => s && (s.id !== undefined && s.id !== null));
+    } catch (e) {
+      subjectsData = [];
+    }
 
     try {
-      const qData = await db.all("SELECT data FROM questions");
-      questionsData = qData.map((r: any) => JSON.parse(r.data));
+      const qData = await db.all("SELECT * FROM questions");
+      questionsData = qData.map((r: any) => {
+        if (r.data) {
+          try { return JSON.parse(r.data); } catch { return r; }
+        }
+        return r;
+      }).filter((q: any) => q && (q.id !== undefined && q.id !== null));
     } catch (e) {
       questionsData = [];
     }
@@ -1744,14 +1829,18 @@ app.get('/api/modules/:id/questions', authenticateToken, (req, res) => {
 
   // Core Simulation File Dispatcher with GZIP, BROTLI & Subfolder Resolution
   function serveSimulationFile(req: express.Request, res: express.Response, baseRoute: string) {
-    const regex = new RegExp('^' + baseRoute.replace('/', '\\/') + '\\/?');
-    let cleanPath = req.path.replace(regex, '');
+    let cleanPath = req.path;
+    // Strip optional /digital/simulasisains prefix
+    cleanPath = cleanPath.replace(/^\/digital\/simulasisains/, '');
+    // Strip baseRoute prefix (e.g. /games or /local-game-play)
+    const routePattern = new RegExp('^' + baseRoute.replace('/', '\\/') + '(\\/?|$)', 'i');
+    cleanPath = cleanPath.replace(routePattern, '');
     try {
       cleanPath = decodeURIComponent(cleanPath);
     } catch (e) {}
 
     // Security: sanitize against path traversal
-    const safeRelativePath = path.normalize(cleanPath).replace(/^(\.\.[\/\\])+/, '');
+    const safeRelativePath = path.normalize(cleanPath).replace(/^(\.\.[\/\\])+/, '').replace(/^[\/\\]+/, '');
     const targetFullPath = path.join(PUBLIC_GAMES_DIR, safeRelativePath);
 
     if (!targetFullPath.startsWith(PUBLIC_GAMES_DIR)) {
@@ -1799,33 +1888,49 @@ app.get('/api/modules/:id/questions', authenticateToken, (req, res) => {
       return res.status(404).send('Simulation index.html not found inside package.');
     }
 
-    // Asset file matching with GZIP & BROTLI variants
-    const candidates: { path: string; encoding?: string }[] = [];
+    // Helper to generate candidate paths for a file lookup
+    function getCandidatesForFile(filePath: string): { path: string; encoding?: string }[] {
+      const list: { path: string; encoding?: string }[] = [];
+      const lower = filePath.toLowerCase();
 
-    // Exact path
-    candidates.push({ path: targetFullPath });
+      list.push({ path: filePath });
 
-    // Compressed variants
-    candidates.push({ path: targetFullPath + '.br', encoding: 'br' });
-    candidates.push({ path: targetFullPath + '.gz', encoding: 'gzip' });
-    candidates.push({ path: targetFullPath + '.unityweb' });
+      if (lower.endsWith('.gz')) {
+        list.push({ path: filePath.slice(0, -3) });
+      } else if (lower.endsWith('.br')) {
+        list.push({ path: filePath.slice(0, -3) });
+      } else if (lower.endsWith('.unityweb')) {
+        const base = filePath.slice(0, -9);
+        list.push({ path: base });
+        list.push({ path: base + '.gz', encoding: 'gzip' });
+        list.push({ path: base + '.br', encoding: 'br' });
+      }
 
-    // Extension transforms for WebGL runtime requests (.wasm -> .wasm.br, .data -> .data.gz, etc)
-    if (/\.(wasm|data|js|json)$/i.test(targetFullPath)) {
-      candidates.push({ path: targetFullPath.replace(/\.(wasm|data|js|json)$/i, '.$1.br'), encoding: 'br' });
-      candidates.push({ path: targetFullPath.replace(/\.(wasm|data|js|json)$/i, '.$1.gz'), encoding: 'gzip' });
-      candidates.push({ path: targetFullPath.replace(/\.(wasm|data|js|json)$/i, '.$1.unityweb') });
-    }
+      list.push({ path: filePath + '.gz', encoding: 'gzip' });
+      list.push({ path: filePath + '.br', encoding: 'br' });
+      list.push({ path: filePath + '.unityweb' });
 
-    if (targetFullPath.endsWith('.js')) {
-      candidates.push({ path: targetFullPath.replace(/\.js$/, '.framework.js.br'), encoding: 'br' });
-      candidates.push({ path: targetFullPath.replace(/\.js$/, '.framework.js.gz'), encoding: 'gzip' });
+      if (/\.(wasm|data|js|json|css|mem|symbols)$/i.test(filePath)) {
+        list.push({ path: filePath.replace(/\.(wasm|data|js|json|css|mem|symbols)$/i, '.$1.gz'), encoding: 'gzip' });
+        list.push({ path: filePath.replace(/\.(wasm|data|js|json|css|mem|symbols)$/i, '.$1.br'), encoding: 'br' });
+        list.push({ path: filePath.replace(/\.(wasm|data|js|json|css|mem|symbols)$/i, '.$1.unityweb') });
+      }
+
+      if (filePath.endsWith('.js')) {
+        list.push({ path: filePath.replace(/\.js$/, '.framework.js.gz'), encoding: 'gzip' });
+        list.push({ path: filePath.replace(/\.js$/, '.framework.js.br'), encoding: 'br' });
+        list.push({ path: filePath.replace(/\.js$/, '.framework.js') });
+      }
+
+      return list;
     }
 
     let matchedFile: string | null = null;
     let matchedEncoding: string | undefined = undefined;
 
-    for (const cand of candidates) {
+    // 1. Check directly at targetFullPath
+    const directCandidates = getCandidatesForFile(targetFullPath);
+    for (const cand of directCandidates) {
       if (fs.existsSync(cand.path)) {
         try {
           if (fs.statSync(cand.path).isFile()) {
@@ -1834,6 +1939,40 @@ app.get('/api/modules/:id/questions', authenticateToken, (req, res) => {
             break;
           }
         } catch (e) {}
+      }
+    }
+
+    // 2. If not found, check subdirectories inside the game directory (e.g. game_123/*/Build/...)
+    if (!matchedFile) {
+      const parts = safeRelativePath.split(/[/\\]/);
+      if (parts.length > 1) {
+        const gameFolder = parts[0];
+        const subRelPath = parts.slice(1).join(path.sep);
+        const gameRoot = path.join(PUBLIC_GAMES_DIR, gameFolder);
+        
+        if (fs.existsSync(gameRoot) && fs.statSync(gameRoot).isDirectory()) {
+          try {
+            const subEntries = fs.readdirSync(gameRoot, { withFileTypes: true });
+            for (const sub of subEntries) {
+              if (sub.isDirectory() && !sub.name.startsWith('.') && !sub.name.includes('__MACOSX')) {
+                const altPath = path.join(gameRoot, sub.name, subRelPath);
+                const altCandidates = getCandidatesForFile(altPath);
+                for (const cand of altCandidates) {
+                  if (fs.existsSync(cand.path)) {
+                    try {
+                      if (fs.statSync(cand.path).isFile()) {
+                        matchedFile = cand.path;
+                        matchedEncoding = cand.encoding;
+                        break;
+                      }
+                    } catch (e) {}
+                  }
+                }
+                if (matchedFile) break;
+              }
+            }
+          } catch (e) {}
+        }
       }
     }
 
@@ -1847,8 +1986,8 @@ app.get('/api/modules/:id/questions', authenticateToken, (req, res) => {
       matchedEncoding = 'br';
     } else if (lowerFile.endsWith('.gz')) {
       matchedEncoding = 'gzip';
-    } else if (!matchedEncoding && (lowerFile.endsWith('.unityweb') || lowerFile.endsWith('.data'))) {
-      // Magic bytes check for GZIP (1f 8b)
+    } else if (!matchedEncoding && (lowerFile.endsWith('.unityweb') || lowerFile.endsWith('.data') || lowerFile.endsWith('.wasm'))) {
+      // Magic bytes check for GZIP (0x1f 0x8b)
       try {
         const fd = fs.openSync(matchedFile, 'r');
         const buf = Buffer.alloc(2);
@@ -1860,7 +1999,7 @@ app.get('/api/modules/:id/questions', authenticateToken, (req, res) => {
       } catch (e) {}
     }
 
-    const mimeType = getSimulationMimeType(targetFullPath);
+    const mimeType = getSimulationMimeType(targetFullPath.endsWith('.gz') || targetFullPath.endsWith('.br') ? targetFullPath : matchedFile);
     res.setHeader('Content-Type', mimeType);
 
     if (matchedEncoding) {
@@ -1870,6 +2009,7 @@ app.get('/api/modules/:id/questions', authenticateToken, (req, res) => {
     res.setHeader('Accept-Ranges', 'bytes');
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', '*');
     res.setHeader('Cross-Origin-Embedder-Policy', 'require-corp');
     res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
     res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');

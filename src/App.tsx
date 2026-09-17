@@ -543,10 +543,6 @@ export default function App() {
   };
 
   const handleLaunchGame = (id: number, title: string) => {
-    if (activeGameId !== null && activeGameId !== id) {
-      showToast('Tutup game aktif dulu sebelum memilih game lain.', 'error');
-      return;
-    }
     setActiveGameId(id);
     setPlayedGames(prev => new Set(prev).add(id));
     showToast(`Game "${title}" sedang dimuat…`, 'info');
