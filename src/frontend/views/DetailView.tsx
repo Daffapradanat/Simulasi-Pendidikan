@@ -77,10 +77,16 @@ export function DetailView({
     
     let isMounted = true;
     
-    if (activeGame.path?.endsWith('.zip') || activeGame.extractedPath) {
+    if (activeGame.path?.startsWith('http://') || activeGame.path?.startsWith('https://')) {
+      setLocalGameSrc(activeGame.path);
+      return;
+    }
+
+    if (activeGame.path?.endsWith('.zip') || activeGame.extractedPath || activeGame.path) {
       const cacheName = 'local-games-cache';
-      const gamePrefix = `/local-game-play/game_${activeGameId}/`;
-      const serverGameUrl = `/games/game_${activeGameId}/`;
+      const base = getBaseUrl();
+      const gamePrefix = `${base}local-game-play/game_${activeGameId}/`;
+      const serverGameUrl = `${base}games/game_${activeGameId}/`;
       
       const loadSimulation = async () => {
         try {
@@ -88,7 +94,7 @@ export function DetailView({
           if ('caches' in window) {
             try {
               const cache = await caches.open(cacheName);
-              const manifestResponse = await cache.match(gamePrefix + 'manifest.json');
+              const manifestResponse = await cache.match(gamePrefix + 'manifest.json') || await cache.match(`/local-game-play/game_${activeGameId}/manifest.json`);
               if (manifestResponse) {
                 const manifest = await manifestResponse.json();
                 if (manifest.status === 'ready' && manifest.entryPoint) {
@@ -107,7 +113,6 @@ export function DetailView({
                 setDownloadingGame(false);
                 setLocalGameSrc(serverGameUrl);
               }
-              // Let the service worker cache assets in the background while playing
               return;
             }
           } catch(e) {}
@@ -118,10 +123,9 @@ export function DetailView({
             setDownloadProgress('Mengunduh paket simulasi...');
           }
           
-          let fetchUrl = activeGame.path || `/games/game_${activeGameId}.zip`;
-          if (!fetchUrl.startsWith('/')) {
-            fetchUrl = `/${fetchUrl}`;
-          }
+          let rawPath = activeGame.path || `games/game_${activeGameId}.zip`;
+          rawPath = rawPath.replace(/^\/?(digital\/simulasisains\/)?/, '');
+          const fetchUrl = `${base}${rawPath}`;
           
           const zipResponse = await fetch(fetchUrl);
           if (!zipResponse.ok) {
@@ -193,6 +197,9 @@ export function DetailView({
                 extractedFilesCount.push(filename);
                 const encodedFilename = filename.split('/').map(encodeURIComponent).join('/');
                 const fullPath = gamePrefix + encodedFilename;
+                const standardPath = `/local-game-play/game_${activeGameId}/${encodedFilename}`;
+                const serverPath = `${base}games/game_${activeGameId}/${encodedFilename}`;
+                const standardServerPath = `/games/game_${activeGameId}/${encodedFilename}`;
                 
                 promises.push(
                   zipEntry.async('blob').then(async fileBlob => {
@@ -216,25 +223,35 @@ export function DetailView({
                     if (isGzip) headers.set('Content-Encoding', 'gzip');
                     if (isBr) headers.set('Content-Encoding', 'br');
                     headers.set('Accept-Ranges', 'bytes');
+                    headers.set('Access-Control-Allow-Origin', '*');
                     headers.set('Cross-Origin-Embedder-Policy', 'require-corp');
                     headers.set('Cross-Origin-Opener-Policy', 'same-origin');
                     headers.set('Cross-Origin-Resource-Policy', 'cross-origin');
                     
                     const res = new Response(fileBlob, { headers });
-                    const putPromises = [cache.put(new Request(fullPath), res.clone())];
+                    const putPromises = [
+                      cache.put(new Request(fullPath), res.clone()),
+                      cache.put(new Request(standardPath), res.clone()),
+                      cache.put(new Request(serverPath), res.clone()),
+                      cache.put(new Request(standardServerPath), res.clone())
+                    ];
 
                     // Cache aliases: if filename ends with .gz / .br / .unityweb, also cache without extension
                     if (cleanName.endsWith('.gz') || cleanName.endsWith('.br')) {
                       const aliasName = filename.slice(0, -3);
                       const aliasEncoded = aliasName.split('/').map(encodeURIComponent).join('/');
                       putPromises.push(cache.put(new Request(gamePrefix + aliasEncoded), res.clone()));
+                      putPromises.push(cache.put(new Request(`/local-game-play/game_${activeGameId}/${aliasEncoded}`), res.clone()));
                     } else if (cleanName.endsWith('.unityweb')) {
                       const aliasName = filename.slice(0, -9);
                       const aliasEncoded = aliasName.split('/').map(encodeURIComponent).join('/');
                       putPromises.push(cache.put(new Request(gamePrefix + aliasEncoded), res.clone()));
+                      putPromises.push(cache.put(new Request(`/local-game-play/game_${activeGameId}/${aliasEncoded}`), res.clone()));
                       putPromises.push(cache.put(new Request(gamePrefix + aliasEncoded + '.gz'), res.clone()));
+                      putPromises.push(cache.put(new Request(`/local-game-play/game_${activeGameId}/${aliasEncoded}.gz`), res.clone()));
                     } else if (/\.(wasm|data|js|json|css|mem|symbols)$/i.test(filename)) {
                       putPromises.push(cache.put(new Request(fullPath + '.gz'), res.clone()));
+                      putPromises.push(cache.put(new Request(standardPath + '.gz'), res.clone()));
                     }
 
                     return Promise.all(putPromises);
@@ -256,6 +273,7 @@ export function DetailView({
             };
             const manifestBlob = new Blob([JSON.stringify(manifestData)], { type: 'application/json' });
             await cache.put(new Request(gamePrefix + 'manifest.json'), new Response(manifestBlob));
+            await cache.put(new Request(`/local-game-play/game_${activeGameId}/manifest.json`), new Response(manifestBlob.slice()));
 
             if (isMounted) {
               setDownloadingGame(false);
@@ -277,8 +295,6 @@ export function DetailView({
       };
       
       loadSimulation();
-    } else if (activeGame.path) {
-      setLocalGameSrc(activeGame.path.startsWith('/') ? activeGame.path : `/${activeGame.path}`);
     } else {
       setLocalGameSrc(null);
     }

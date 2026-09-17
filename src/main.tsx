@@ -14,14 +14,6 @@ import '@fontsource/dm-sans/600.css';
 import '@tabler/icons-webfont/dist/tabler-icons.min.css';
 import './index.css';
 
-// Minimalize memory footprint on potato devices by silencing noisy console logs
-if (process.env.NODE_ENV === 'production' || window.location.hostname !== 'localhost') {
-  const noop = () => {};
-  window.console.log = noop;
-  window.console.debug = noop;
-  window.console.info = noop;
-}
-
 // Register service worker
 import { registerSW } from 'virtual:pwa-register';
 
@@ -40,13 +32,13 @@ createRoot(document.getElementById('root')!).render(
 );
 
 // Register game service worker for local offline playing
-if ('serviceWorker' in navigator ) {
+if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register(
     `${getBaseUrl()}game-sw.js`,
     {
-      scope: `${getBaseUrl()}local-game-play/`
+      scope: `${getBaseUrl()}`
     }
   )
-  .then(reg => console.log('Game SW registered', reg.scope))
-  .catch(err => console.error('Game SW failed', err));
+  .then(reg => console.log('Game SW registered with scope:', reg.scope))
+  .catch(err => console.warn('Game SW registration notice:', err));
 }
