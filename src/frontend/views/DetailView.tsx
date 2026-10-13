@@ -556,25 +556,13 @@ export function DetailView({
                     style={{ overflow: 'hidden' }}
                   >
                     <div className="step-card-body" style={{ padding: '20px' }}>
-                      {module.status === 'locked' && !(user?.role === 'admin' || user?.role === 'guru') ? (
-                        <div style={{ textAlign: 'center', padding: '36px 20px', background: '#f8fafc', borderRadius: '12px', border: '1.5px dashed #cbd5e1' }}>
-                          <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: '#fef3c7', color: '#d97706', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px', fontSize: '24px' }}>
-                            <i className="ti ti-lock"></i>
-                          </div>
-                          <h4 style={{ margin: '0 0 6px 0', fontSize: '15px', fontWeight: 700, color: '#0f172a' }}>Kuis Evaluasi Masih Terkunci</h4>
-                          <p style={{ margin: 0, fontSize: '13px', color: '#64748b', lineHeight: 1.5, maxWidth: '380px', marginLeft: 'auto', marginRight: 'auto' }}>
-                            Materi dan simulasi modul ini bebas dipelajari. Untuk mengerjakan kuis dan membuka progres modul selanjutnya, silakan selesaikan evaluasi pada modul sebelumnya terlebih dahulu.
-                          </p>
-                        </div>
-                      ) : (
-                        <QuestionsView 
-                          questions={questions}
-                          module={module}
-                          user={user}
-                          allPlayed={allPlayed}
-                          onComplete={onCompleteModule}
-                        />
-                      )}
+                      <QuestionsView 
+                        questions={questions}
+                        module={module}
+                        user={user}
+                        allPlayed={allPlayed}
+                        onComplete={onCompleteModule}
+                      />
                     </div>
                   </motion.div>
                 )}

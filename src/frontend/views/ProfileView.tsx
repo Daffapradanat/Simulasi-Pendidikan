@@ -83,9 +83,13 @@ export function ProfileView({ user, completedModuleIds, modules, subjects = [], 
               <span className="badge badge-primary"><i className="ti ti-user"></i> Peran: {user.isGuest ? 'Siswa (Tamu)' : user.role}</span>
             </div>
             {user.isGuest && (
-              <div style={{ marginTop: '12px', padding: '8px 16px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '12px', color: 'var(--text-muted)', maxWidth: '400px' }}>
-                <i className="ti ti-info-circle" style={{ marginRight: '6px' }}></i>
-                Foto profil otomatis dibuat berdasarkan inisial nama untuk mode tamu.
+              <div style={{ marginTop: '14px', padding: '12px 16px', background: '#eff6ff', borderRadius: '10px', border: '1px solid #bfdbfe', fontSize: '13px', color: '#1e40af', maxWidth: '440px', textAlign: 'left', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 700, fontSize: '13px' }}>
+                  <i className="ti ti-device-floppy"></i> Penyimpanan Lokal Terkompresi Aktif
+                </div>
+                <div style={{ color: '#1e3a8a', lineHeight: 1.5, fontSize: '12px' }}>
+                  Progres belajar tersimpan otomatis di perangkat ini selama <strong>30 hari</strong> sejak aktivitas terakhir. Masukkan nama <strong>{user.name}</strong> saat masuk kembali di perangkat ini untuk melanjutkan progres belajarmu.
+                </div>
               </div>
             )}
           </div>

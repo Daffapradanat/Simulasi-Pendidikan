@@ -1,6 +1,6 @@
 {
-  "summary": "Rencana implementasi terperinci untuk perbaikan platform simulasi sains pendidikan:\n1. Memperbaiki bug download otomatis dan refresh mendadak pada simulasi WebGL (termasuk grafik airbag).\n2. Memperbaiki bug state soal yang kembali ke nomor 1 saat berganti tab atau memainkan simulasi.\n3. Menyesuaikan teks tombol jawaban menjadi 'Jawab (X soal) untuk bisa dikumpulkan' dan tombol hijau 'Selesaikan dan Kumpulkan'.\n4. Mengimplementasikan tipe soal Tabel Benar/Salah (multi-pernyataan dalam satu soal).\n5. Membuka akses membaca seluruh materi dengan tetap mempertahankan sistem kunci kuis/kelulusan bertahap.\n6. Mengubah sistem modul terakhir menjadi badge 'Sedang Berjalan' warna oranye pada kartu modul.\n7. Mengganti seluruh terminologi 'Game' menjadi 'Simulasi'.\n8. Menambahkan field urutan modul (order_index) di admin dan sorting daftar modul.\n9. Menambahkan penanda field Wajib vs Opsional pada form tambah/edit modul.\n10. Validasi batas upload banner maksimal 5MB.",
-  "updatedAt": "2026-10-13T02:48:43.119981078Z",
+  "summary": "Rencana implementasi arsitektur penyimpanan progres siswa lokal terkompresi (fflate), isolasi profil siswa tamu berbasis nama, masa retensi aktif 30 hari, pembersihan otomatis (garbage collection), perbaikan race condition saat pergantian akun, dan pembukaan seluruh modul secara bebas.",
+  "updatedAt": "2026-10-13T03:46:31.047241669Z",
   "requestFeedback": true,
   "userFacing": true
 }

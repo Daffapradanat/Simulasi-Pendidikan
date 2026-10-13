@@ -695,10 +695,11 @@ app.post("/api/upload-image", authenticateToken, isAdmin, (req, res) => {
 
   app.post("/api/auth/guest-login", (req, res) => {
     const rawName = (req.body && req.body.name ? req.body.name.toString().trim() : '') || 'Siswa Tamu';
+    const guestKey = rawName.toLowerCase().replace(/[^\w\s-]/g, '').replace(/\s+/g, '_').slice(0, 40) || 'siswa_tamu';
     const user = {
-      id: "guest_" + Date.now(),
+      id: `guest_${guestKey}`,
       name: rawName,
-      email: "guest@simulasisains.id",
+      email: `${guestKey}@simulasisains.id`,
       role: 'siswa',
       isGuest: true,
       avatar: "https://ui-avatars.com/api/?name=" + encodeURIComponent(rawName) + "&background=random&color=fff&size=100"
@@ -713,10 +714,11 @@ app.post("/api/upload-image", authenticateToken, isAdmin, (req, res) => {
     // If password is not provided, treat as Guest student login
     if (!password || password.toString().trim() === '') {
       const guestName = (email || '').toString().trim() || 'Siswa Tamu';
+      const guestKey = guestName.toLowerCase().replace(/[^\w\s-]/g, '').replace(/\s+/g, '_').slice(0, 40) || 'siswa_tamu';
       const guestUser = {
-        id: "guest_" + Date.now(),
+        id: `guest_${guestKey}`,
         name: guestName,
-        email: "guest@simulasisains.id",
+        email: `${guestKey}@simulasisains.id`,
         role: 'siswa',
         isGuest: true,
         avatar: "https://ui-avatars.com/api/?name=" + encodeURIComponent(guestName) + "&background=random&color=fff&size=100"
@@ -2070,6 +2072,19 @@ app.get('/api/modules/:id/questions', authenticateToken, (req, res) => {
     serveSimulationFile(req, res, '/local-game-play');
   });
 
+  // Serve static assets from public folder directly
+  const publicDir = path.join(process.cwd(), "public");
+  if (fs.existsSync(publicDir)) {
+    app.use('/digital/simulasisains', express.static(publicDir, { maxAge: '1h' }));
+    app.use(express.static(publicDir, { maxAge: '1h' }));
+  }
+
+  const distAssetsDir = path.join(process.cwd(), "dist", "assets");
+  if (fs.existsSync(distAssetsDir)) {
+    app.use('/digital/simulasisains/assets', express.static(distAssetsDir, { maxAge: '1d' }));
+    app.use('/assets', express.static(distAssetsDir, { maxAge: '1d' }));
+  }
+
   // Provide JSON 404 for unhandled API routes instead of falling back to Vite SPA
   app.all('/api/*', (req, res) => {
     res.status(404).json({ error: 'API Endpoint not found' });
@@ -2090,9 +2105,20 @@ app.get('/api/modules/:id/questions', authenticateToken, (req, res) => {
     app.use('/digital/simulasisains', express.static(distPath));
     app.use(express.static(distPath));
     app.get("*", (req, res) => {
+      if (req.path.match(/\.(css|js|png|jpg|jpeg|gif|svg|ico|woff2|woff|ttf|map)$/i)) {
+        return res.status(404).type('text/plain').send('Asset not found');
+      }
       res.sendFile(path.join(distPath, "index.html"));
     });
   }
+
+  // Fallback for missing assets after Vite middleware to prevent 500 error responses
+  app.use((req: any, res: any, next: any) => {
+    if (req.path.match(/\.(css|js|png|jpg|jpeg|gif|svg|ico|woff2|woff|ttf|map)$/i)) {
+      return res.status(404).type('text/plain').send('Asset not found');
+    }
+    next();
+  });
 
   // Global Error Handler to catch express-rate-limit validation errors or other crashes
   app.use((err: any, req: any, res: any, next: any) => {

@@ -18,6 +18,11 @@ import AdminDashboard from './admin/AdminDashboard';
 import { fetchAuth } from './lib/fetchAuth';
 import { ErrorView } from './frontend/views/ErrorView';
 import { syncProgressWithServer } from './lib/syncProgress';
+import { 
+  saveStudentProgress, 
+  loadStudentProgress, 
+  cleanupExpiredStudentProgress 
+} from './lib/studentStorage';
 
 
 // --- MAIN APP COMPONENT ---
@@ -130,41 +135,11 @@ export default function App() {
   }, [selectedCategoryId, filteredSubjects, location.pathname, navigate]);
 
   const computedModules = useMemo(() => {
-    const isAdminOrGuru = currentUser?.role === 'admin' || currentUser?.role === 'guru';
-
-    // Group modules by subject_id (each mata pelajaran has its own progression starting with 1 open)
-    const grouped = new Map<string, typeof appModules>();
-    
-    for (const mod of appModules) {
-      const subKey = String(mod.subject_id ?? mod.category_id ?? 'general');
-      if (!grouped.has(subKey)) {
-        grouped.set(subKey, []);
-      }
-      grouped.get(subKey)!.push(mod);
-    }
-    
-    const moduleStatuses = new Map<number, string>();
-    
-    for (const [, mods] of grouped.entries()) {
-      let prevCompleted = true;
-      for (let i = 0; i < mods.length; i++) {
-        const mod = mods[i];
-        let status = 'locked';
-        if (completedModuleIds.has(Number(mod.id))) {
-          status = 'completed';
-        } else if (isAdminOrGuru || i === 0 || prevCompleted) {
-          status = 'unlocked';
-        }
-        prevCompleted = (status === 'completed');
-        moduleStatuses.set(Number(mod.id), status);
-      }
-    }
-    
     return appModules.map(mod => ({
       ...mod,
-      status: (moduleStatuses.get(Number(mod.id)) || (isAdminOrGuru ? 'unlocked' : 'locked')) as 'locked' | 'unlocked' | 'completed'
+      status: (completedModuleIds.has(Number(mod.id)) ? 'completed' : 'unlocked') as 'unlocked' | 'completed'
     }));
-  }, [completedModuleIds, appModules, currentUser]);
+  }, [completedModuleIds, appModules]);
 
 
   useEffect(() => {
@@ -197,6 +172,7 @@ export default function App() {
   }, [navigate]);
 
   useEffect(() => {
+    cleanupExpiredStudentProgress();
     const token = localStorage.getItem('simpend_token');
     let savedUser = localStorage.getItem('simpend_auto_login');
     if (!savedUser) {
@@ -256,7 +232,27 @@ export default function App() {
   }, [location.pathname]);
 
   const refreshUserData = async (user: User) => {
+    setIsProgressLoaded(false);
     try {
+      const isGuestUser = Boolean(user.isGuest || String(user.id).startsWith('guest_'));
+      if (isGuestUser) {
+        const localData = loadStudentProgress(user.name);
+        if (localData) {
+          setPlayedGames(new Set(localData.playedGames || []));
+          setCompletedModuleIds(new Set(localData.completedModuleIds || []));
+          setReflections(localData.reflections || {});
+          if (localData.lastModuleId) setLastModuleId(localData.lastModuleId);
+          else setLastModuleId(null);
+        } else {
+          setPlayedGames(new Set());
+          setCompletedModuleIds(new Set());
+          setReflections({});
+          setLastModuleId(null);
+        }
+        setIsProgressLoaded(true);
+        return;
+      }
+
       const res = await fetchAuth(`/api/users/${user.id}/progress`);
       if (res.ok) {
          const data = await res.json();
@@ -326,16 +322,31 @@ export default function App() {
       localStorage.setItem('simpend_current_user', JSON.stringify(currentUser));
       const pArr = Array.from(playedGames);
       const cArr = Array.from(completedModuleIds);
-      localStorage.setItem(`simpend_played_${currentUser.id}`, JSON.stringify(pArr));
-      localStorage.setItem(`simpend_completed_${currentUser.id}`, JSON.stringify(cArr));
-      localStorage.setItem(`simpend_reflections_${currentUser.id}`, JSON.stringify(reflections));
       
-      // Sync with server
-      fetchAuth(`/api/users/${currentUser.id}/progress`, {
-         method: 'POST',
-         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('simpend_token')}` },
-         body: JSON.stringify({ playedGames: pArr, completedModuleIds: cArr, reflections })
-      }).catch(console.error);
+      const isGuestUser = Boolean(currentUser.isGuest || String(currentUser.id).startsWith('guest_'));
+      if (isGuestUser) {
+        // Simpan ke local storage terkompresi dengan retensi 30 hari berbasis nama siswa
+        saveStudentProgress(currentUser.name, {
+          playedGames: pArr,
+          completedModuleIds: cArr,
+          reflections,
+          lastModuleId
+        });
+      } else {
+        localStorage.setItem(`simpend_played_${currentUser.id}`, JSON.stringify(pArr));
+        localStorage.setItem(`simpend_completed_${currentUser.id}`, JSON.stringify(cArr));
+        localStorage.setItem(`simpend_reflections_${currentUser.id}`, JSON.stringify(reflections));
+        if (lastModuleId) {
+          localStorage.setItem(`simpend_last_module_${currentUser.id}`, String(lastModuleId));
+        }
+        
+        // Sync with server for registered users
+        fetchAuth(`/api/users/${currentUser.id}/progress`, {
+           method: 'POST',
+           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('simpend_token')}` },
+           body: JSON.stringify({ playedGames: pArr, completedModuleIds: cArr, reflections })
+        }).catch(console.error);
+      }
 
       let roleTitle = currentUser.role;
       if (roleTitle === 'siswa') roleTitle = 'Siswa';
@@ -345,14 +356,22 @@ export default function App() {
     } else {
       document.title = 'Pusat Asesmen Pendidikan - Website Literasi Sains 2025/2026';
     }
-  }, [playedGames, completedModuleIds, reflections, currentUser, isProgressLoaded]);
+  }, [playedGames, completedModuleIds, reflections, lastModuleId, currentUser, isProgressLoaded]);
 
   const handleGuestLogin = async (name: string) => {
+    const rawName = name.trim() || 'Siswa Tamu';
+    // Reset state in-memory secara atomik sebelum login baru agar data sesi sebelumnya tidak bocor
+    setIsProgressLoaded(false);
+    setPlayedGames(new Set());
+    setCompletedModuleIds(new Set());
+    setReflections({});
+    setLastModuleId(null);
+
     try {
       const res = await fetchAuth('/api/auth/guest-login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name })
+        body: JSON.stringify({ name: rawName })
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Login gagal.');
@@ -363,7 +382,9 @@ export default function App() {
       localStorage.setItem('simpend_token', token);
       localStorage.setItem('simpend_auto_login', 'true');
       localStorage.setItem('simpend_current_user', JSON.stringify(user));
+      
       setCurrentUser(user);
+      await refreshUserData(user);
       
       // Navigate straight to dashboard root for guest
       navigate('/');
@@ -482,11 +503,14 @@ export default function App() {
       }
     }
     
+    setIsProgressLoaded(true);
     setCurrentUser(null);
     setCurrentModuleId(null);
     setActiveGameId(null);
     setPlayedGames(new Set());
     setCompletedModuleIds(new Set());
+    setReflections({});
+    setLastModuleId(null);
     setViewMode('main');
     showToast('Berhasil keluar.', 'info');
 
@@ -542,10 +566,6 @@ export default function App() {
   const handleOpenModule = (id: number) => {
     const target = computedModules.find(m => m.id === id);
     if (!target) return;
-    if (target.status === 'locked') {
-      showToast('Selesaikan modul sebelumnya terlebih dahulu.', 'error');
-      return;
-    }
     navigate(`/module/${id}`);
     setLastModuleId(id);
     setActiveGameId(null);
@@ -579,7 +599,7 @@ export default function App() {
     navigate(`/hasil-modul/${finishedModuleId}`);
   };
 
-  if (!isProgressLoaded) {
+  if (!isProgressLoaded && currentUser) {
     return (
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', background: 'var(--surface-2)' }}>
         <div className="loading-spinner"></div>

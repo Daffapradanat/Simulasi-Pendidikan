@@ -107,9 +107,9 @@ export function ModulesView({ modules, subjects, user, onOpenModule, lastModuleI
             <div className="stat-label">Tersedia</div>
           </div>
           <div className="stat-card">
-            <div className="stat-icon"><i className="ti ti-lock" aria-hidden="true"></i></div>
-            <div className="stat-value">{locked}</div>
-            <div className="stat-label">Terkunci</div>
+            <div className="stat-icon"><i className="ti ti-chart-pie" aria-hidden="true"></i></div>
+            <div className="stat-value">{pct}%</div>
+            <div className="stat-label">Kelulusan</div>
           </div>
         </div>
         
@@ -207,10 +207,6 @@ export function ModulesView({ modules, subjects, user, onOpenModule, lastModuleI
                                   </span>
                                 ) : mod.status === "completed" ? (
                                   <span className="badge badge-success"><i className="ti ti-check"></i> Selesai</span>
-                                ) : mod.status === "locked" ? (
-                                  <span className="badge" style={{ background: "#f8fafc", color: "#64748b", border: "1px solid #cbd5e1", padding: "4px 8px", borderRadius: "6px", fontSize: "11px", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: "4px" }}>
-                                    <i className="ti ti-lock"></i> Kuis Terkunci
-                                  </span>
                                 ) : (
                                   <span className="badge badge-primary"><i className="ti ti-lock-open"></i> Tersedia</span>
                                 )}
@@ -273,10 +269,6 @@ export function ModulesView({ modules, subjects, user, onOpenModule, lastModuleI
                             </span>
                           ) : mod.status === "completed" ? (
                             <span className="badge badge-success"><i className="ti ti-check"></i> Selesai</span>
-                          ) : mod.status === "locked" ? (
-                            <span className="badge" style={{ background: "#f8fafc", color: "#64748b", border: "1px solid #cbd5e1", padding: "4px 8px", borderRadius: "6px", fontSize: "11px", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: "4px" }}>
-                              <i className="ti ti-lock"></i> Kuis Terkunci
-                            </span>
                           ) : (
                             <span className="badge badge-primary"><i className="ti ti-lock-open"></i> Tersedia</span>
                           )}
