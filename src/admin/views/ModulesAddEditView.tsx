@@ -38,7 +38,7 @@ export default function ModulesAddEditView({
      let newQ: any = { type: code, text: '', explanation: '' };
      if (code === 'multiple_choice') newQ = { ...newQ, options: ['', '', '', ''], correctAnswerIndex: 0 };
      else if (code === 'multiple_select') newQ = { ...newQ, options: ['', '', '', ''], correctAnswers: [] };
-     else if (code === 'true_false') newQ = { ...newQ, correctAnswer: true };
+     else if (code === 'true_false') newQ = { ...newQ, statements: [{ text: '', isCorrect: true }, { text: '', isCorrect: false }] };
      else if (code === 'short_answer') newQ = { ...newQ, correctAnswerText: '' };
      else if (code === 'essay') newQ = { ...newQ, explanation: 'Jawaban uraian akan dinilai berdasarkan kata kunci yang relevan oleh guru.' };
      else if (code === 'matching') newQ = { ...newQ, pairs: [{left: '', right: ''}, {left: '', right: ''}] };
@@ -55,8 +55,8 @@ export default function ModulesAddEditView({
       toast.error('Format file tidak didukung. Harap gunakan PNG, JPG, atau JPEG.');
       return;
     }
-    if (file.size > 10 * 1024 * 1024) {
-      toast.error('Ukuran file terlalu besar. Maksimal 10MB.');
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Ukuran file terlalu besar. Maksimal 5MB.');
       return;
     }
     
@@ -112,12 +112,16 @@ export default function ModulesAddEditView({
             <div className="section-card">
               <form onSubmit={handleSaveModule}>
                 <div style={{ marginBottom: '16px' }}>
-                  <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: 500 }}>Judul Modul</label>
+                  <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: 600 }}>
+                    Judul Modul <span style={{ color: '#dc2626', fontSize: '11.5px', fontWeight: 700, marginLeft: '6px' }}>(Wajib)</span>
+                  </label>
                   <input type="text" className="form-input" required value={moduleForm.title} onChange={e => setModuleForm({...moduleForm, title: e.target.value})} placeholder="Contoh: Modul 3: Evaluasi" />
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px', marginBottom: '16px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px', marginBottom: '16px' }}>
                   <div>
-                    <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: 500 }}>Kategori (Jenjang)</label>
+                    <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: 600 }}>
+                      Kategori (Jenjang) <span style={{ color: '#dc2626', fontSize: '11.5px', fontWeight: 700, marginLeft: '6px' }}>(Wajib)</span>
+                    </label>
                     <select className="form-input" required={categories.length > 0} value={moduleForm.category_id || ''} onChange={e => {
                         const cat = categories.find((c: any) => c.id === parseInt(e.target.value));
                         setModuleForm({...moduleForm, category_id: parseInt(e.target.value), level: cat ? cat.name : moduleForm.level});
@@ -129,7 +133,9 @@ export default function ModulesAddEditView({
                     </select>
                   </div>
                   <div>
-                    <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: 500 }}>Mata Pelajaran</label>
+                    <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: 600 }}>
+                      Mata Pelajaran <span style={{ color: '#dc2626', fontSize: '11.5px', fontWeight: 700, marginLeft: '6px' }}>(Wajib)</span>
+                    </label>
                     <select className="form-input" required={subjects.length > 0} value={moduleForm.subject_id || ''} onChange={e => setModuleForm({...moduleForm, subject_id: parseInt(e.target.value)})}>
                       <option value="" disabled>{subjects.length > 0 ? 'Pilih Mata Pelajaran' : 'Belum ada mata pelajaran (buat di menu Kategori & Mapel)'}</option>
                       {subjects.map((s: any) => (
@@ -138,12 +144,28 @@ export default function ModulesAddEditView({
                     </select>
                   </div>
                   <div>
-                    <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: 500 }}>Estimasi Waktu</label>
+                    <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: 600 }}>
+                      Urutan Modul (No. Urut) <span style={{ color: '#64748b', fontSize: '11.5px', fontWeight: 500, marginLeft: '6px' }}>(Opsional)</span>
+                    </label>
+                    <input 
+                      type="number" 
+                      className="form-input" 
+                      placeholder="Contoh: 1, 2, 3..." 
+                      value={moduleForm.order ?? ''} 
+                      onChange={e => setModuleForm({...moduleForm, order: parseInt(e.target.value) || 0})} 
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: 600 }}>
+                      Estimasi Waktu <span style={{ color: '#dc2626', fontSize: '11.5px', fontWeight: 700, marginLeft: '6px' }}>(Wajib)</span>
+                    </label>
                     <input type="text" className="form-input" placeholder="Contoh: 45 Menit" required value={moduleForm.duration} onChange={e => setModuleForm({...moduleForm, duration: e.target.value})} />
                   </div>
                 </div>
                 <div style={{ marginBottom: '16px' }}>
-                  <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: 500 }}>Deskripsi Singkat</label>
+                  <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: 600 }}>
+                    Deskripsi Singkat <span style={{ color: '#dc2626', fontSize: '11.5px', fontWeight: 700, marginLeft: '6px' }}>(Wajib)</span>
+                  </label>
                   <p style={{ fontSize: '12px', color: 'var(--text-muted)', margin: '-4px 0 8px 0' }}>Penjelasan singkat materi, akan ditampilkan di kartu daftar modul di halaman utama siswa.</p>
                   <textarea className="form-input" required value={moduleForm.desc} onChange={e => setModuleForm({...moduleForm, desc: e.target.value})} placeholder="Deskripsi singkat modul..." rows={2}></textarea>
                 </div>
@@ -177,14 +199,18 @@ export default function ModulesAddEditView({
                       onChange={e => setModuleForm({...moduleForm, is_restricted: e.target.checked})} 
                     />
                     <div>
-                      <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text)' }}>Modul Terbatas (Gembok)</div>
+                      <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text)' }}>
+                        Modul Terbatas (Gembok) <span style={{ color: '#64748b', fontSize: '11.5px', fontWeight: 500, marginLeft: '6px' }}>(Opsional)</span>
+                      </div>
                       <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px' }}>Siswa Guest harus login dengan akun terdaftar untuk mengakses modul ini.</div>
                     </div>
                   </label>
                 </div>
 
                 <div style={{ marginBottom: '24px' }}>
-                  <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: 500 }}>Gambar Banner Modul (Opsional)</label>
+                  <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: 600 }}>
+                    Gambar Banner Modul <span style={{ color: '#64748b', fontSize: '11.5px', fontWeight: 500, marginLeft: '6px' }}>(Opsional, Maks. 5MB)</span>
+                  </label>
                   <p style={{ fontSize: '12px', color: 'var(--text-muted)', margin: '-4px 0 12px 0' }}>Banner akan ditampilkan di halaman daftar modul. Akan dikompres secara otomatis.</p>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                     {(moduleForm.banner_url || bannerPreview) ? (
@@ -218,7 +244,7 @@ export default function ModulesAddEditView({
                           <i className="ti ti-cloud-upload"></i>
                         </div>
                         <h4 style={{ fontSize: '15px', fontWeight: 600, marginBottom: '6px', color: 'var(--text)' }}>Klik atau Drag & Drop banner kesini</h4>
-                        <p style={{ fontSize: '13px', color: 'var(--text-muted)', margin: 0 }}>PNG, JPG, JPEG (Maks. 10MB)</p>
+                        <p style={{ fontSize: '13px', color: 'var(--text-muted)', margin: 0 }}>PNG, JPG, JPEG (Maks. 5MB)</p>
                       </div>
                     )}
                     <input id="banner-upload" type="file" accept="image/png, image/jpeg, image/jpg" style={{ display: 'none' }} onChange={async e => {
@@ -231,12 +257,16 @@ export default function ModulesAddEditView({
                 </div>
 
                 <div style={{ marginBottom: '16px' }}>
-                  <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: 500 }}>Tujuan Pembelajaran</label>
+                  <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: 600 }}>
+                    Tujuan Pembelajaran <span style={{ color: '#64748b', fontSize: '11.5px', fontWeight: 500, marginLeft: '6px' }}>(Opsional)</span>
+                  </label>
                   <p style={{ fontSize: '12px', color: 'var(--text-muted)', margin: '-4px 0 8px 0' }}>Satu tujuan per baris.</p>
-                  <textarea className="form-input" required value={moduleForm.objectives} onChange={e => setModuleForm({...moduleForm, objectives: e.target.value})} placeholder="Contoh: Memahami konsep ..." rows={3}></textarea>
+                  <textarea className="form-input" value={moduleForm.objectives} onChange={e => setModuleForm({...moduleForm, objectives: e.target.value})} placeholder="Contoh: Memahami konsep ..." rows={3}></textarea>
                 </div>
                 <div style={{ marginBottom: '24px' }}>
-                  <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: 500 }}>Istilah Kunci</label>
+                  <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: 600 }}>
+                    Istilah Kunci <span style={{ color: '#64748b', fontSize: '11.5px', fontWeight: 500, marginLeft: '6px' }}>(Opsional)</span>
+                  </label>
                   <p style={{ fontSize: '12px', color: 'var(--text-muted)', margin: '-4px 0 12px 0' }}>Tambahkan istilah dan definisi.</p>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                     {moduleForm.keyTerms.map((item: { term: string; def: string }, index: number) => (
@@ -266,7 +296,9 @@ export default function ModulesAddEditView({
                   </div>
                 </div>
                 <div style={{ marginBottom: '40px' }}>
-                  <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: 500 }}>Materi Pembelajaran</label>
+                  <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: 600 }}>
+                    Materi Pembelajaran (Teori) <span style={{ color: '#64748b', fontSize: '11.5px', fontWeight: 500, marginLeft: '6px' }}>(Opsional)</span>
+                  </label>
                   <div style={{ background: 'white', border: '1px solid var(--border)', borderRadius: '8px', padding: '16px' }}>
                      <ReactQuill 
                        theme="snow" 
@@ -289,8 +321,10 @@ export default function ModulesAddEditView({
                   </div>
                 </div>
                 <div style={{ marginBottom: '24px', padding: '24px', background: 'var(--surface-2)', borderRadius: '12px', border: '2px dashed var(--border)' }}>
-                  <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: 500 }}><i className="ti ti-file-zip"></i> Upload Game</label>
-                  <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '12px' }}>Upload file ZIP. Multiple file didukung.</p>
+                  <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: 600 }}>
+                    <i className="ti ti-device-gamepad-2"></i> Simulasi Interaktif <span style={{ color: '#64748b', fontSize: '11.5px', fontWeight: 500, marginLeft: '6px' }}>(Opsional)</span>
+                  </label>
+                  <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '12px' }}>Upload file ZIP paket simulasi WebGL. Multiple simulasi didukung.</p>
                   
                   <div style={{ position: 'relative', overflow: 'hidden', marginBottom: '16px' }}>
                     <input type="file" multiple accept=".zip" onChange={e => {
@@ -300,8 +334,8 @@ export default function ModulesAddEditView({
                     }} style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', opacity: 0, cursor: 'pointer', zIndex: 10 }} />
                     <div style={{ padding: '32px', textAlign: 'center', background: 'white', border: '1px solid var(--border)', borderRadius: '8px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
                       <i className="ti ti-upload" style={{ fontSize: '32px', color: 'var(--primary)', marginBottom: '12px' }}></i>
-                      <div style={{ fontWeight: '600', marginBottom: '8px', color: 'var(--text)' }}>Klik atau seret file ZIP kesini</div>
-                      <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>Maksimal 100MB per file</div>
+                      <div style={{ fontWeight: '600', marginBottom: '8px', color: 'var(--text)' }}>Klik atau seret file ZIP simulasi kesini</div>
+                      <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>Maksimal 100MB per file simulasi</div>
                     </div>
                   </div>
 
@@ -314,18 +348,18 @@ export default function ModulesAddEditView({
                            </div>
                            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', flex: 1 }}>
                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                               <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--primary)' }}><i className="ti ti-file-zip" style={{ marginRight: '6px' }}></i>{gf.file ? gf.file.name : 'File Game Tersimpan'} {gf.file && gf.file.size ? `(${(gf.file.size / 1024 / 1024).toFixed(2)} MB)` : ''}</span>
+                               <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--primary)' }}><i className="ti ti-file-zip" style={{ marginRight: '6px' }}></i>{gf.file ? gf.file.name : 'File Simulasi Tersimpan'} {gf.file && gf.file.size ? `(${(gf.file.size / 1024 / 1024).toFixed(2)} MB)` : ''}</span>
                                <button type="button" className="btn btn-danger btn-sm" style={{ padding: '4px 8px' }} onClick={() => setModuleGameFiles((prev: any[]) => prev.filter((_: any, idx: number) => idx !== i))}>
                                  <i className="ti ti-trash"></i>
                                </button>
                              </div>
                              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                               <input type="text" className="form-input" required placeholder="Judul Game..." value={gf.title} onChange={e => {
+                               <input type="text" className="form-input" required placeholder="Judul Simulasi..." value={gf.title} onChange={e => {
                                  const updated = [...moduleGameFiles];
                                  updated[i].title = e.target.value;
                                  setModuleGameFiles(updated);
                                }} style={{ margin: 0, fontWeight: 700, fontSize: '15px' }} />
-                               <input type="text" className="form-input" required placeholder="Deskripsi Singkat / Objektif Misi..." value={gf.desc} onChange={e => {
+                               <input type="text" className="form-input" required placeholder="Deskripsi Singkat Simulasi..." value={gf.desc} onChange={e => {
                                  const updated = [...moduleGameFiles];
                                  updated[i].desc = e.target.value;
                                  setModuleGameFiles(updated);
@@ -339,7 +373,9 @@ export default function ModulesAddEditView({
                 </div>
                 
                 <div style={{ marginBottom: '40px', padding: '24px', background: 'var(--surface-2)', borderRadius: '12px', border: '1px solid var(--border)' }}>
-                  <label style={{ display: 'block', marginBottom: '16px', fontSize: '16px', fontWeight: 600 }}><i className="ti ti-notes"></i> Soal Evaluasi</label>
+                  <label style={{ display: 'block', marginBottom: '16px', fontSize: '16px', fontWeight: 600 }}>
+                    <i className="ti ti-notes"></i> Soal Evaluasi <span style={{ color: '#64748b', fontSize: '11.5px', fontWeight: 500, marginLeft: '6px' }}>(Opsional)</span>
+                  </label>
                   <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '16px' }}>Tambahkan soal-soal evaluasi dengan berbagai tipe (Pilihan Ganda, PG Kompleks, Benar/Salah, Isian Singkat, Uraian, Menjodohkan, Mengurutkan).</p>
                   
                   {moduleQuestions && moduleQuestions.map((q: any, qIndex: number) => {
@@ -416,25 +452,85 @@ export default function ModulesAddEditView({
                              </>
                            )}
                            {q.type === 'true_false' && (
-                             <>
-                               <label style={{ fontSize: '13px', fontWeight: 500, marginBottom: '8px', display: 'block' }}>Kunci Jawaban (Benar/Salah):</label>
-                               <div style={{ display: 'flex', gap: '16px', padding: '8px 0' }}>
-                                 <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
-                                   <input type="radio" name={`tf_${qIndex}`} checked={q.correctAnswer === true} onChange={() => {
-                                       const nq = [...moduleQuestions];
-                                       nq[qIndex].correctAnswer = true;
-                                       setModuleQuestions(nq);
-                                   }} /> <strong>Benar</strong>
-                                 </label>
-                                 <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
-                                   <input type="radio" name={`tf_${qIndex}`} checked={q.correctAnswer === false} onChange={() => {
-                                       const nq = [...moduleQuestions];
-                                       nq[qIndex].correctAnswer = false;
-                                       setModuleQuestions(nq);
-                                   }} /> <strong>Salah</strong>
-                                 </label>
+                             <div style={{ marginTop: '4px' }}>
+                               <label style={{ fontSize: '13px', fontWeight: 600, marginBottom: '6px', display: 'block', color: 'var(--text)' }}>
+                                 Tabel Pernyataan (Benar / Salah):
+                               </label>
+                               <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '10px' }}>
+                                 Tuliskan pernyataan pada setiap baris dan tentukan kunci jawaban (Benar atau Salah).
+                               </p>
+                               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '12px' }}>
+                                 {(q.statements || (q.statements = [{ text: '', isCorrect: true }, { text: '', isCorrect: false }])).map((stmt: any, sIdx: number) => (
+                                   <div key={sIdx} style={{ display: 'flex', gap: '10px', alignItems: 'center', background: 'var(--surface-2, #f8fafc)', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border)' }}>
+                                     <span style={{ fontWeight: 700, fontSize: '13px', color: '#64748b', minWidth: '24px' }}>#{sIdx + 1}</span>
+                                     <input 
+                                       type="text" 
+                                       className="form-input" 
+                                       style={{ margin: 0, flex: 1, fontSize: '13.5px' }} 
+                                       placeholder={`Tulis pernyataan #${sIdx + 1}...`} 
+                                       required 
+                                       value={stmt.text || ''} 
+                                       onChange={e => {
+                                         const nq = [...moduleQuestions];
+                                         if (!nq[qIndex].statements) nq[qIndex].statements = [];
+                                         nq[qIndex].statements[sIdx].text = e.target.value;
+                                         setModuleQuestions(nq);
+                                       }} 
+                                     />
+                                     <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 600, color: '#15803d', userSelect: 'none' }}>
+                                       <input 
+                                         type="radio" 
+                                         name={`stmt_tf_${qIndex}_${sIdx}`} 
+                                         checked={stmt.isCorrect === true} 
+                                         onChange={() => {
+                                           const nq = [...moduleQuestions];
+                                           nq[qIndex].statements[sIdx].isCorrect = true;
+                                           setModuleQuestions(nq);
+                                         }} 
+                                       /> Benar
+                                     </label>
+                                     <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 600, color: '#be123c', userSelect: 'none' }}>
+                                       <input 
+                                         type="radio" 
+                                         name={`stmt_tf_${qIndex}_${sIdx}`} 
+                                         checked={stmt.isCorrect === false} 
+                                         onChange={() => {
+                                           const nq = [...moduleQuestions];
+                                           nq[qIndex].statements[sIdx].isCorrect = false;
+                                           setModuleQuestions(nq);
+                                         }} 
+                                       /> Salah
+                                     </label>
+                                     {q.statements.length > 1 && (
+                                       <button 
+                                         type="button" 
+                                         className="btn btn-danger btn-sm" 
+                                         style={{ padding: '6px 8px' }}
+                                         onClick={() => {
+                                           const nq = [...moduleQuestions];
+                                           nq[qIndex].statements.splice(sIdx, 1);
+                                           setModuleQuestions(nq);
+                                         }}
+                                       >
+                                         <i className="ti ti-trash"></i>
+                                       </button>
+                                     )}
+                                   </div>
+                                 ))}
                                </div>
-                             </>
+                               <button 
+                                 type="button" 
+                                 className="btn btn-ghost btn-sm" 
+                                 onClick={() => {
+                                   const nq = [...moduleQuestions];
+                                   if (!nq[qIndex].statements) nq[qIndex].statements = [];
+                                   nq[qIndex].statements.push({ text: '', isCorrect: true });
+                                   setModuleQuestions(nq);
+                                 }}
+                               >
+                                 <i className="ti ti-plus"></i> Tambah Baris Pernyataan
+                               </button>
+                             </div>
                            )}
                            {q.type === 'short_answer' && (
                              <>

@@ -3045,9 +3045,13 @@ select.form-input {
   button,
   .btn,
   .toast-container,
+  .toast,
+  [class*="toast"],
   .modal-overlay,
   .pdf-modal-backdrop {
     display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
   }
 
   .print-only {

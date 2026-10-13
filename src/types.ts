@@ -37,6 +37,7 @@ export type Module = {
   duration: string;
   level: string;
   gameCount: number;
+  order?: number;
   banner_url?: string;
   questionCount?: number;
   is_restricted?: boolean;

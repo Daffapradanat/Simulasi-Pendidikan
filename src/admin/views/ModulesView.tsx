@@ -92,7 +92,7 @@ export default function ModulesView({
               className="btn btn-primary btn-sm" 
               onClick={() => {
                 setEditingModule(null);
-                setModuleForm({ title: '', desc: '', level: categories && categories.length > 0 ? categories[0].name : '', duration: '', category_id: 1, subject_id: 1, objectives: '', theory: '', keyTerms: [], banner_url: '', is_restricted: false });
+                setModuleForm({ title: '', desc: '', level: categories && categories.length > 0 ? categories[0].name : '', duration: '', category_id: 1, subject_id: 1, order: 0, objectives: '', theory: '', keyTerms: [], banner_url: '', is_restricted: false });
                 setModuleGameFiles([]);
                 if (setModuleQuestions) setModuleQuestions([]);
                 setView('modules_add_edit');
@@ -136,7 +136,12 @@ export default function ModulesView({
                 displayedModules.map((mod: any) => (
                 <tr key={mod.id} style={{ ...(mod.isDeleted ? { filter: 'grayscale(100%)', opacity: 0.5 } : {}) }}>
                   <td>
-                    <div style={{ fontWeight: 600 }}>{modules.findIndex((m: any) => m.id === mod.id) + 1}</div>
+                    <div style={{ fontWeight: 700 }}>{modules.findIndex((m: any) => m.id === mod.id) + 1}</div>
+                    {mod.order !== undefined && mod.order !== null && (
+                      <span className="badge" style={{ background: '#f1f5f9', color: '#475569', fontSize: '10.5px', marginTop: '4px', display: 'inline-block' }}>
+                        Urutan: {mod.order}
+                      </span>
+                    )}
                     {mod.isDeleted && <span className="badge" style={{ background: 'var(--border)', color: 'var(--text-muted)', marginTop: '6px', display: 'inline-block' }}>Dihapus</span>}
                   </td>
                   <td style={{ textDecoration: mod.isDeleted ? 'line-through' : 'none' }}>
@@ -152,7 +157,7 @@ export default function ModulesView({
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                       <div style={{ fontSize: '12px', color: 'var(--text)' }}><i className="ti ti-school" style={{ color: 'var(--primary)', width: '16px' }}></i> <strong>Jenjang:</strong> {mod.level}</div>
                       <div style={{ fontSize: '12px', color: 'var(--text)' }}><i className="ti ti-clock" style={{ color: 'var(--warning)', width: '16px' }}></i> <strong>Durasi:</strong> {mod.duration || '-'}</div>
-                      <div style={{ fontSize: '12px', color: 'var(--text)' }}><i className="ti ti-device-gamepad" style={{ color: 'var(--success)', width: '16px' }}></i> <strong>Game:</strong> {mod.gameCount || 0} File</div>
+                      <div style={{ fontSize: '12px', color: 'var(--text)' }}><i className="ti ti-device-gamepad" style={{ color: 'var(--success)', width: '16px' }}></i> <strong>Simulasi:</strong> {mod.gameCount || 0} File</div>
                       <div style={{ fontSize: '12px', color: 'var(--text)' }}><i className="ti ti-notes" style={{ color: 'var(--accent)', width: '16px' }}></i> <strong>Soal:</strong> {mod.questionCount || 0} Butir</div>
                     </div>
                   </td>
@@ -182,6 +187,7 @@ export default function ModulesView({
                           level: mod.level, 
                           category_id: mod.category_id || 1,
                           subject_id: mod.subject_id || 1,
+                          order: mod.order ?? 0,
                           duration: mod.duration || '', 
                           objectives: mod.material?.objectives?.join('\n') || '',
                           theory: mod.material?.theory || '',

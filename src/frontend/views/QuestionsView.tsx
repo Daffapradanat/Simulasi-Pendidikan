@@ -23,6 +23,7 @@ export function QuestionsView({
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [reflection, setReflection] = useState('');
   const [showConfirmSubmit, setShowConfirmSubmit] = useState(false);
+  const prevModuleIdRef = React.useRef<number | undefined>(module?.id);
 
   useEffect(() => {
     const rights: Record<number, string[]> = {};
@@ -51,21 +52,26 @@ export function QuestionsView({
       setAnswers(savedState.answers || initialAns);
       setReflection(savedState.reflection || '');
       setIsSubmitted(savedState.isSubmitted || false);
+      if (typeof savedState.currentIdx === 'number' && savedState.currentIdx >= 0 && savedState.currentIdx < questions.length) {
+        setCurrentIdx(savedState.currentIdx);
+      }
     } else {
       setAnswers(initialAns);
       setIsSubmitted(false);
       setReflection('');
+      if (prevModuleIdRef.current !== module?.id) {
+        setCurrentIdx(0);
+      }
     }
-    
-    setCurrentIdx(0);
-  }, [questions, module, user]);
+    prevModuleIdRef.current = module?.id;
+  }, [questions, module?.id, user?.id]);
 
   useEffect(() => {
-    if (module && user && Object.keys(answers).length > 0) {
+    if (module && user) {
       const storageKey = `draft_answers_${user.id}_${module.id}`;
-      localStorage.setItem(storageKey, JSON.stringify({ answers, reflection, isSubmitted }));
+      localStorage.setItem(storageKey, JSON.stringify({ answers, reflection, isSubmitted, currentIdx }));
     }
-  }, [answers, reflection, isSubmitted, module, user]);
+  }, [answers, reflection, isSubmitted, currentIdx, module?.id, user?.id]);
 
   const handleSelect = (qIndex: number, answer: any) => {
     if (isSubmitted) return;
@@ -77,6 +83,12 @@ export function QuestionsView({
       } else {
         setAnswers({ ...answers, [qIndex]: [...currentAnswers, answer] });
       }
+    } else if (q.type === 'true_false' && q.statements && Array.isArray(q.statements) && q.statements.length > 0) {
+      const currentObj = answers[qIndex] && typeof answers[qIndex] === 'object' ? answers[qIndex] : {};
+      setAnswers({
+        ...answers,
+        [qIndex]: { ...currentObj, [answer.statementIndex]: answer.value }
+      });
     } else {
       setAnswers({ ...answers, [qIndex]: answer });
     }
@@ -97,7 +109,7 @@ export function QuestionsView({
     if (module && user) {
       const storageKey = `draft_answers_${user.id}_${module.id}`;
       try {
-        localStorage.setItem(storageKey, JSON.stringify({ answers: initialAns, reflection: '', isSubmitted: false }));
+        localStorage.setItem(storageKey, JSON.stringify({ answers: initialAns, reflection: '', isSubmitted: false, currentIdx: 0 }));
       } catch (e) {}
     }
   };
@@ -106,8 +118,28 @@ export function QuestionsView({
     if (ans === undefined || ans === null) return false;
     const type = q.type || 'multiple_choice';
     if (type === 'multiple_choice') return ans === q.correctAnswerIndex;
-    if (type === 'true_false') return ans === q.correctAnswer;
-    if (type === 'short_answer') return String(ans).toLowerCase().trim() === String(q.correctAnswerText || '').toLowerCase().trim();
+    if (type === 'true_false') {
+      if (q.statements && Array.isArray(q.statements) && q.statements.length > 0) {
+        if (!ans || typeof ans !== 'object') return false;
+        return q.statements.every((stmt: any, sIdx: number) => {
+          const expected = stmt.isCorrect !== undefined ? stmt.isCorrect : (stmt.correctAnswer !== undefined ? stmt.correctAnswer : stmt.answer);
+          return ans[sIdx] === expected;
+        });
+      }
+      return ans === q.correctAnswer;
+    }
+    if (type === 'short_answer') {
+      const normalize = (str: any) => String(str || '').toLowerCase().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, '').replace(/\s+/g, ' ').trim();
+      const userNorm = normalize(ans);
+      if (!userNorm) return false;
+      const rawCorrect = String(q.correctAnswerText || '');
+      const variants = rawCorrect.split(/[,;\/|]/).map(v => normalize(v)).filter(Boolean);
+      if (q.acceptableAnswers && Array.isArray(q.acceptableAnswers)) {
+        variants.push(...q.acceptableAnswers.map((a: any) => normalize(a)).filter(Boolean));
+      }
+      if (variants.length === 0) return userNorm === normalize(rawCorrect);
+      return variants.includes(userNorm);
+    }
     if (type === 'essay') return typeof ans === 'string' && ans.trim().length > 0;
     if (type === 'multiple_select') {
       if (!Array.isArray(ans)) return false;
@@ -138,6 +170,13 @@ export function QuestionsView({
     const ans = answers[qIndex];
     if (ans === undefined || ans === null) return false;
     const type = q.type || 'multiple_choice';
+    if (type === 'true_false') {
+      if (q.statements && Array.isArray(q.statements) && q.statements.length > 0) {
+        if (!ans || typeof ans !== 'object') return false;
+        return q.statements.every((_: any, sIdx: number) => typeof ans[sIdx] === 'boolean');
+      }
+      return typeof ans === 'boolean';
+    }
     if (type === 'short_answer' || type === 'essay') return typeof ans === 'string' && ans.trim().length > 0;
     if (type === 'multiple_select') return Array.isArray(ans) && ans.length > 0;
     if (type === 'matching') {
@@ -157,7 +196,12 @@ export function QuestionsView({
   const getCorrectAnswerLabel = (q: any) => {
     const type = q.type || 'multiple_choice';
     if (type === 'multiple_choice') return q.options?.[q.correctAnswerIndex] || '-';
-    if (type === 'true_false') return q.correctAnswer ? 'Benar' : 'Salah';
+    if (type === 'true_false') {
+      if (q.statements && Array.isArray(q.statements) && q.statements.length > 0) {
+        return q.statements.map((s: any, idx: number) => `P${idx + 1}: ${(s.isCorrect ?? s.correctAnswer ?? s.answer) ? 'Benar' : 'Salah'}`).join('; ');
+      }
+      return q.correctAnswer ? 'Benar' : 'Salah';
+    }
     if (type === 'short_answer') return q.correctAnswerText || '-';
     if (type === 'essay') return '(Sesuai dengan konsep materi sains yang telah dipelajari)';
     if (type === 'multiple_select') return (q.correctAnswers || []).map((i: number) => q.options?.[i]).join(', ');
@@ -170,7 +214,13 @@ export function QuestionsView({
     if (ans === undefined || ans === null || ans === '') return '(Tidak dijawab)';
     const type = q.type || 'multiple_choice';
     if (type === 'multiple_choice') return q.options?.[ans] || '-';
-    if (type === 'true_false') return ans ? 'Benar' : 'Salah';
+    if (type === 'true_false') {
+      if (q.statements && Array.isArray(q.statements) && q.statements.length > 0) {
+        if (!ans || typeof ans !== 'object') return '(Tidak dijawab)';
+        return q.statements.map((_: any, idx: number) => `P${idx + 1}: ${ans[idx] === true ? 'Benar' : ans[idx] === false ? 'Salah' : '-'}`).join('; ');
+      }
+      return ans ? 'Benar' : 'Salah';
+    }
     if (type === 'short_answer') return String(ans);
     if (type === 'essay') return String(ans);
     if (type === 'multiple_select') {
@@ -416,35 +466,108 @@ export function QuestionsView({
 
               {/* Opsi: Benar / Salah */}
               {currentQ.type === 'true_false' && (
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                  {[true, false].map((val, bIdx) => {
-                    const isSelected = answers[currentIdx] === val;
-                    return (
-                      <div
-                        key={bIdx}
-                        onClick={() => handleSelect(currentIdx, val)}
-                        style={{ 
-                          textAlign: 'center',
-                          padding: '16px',
-                          borderRadius: '10px',
-                          border: isSelected ? (val ? '2px solid #15803d' : '2px solid #be123c') : '1.5px solid #e2e8f0',
-                          background: isSelected ? (val ? '#f0fdf4' : '#fff1f2') : '#ffffff',
-                          color: isSelected ? (val ? '#15803d' : '#be123c') : '#1e293b',
-                          cursor: 'pointer',
-                          fontWeight: 700,
-                          fontSize: '15px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          gap: '8px'
-                        }}
-                      >
-                        <i className={`ti ${val ? 'ti-thumb-up' : 'ti-thumb-down'}`}></i>
-                        <span>{val ? 'Benar' : 'Salah'}</span>
-                      </div>
-                    );
-                  })}
-                </div>
+                currentQ.statements && Array.isArray(currentQ.statements) && currentQ.statements.length > 0 ? (
+                  <div style={{ overflowX: 'auto', border: '1.5px solid #e2e8f0', borderRadius: '12px', background: '#ffffff' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13.5px' }}>
+                      <thead>
+                        <tr style={{ background: '#f8fafc', borderBottom: '1.5px solid #e2e8f0' }}>
+                          <th style={{ padding: '12px 14px', width: '48px', textAlign: 'center', color: '#475569', fontWeight: 700 }}>No</th>
+                          <th style={{ padding: '12px 14px', color: '#475569', fontWeight: 700 }}>Pernyataan</th>
+                          <th style={{ padding: '12px 14px', width: '90px', textAlign: 'center', color: '#15803d', fontWeight: 700 }}>Benar</th>
+                          <th style={{ padding: '12px 14px', width: '90px', textAlign: 'center', color: '#be123c', fontWeight: 700 }}>Salah</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {currentQ.statements.map((stmt: any, sIdx: number) => {
+                          const stmtText = typeof stmt === 'string' ? stmt : (stmt.text || stmt.statement || '');
+                          const currentVal = answers[currentIdx]?.[sIdx];
+                          return (
+                            <tr key={sIdx} style={{ borderBottom: sIdx < currentQ.statements.length - 1 ? '1px solid #f1f5f9' : 'none' }}>
+                              <td style={{ padding: '14px', textAlign: 'center', fontWeight: 700, color: '#64748b' }}>
+                                {sIdx + 1}
+                              </td>
+                              <td style={{ padding: '14px', color: '#1e293b', fontWeight: 500, lineHeight: 1.5 }}>
+                                {stmtText}
+                              </td>
+                              <td 
+                                style={{ 
+                                  padding: '14px', 
+                                  textAlign: 'center', 
+                                  cursor: isSubmitted ? 'default' : 'pointer',
+                                  background: currentVal === true ? '#f0fdf4' : 'transparent',
+                                  transition: 'background 0.15s ease'
+                                }}
+                                onClick={() => !isSubmitted && handleSelect(currentIdx, { statementIndex: sIdx, value: true })}
+                              >
+                                <label style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', cursor: isSubmitted ? 'default' : 'pointer', width: '100%' }}>
+                                  <input 
+                                    type="radio" 
+                                    name={`tf_stmt_${currentIdx}_${sIdx}`} 
+                                    checked={currentVal === true}
+                                    disabled={isSubmitted}
+                                    onChange={() => handleSelect(currentIdx, { statementIndex: sIdx, value: true })}
+                                    style={{ width: '18px', height: '18px', accentColor: '#15803d', cursor: isSubmitted ? 'default' : 'pointer' }}
+                                  />
+                                </label>
+                              </td>
+                              <td 
+                                style={{ 
+                                  padding: '14px', 
+                                  textAlign: 'center', 
+                                  cursor: isSubmitted ? 'default' : 'pointer',
+                                  background: currentVal === false ? '#fff1f2' : 'transparent',
+                                  transition: 'background 0.15s ease'
+                                }}
+                                onClick={() => !isSubmitted && handleSelect(currentIdx, { statementIndex: sIdx, value: false })}
+                              >
+                                <label style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', cursor: isSubmitted ? 'default' : 'pointer', width: '100%' }}>
+                                  <input 
+                                    type="radio" 
+                                    name={`tf_stmt_${currentIdx}_${sIdx}`} 
+                                    checked={currentVal === false}
+                                    disabled={isSubmitted}
+                                    onChange={() => handleSelect(currentIdx, { statementIndex: sIdx, value: false })}
+                                    style={{ width: '18px', height: '18px', accentColor: '#be123c', cursor: isSubmitted ? 'default' : 'pointer' }}
+                                  />
+                                </label>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                    {[true, false].map((val, bIdx) => {
+                      const isSelected = answers[currentIdx] === val;
+                      return (
+                        <div
+                          key={bIdx}
+                          onClick={() => handleSelect(currentIdx, val)}
+                          style={{ 
+                            textAlign: 'center',
+                            padding: '16px',
+                            borderRadius: '10px',
+                            border: isSelected ? (val ? '2px solid #15803d' : '2px solid #be123c') : '1.5px solid #e2e8f0',
+                            background: isSelected ? (val ? '#f0fdf4' : '#fff1f2') : '#ffffff',
+                            color: isSelected ? (val ? '#15803d' : '#be123c') : '#1e293b',
+                            cursor: 'pointer',
+                            fontWeight: 700,
+                            fontSize: '15px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '8px'
+                          }}
+                        >
+                          <i className={`ti ${val ? 'ti-thumb-up' : 'ti-thumb-down'}`}></i>
+                          <span>{val ? 'Benar' : 'Salah'}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )
               )}
 
               {/* Opsi: Isian Singkat & Essay */}
@@ -608,7 +731,7 @@ export function QuestionsView({
                 disabled={answeredCount < questions.length}
                 onClick={() => setShowConfirmSubmit(true)}
                 style={{
-                  background: answeredCount < questions.length ? '#cbd5e1' : '#15803d',
+                  background: answeredCount < questions.length ? '#e2e8f0' : '#15803d',
                   color: answeredCount < questions.length ? '#64748b' : '#ffffff',
                   border: 'none',
                   padding: '10px 20px',
@@ -621,7 +744,7 @@ export function QuestionsView({
                   cursor: answeredCount < questions.length ? 'not-allowed' : 'pointer'
                 }}
               >
-                <i className="ti ti-check"></i> {answeredCount < questions.length ? `Selesai (${questions.length - answeredCount} Belum Dijawab)` : 'Selesai & Kumpulkan Jawaban'}
+                <i className={answeredCount < questions.length ? 'ti ti-lock' : 'ti ti-check'}></i> {answeredCount < questions.length ? `Jawab ${questions.length - answeredCount} soal untuk bisa dikumpulkan` : 'Selesaikan dan Kumpulkan'}
               </button>
             )}
           </div>
@@ -748,13 +871,14 @@ export function QuestionsView({
                 fontSize: '14.5px',
                 fontWeight: 800,
                 borderRadius: '10px',
-                background: answeredCount < questions.length ? '#cbd5e1' : '#0d47a1',
+                background: answeredCount < questions.length ? '#e2e8f0' : '#15803d',
                 color: answeredCount < questions.length ? '#64748b' : '#ffffff',
                 border: 'none',
-                cursor: answeredCount < questions.length ? 'not-allowed' : 'pointer'
+                cursor: answeredCount < questions.length ? 'not-allowed' : 'pointer',
+                boxShadow: answeredCount === questions.length ? '0 4px 14px rgba(21, 128, 61, 0.35)' : 'none'
               }}
             >
-              <i className="ti ti-send"></i> {answeredCount < questions.length ? `Jawab ${questions.length - answeredCount} Soal Lagi Untuk Kumpul` : 'Kumpulkan & Periksa Jawaban'}
+              <i className={answeredCount < questions.length ? 'ti ti-lock' : 'ti ti-check'}></i> {answeredCount < questions.length ? `Jawab ${questions.length - answeredCount} soal untuk bisa dikumpulkan` : 'Selesaikan dan Kumpulkan'}
             </button>
           </div>
 

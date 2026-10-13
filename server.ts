@@ -633,7 +633,7 @@ app.use(cookieParser());
   
 const uploadBannerMemory = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 10 * 1024 * 1024 },
+  limits: { fileSize: 5 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
     const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/jpg'];
     if (allowedMimeTypes.includes(file.mimetype)) {
@@ -1358,10 +1358,18 @@ app.get('/api/modules/:id/questions', authenticateToken, (req, res) => {
     res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
     res.setHeader("Pragma", "no-cache");
     res.setHeader("Expires", "0");
-    const modulesWithQuestionCount = modulesData.map((m: any) => ({
-      ...m,
-      questionCount: questionsData.filter(q => Number(q.module_id) === Number(m.id)).length
-    }));
+    const modulesWithQuestionCount = modulesData
+      .map((m: any) => ({
+        ...m,
+        order: m.order !== undefined ? Number(m.order) : 0,
+        questionCount: questionsData.filter(q => Number(q.module_id) === Number(m.id)).length
+      }))
+      .sort((a: any, b: any) => {
+        const orderA = a.order !== undefined ? Number(a.order) : 0;
+        const orderB = b.order !== undefined ? Number(b.order) : 0;
+        if (orderA !== orderB) return orderA - orderB;
+        return Number(a.id || 0) - Number(b.id || 0);
+      });
     res.json(modulesWithQuestionCount);
   });
 
@@ -1417,7 +1425,7 @@ app.get('/api/modules/:id/questions', authenticateToken, (req, res) => {
 
   app.post("/api/modules", authenticateToken, isAdmin, upload.array('gameFiles') as any, async (req, res) => {
     try {
-      let { title, desc, level, category_id, subject_id, duration, material, gamesMeta, banner_url, is_restricted } = req.body;
+      let { title, desc, level, category_id, subject_id, duration, material, gamesMeta, banner_url, is_restricted, order, order_index } = req.body;
       try { material = JSON.parse(material || '[]'); } catch(e) {}
       try { gamesMeta = JSON.parse(gamesMeta || '[]'); } catch(e) {}
 
@@ -1467,6 +1475,7 @@ app.get('/api/modules/:id/questions', authenticateToken, (req, res) => {
       const newModule = { 
         id: Date.now(), 
         title, desc, level, 
+        order: parseInt(order ?? order_index) || 0,
         category_id: parseInt(category_id) || null,
         subject_id: parseInt(subject_id) || null,
         duration, material, 
@@ -1491,7 +1500,7 @@ app.get('/api/modules/:id/questions', authenticateToken, (req, res) => {
       const index = modulesData.findIndex(m => m.id === id);
       if (index === -1) return res.status(404).json({ error: "Not found" });
 
-      let { title, desc, level, category_id, subject_id, duration, material, gamesMeta, banner_url, is_restricted } = req.body;
+      let { title, desc, level, category_id, subject_id, duration, material, gamesMeta, banner_url, is_restricted, order, order_index } = req.body;
       try { material = JSON.parse(material || '[]'); } catch(e) {}
       try { gamesMeta = JSON.parse(gamesMeta || '[]'); } catch(e) {}
 
@@ -1551,9 +1560,12 @@ app.get('/api/modules/:id/questions', authenticateToken, (req, res) => {
         }
       }
 
+      const finalOrder = order !== undefined ? (parseInt(order) || 0) : (order_index !== undefined ? (parseInt(order_index) || 0) : (modulesData[index].order || 0));
+
       modulesData[index] = { 
         ...modulesData[index], 
         title, desc, level, 
+        order: finalOrder,
         category_id: parseInt(category_id) || null,
         subject_id: parseInt(subject_id) || null,
         duration, material, games: gamesMeta, gameCount: gamesMeta?.length || 0, banner_url, is_restricted: is_restricted === 'true' || is_restricted === true
@@ -1863,6 +1875,12 @@ app.get('/api/modules/:id/questions', authenticateToken, (req, res) => {
 
     // Direct ZIP request handler
     if (safeRelativePath.toLowerCase().endsWith('.zip')) {
+      const isHtmlOrIframe = req.headers['sec-fetch-dest'] === 'iframe' || (req.headers.accept && req.headers.accept.includes('text/html'));
+      const baseFolder = targetFullPath.slice(0, -4);
+      if (isHtmlOrIframe && fs.existsSync(baseFolder) && fs.statSync(baseFolder).isDirectory()) {
+        const dest = req.originalUrl.replace(/\.zip(\?.*)?$/i, '/');
+        return res.redirect(302, dest);
+      }
       if (fs.existsSync(targetFullPath) && fs.statSync(targetFullPath).isFile()) {
         res.setHeader('Content-Type', 'application/zip');
         res.setHeader('Accept-Ranges', 'bytes');

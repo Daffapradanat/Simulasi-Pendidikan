@@ -82,15 +82,35 @@ export function DetailView({
       return;
     }
 
-    if (activeGame.path?.endsWith('.zip') || activeGame.extractedPath || activeGame.path) {
+    if (activeGame.extractedPath) {
+      const base = getBaseUrl();
+      const directUrl = `${base}${activeGame.extractedPath.replace(/^\//, '')}${activeGame.entryPoint ? activeGame.entryPoint : ''}`;
+      setLocalGameSrc(directUrl);
+      setDownloadingGame(false);
+      return;
+    }
+
+    if (activeGame.path?.endsWith('.zip') || activeGame.path) {
       const cacheName = 'local-games-cache';
       const base = getBaseUrl();
       const gamePrefix = `${base}local-game-play/game_${activeGameId}/`;
-      const serverGameUrl = `${base}games/game_${activeGameId}/`;
+      const serverGameUrl = `${base}games/game_${activeGameId}/${activeGame.entryPoint || ''}`;
       
       const loadSimulation = async () => {
         try {
-          // 1. Check if already extracted and ready in Service Worker cache (Offline-first)
+          // 1. Check if direct server simulation folder is available (Instant load, high-performance streaming)
+          try {
+            const headCheck = await fetch(serverGameUrl, { method: 'HEAD' });
+            if (headCheck.ok) {
+              if (isMounted) {
+                setDownloadingGame(false);
+                setLocalGameSrc(serverGameUrl);
+              }
+              return;
+            }
+          } catch(e) {}
+
+          // 2. Check if already extracted and ready in Service Worker cache (Offline-first)
           if ('caches' in window) {
             try {
               const cache = await caches.open(cacheName);
@@ -105,188 +125,12 @@ export function DetailView({
             } catch(e) {}
           }
 
-          // 2. Check if direct server simulation folder is available (Instant load, high-performance streaming)
-          try {
-            const headCheck = await fetch(serverGameUrl, { method: 'HEAD' });
-            if (headCheck.ok) {
-              if (isMounted) {
-                setDownloadingGame(false);
-                setLocalGameSrc(serverGameUrl);
-              }
-              return;
-            }
-          } catch(e) {}
-
-          // 3. Download ZIP package for client-side extraction & offline preparation
+          // 3. Fallback: stream directly from server player URL
           if (isMounted) {
-            setDownloadingGame(true);
-            setDownloadProgress('Mengunduh paket simulasi...');
-          }
-          
-          let rawPath = activeGame.path || `games/game_${activeGameId}.zip`;
-          rawPath = rawPath.replace(/^\/?(digital\/simulasisains\/)?/, '');
-          const fetchUrl = `${base}${rawPath}`;
-          
-          const zipResponse = await fetch(fetchUrl);
-          if (!zipResponse.ok) {
-            // Check if direct server simulation folder exists
-            try {
-              const headCheck = await fetch(serverGameUrl, { method: 'HEAD' });
-              if (headCheck.ok) {
-                if (isMounted) {
-                  setDownloadingGame(false);
-                  setLocalGameSrc(serverGameUrl);
-                }
-                return;
-              }
-            } catch(e) {}
-
-            if (isMounted) {
-              setDownloadingGame(false);
-              setLocalGameSrc(null);
-            }
-            return;
-          }
-          
-          const blob = await zipResponse.blob();
-          
-          // Validate ZIP magic bytes (PK\x03\x04 = 0x50 0x4b 0x03 0x04)
-          const firstBytes = await blob.slice(0, 4).arrayBuffer().then(buf => new Uint8Array(buf)).catch(() => new Uint8Array(0));
-          const isZip = firstBytes.length >= 2 && firstBytes[0] === 0x50 && firstBytes[1] === 0x4b;
-          
-          if (!isZip) {
-            console.warn("Server returned non-zip response, streaming directly from server player.");
-            if (isMounted) {
-              setDownloadingGame(false);
-              setLocalGameSrc(serverGameUrl);
-            }
-            return;
-          }
-          
-          if (isMounted) setDownloadProgress('Mengekstrak aset simulasi...');
-          
-          const zip = await JSZip.loadAsync(blob);
-          
-          let indexPath = '';
-          const filenames = Object.keys(zip.files);
-          const possibleIndexFiles = filenames.filter(f => f.toLowerCase().endsWith('index.html') && !f.includes('__MACOSX'));
-          
-          if (possibleIndexFiles.length > 0) {
-            possibleIndexFiles.sort((a, b) => {
-              const depthA = a.split('/').length;
-              const depthB = b.split('/').length;
-              if (depthA !== depthB) return depthA - depthB;
-              return a.length - b.length;
-            });
-            indexPath = possibleIndexFiles[0];
-          } else {
-            // If no index.html in root, try direct server playback
-            if (isMounted) {
-              setDownloadingGame(false);
-              setLocalGameSrc(serverGameUrl);
-            }
-            return;
-          }
-
-          if ('caches' in window) {
-            const cache = await caches.open(cacheName);
-            const promises = [];
-            const extractedFilesCount: string[] = [];
-            for (const [filename, zipEntry] of Object.entries(zip.files)) {
-              if (!zipEntry.dir && !filename.includes('__MACOSX')) {
-                extractedFilesCount.push(filename);
-                const encodedFilename = filename.split('/').map(encodeURIComponent).join('/');
-                const fullPath = gamePrefix + encodedFilename;
-                const standardPath = `/local-game-play/game_${activeGameId}/${encodedFilename}`;
-                const serverPath = `${base}games/game_${activeGameId}/${encodedFilename}`;
-                const standardServerPath = `/games/game_${activeGameId}/${encodedFilename}`;
-                
-                promises.push(
-                  zipEntry.async('blob').then(async fileBlob => {
-                    const headers = new Headers();
-                    headers.set('Content-Type', getMimeType(filename));
-                    
-                    const cleanName = filename.toLowerCase();
-                    let isGzip = cleanName.endsWith('.gz');
-                    let isBr = cleanName.endsWith('.br');
-
-                    if (!isGzip && !isBr && (cleanName.endsWith('.unityweb') || cleanName.endsWith('.data') || cleanName.endsWith('.wasm'))) {
-                      try {
-                        const headBuf = await fileBlob.slice(0, 2).arrayBuffer();
-                        const bytes = new Uint8Array(headBuf);
-                        if (bytes.length >= 2 && bytes[0] === 0x1f && bytes[1] === 0x8b) {
-                          isGzip = true;
-                        }
-                      } catch(e) {}
-                    }
-
-                    if (isGzip) headers.set('Content-Encoding', 'gzip');
-                    if (isBr) headers.set('Content-Encoding', 'br');
-                    headers.set('Accept-Ranges', 'bytes');
-                    headers.set('Access-Control-Allow-Origin', '*');
-                    headers.set('Cross-Origin-Embedder-Policy', 'require-corp');
-                    headers.set('Cross-Origin-Opener-Policy', 'same-origin');
-                    headers.set('Cross-Origin-Resource-Policy', 'cross-origin');
-                    
-                    const res = new Response(fileBlob, { headers });
-                    const putPromises = [
-                      cache.put(new Request(fullPath), res.clone()),
-                      cache.put(new Request(standardPath), res.clone()),
-                      cache.put(new Request(serverPath), res.clone()),
-                      cache.put(new Request(standardServerPath), res.clone())
-                    ];
-
-                    // Cache aliases: if filename ends with .gz / .br / .unityweb, also cache without extension
-                    if (cleanName.endsWith('.gz') || cleanName.endsWith('.br')) {
-                      const aliasName = filename.slice(0, -3);
-                      const aliasEncoded = aliasName.split('/').map(encodeURIComponent).join('/');
-                      putPromises.push(cache.put(new Request(gamePrefix + aliasEncoded), res.clone()));
-                      putPromises.push(cache.put(new Request(`/local-game-play/game_${activeGameId}/${aliasEncoded}`), res.clone()));
-                    } else if (cleanName.endsWith('.unityweb')) {
-                      const aliasName = filename.slice(0, -9);
-                      const aliasEncoded = aliasName.split('/').map(encodeURIComponent).join('/');
-                      putPromises.push(cache.put(new Request(gamePrefix + aliasEncoded), res.clone()));
-                      putPromises.push(cache.put(new Request(`/local-game-play/game_${activeGameId}/${aliasEncoded}`), res.clone()));
-                      putPromises.push(cache.put(new Request(gamePrefix + aliasEncoded + '.gz'), res.clone()));
-                      putPromises.push(cache.put(new Request(`/local-game-play/game_${activeGameId}/${aliasEncoded}.gz`), res.clone()));
-                    } else if (/\.(wasm|data|js|json|css|mem|symbols)$/i.test(filename)) {
-                      putPromises.push(cache.put(new Request(fullPath + '.gz'), res.clone()));
-                      putPromises.push(cache.put(new Request(standardPath + '.gz'), res.clone()));
-                    }
-
-                    return Promise.all(putPromises);
-                  })
-                );
-              }
-            }
-            
-            await Promise.all(promises);
-            
-            // Create and store manifest AFTER all files are successfully cached
-            const encodedEntryPoint = indexPath.split('/').map(encodeURIComponent).join('/');
-            const manifestData = {
-              simulationId: activeGameId,
-              status: 'ready',
-              entryPoint: encodedEntryPoint,
-              filesCount: extractedFilesCount.length,
-              timestamp: Date.now()
-            };
-            const manifestBlob = new Blob([JSON.stringify(manifestData)], { type: 'application/json' });
-            await cache.put(new Request(gamePrefix + 'manifest.json'), new Response(manifestBlob));
-            await cache.put(new Request(`/local-game-play/game_${activeGameId}/manifest.json`), new Response(manifestBlob.slice()));
-
-            if (isMounted) {
-              setDownloadingGame(false);
-              setLocalGameSrc(gamePrefix + encodedEntryPoint);
-            }
-          } else {
-            if (isMounted) {
-              setDownloadingGame(false);
-              setLocalGameSrc(serverGameUrl);
-            }
+            setDownloadingGame(false);
+            setLocalGameSrc(serverGameUrl);
           }
         } catch (err) {
-          console.warn("Zip extraction encountered issue, falling back to server simulation stream:", err);
           if (isMounted) {
             setDownloadingGame(false);
             setLocalGameSrc(serverGameUrl);
@@ -402,7 +246,7 @@ export function DetailView({
                 <i className="ti ti-category" style={{ color: 'var(--primary)' }}></i> {module.subject || 'Sains Terpadu'}
               </span>
               <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                <i className="ti ti-device-gamepad-2" style={{ color: 'var(--primary)' }}></i> {module.games?.length || 0} Simulasi Game
+                <i className="ti ti-device-gamepad-2" style={{ color: 'var(--primary)' }}></i> {module.games?.length || 0} Simulasi
               </span>
             </div>
           </div>
@@ -712,13 +556,25 @@ export function DetailView({
                     style={{ overflow: 'hidden' }}
                   >
                     <div className="step-card-body" style={{ padding: '20px' }}>
-                      <QuestionsView 
-                        questions={questions}
-                        module={module}
-                        user={user}
-                        allPlayed={allPlayed}
-                        onComplete={onCompleteModule}
-                      />
+                      {module.status === 'locked' && !(user?.role === 'admin' || user?.role === 'guru') ? (
+                        <div style={{ textAlign: 'center', padding: '36px 20px', background: '#f8fafc', borderRadius: '12px', border: '1.5px dashed #cbd5e1' }}>
+                          <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: '#fef3c7', color: '#d97706', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px', fontSize: '24px' }}>
+                            <i className="ti ti-lock"></i>
+                          </div>
+                          <h4 style={{ margin: '0 0 6px 0', fontSize: '15px', fontWeight: 700, color: '#0f172a' }}>Kuis Evaluasi Masih Terkunci</h4>
+                          <p style={{ margin: 0, fontSize: '13px', color: '#64748b', lineHeight: 1.5, maxWidth: '380px', marginLeft: 'auto', marginRight: 'auto' }}>
+                            Materi dan simulasi modul ini bebas dipelajari. Untuk mengerjakan kuis dan membuka progres modul selanjutnya, silakan selesaikan evaluasi pada modul sebelumnya terlebih dahulu.
+                          </p>
+                        </div>
+                      ) : (
+                        <QuestionsView 
+                          questions={questions}
+                          module={module}
+                          user={user}
+                          allPlayed={allPlayed}
+                          onComplete={onCompleteModule}
+                        />
+                      )}
                     </div>
                   </motion.div>
                 )}

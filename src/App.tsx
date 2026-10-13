@@ -245,10 +245,8 @@ export default function App() {
       fetchModules();
     };
     window.addEventListener('simpend-modules-updated', handleModulesUpdated);
-    window.addEventListener('focus', handleModulesUpdated);
     return () => {
       window.removeEventListener('simpend-modules-updated', handleModulesUpdated);
-      window.removeEventListener('focus', handleModulesUpdated);
     };
   }, []);
 
@@ -293,7 +291,12 @@ export default function App() {
       .then(data => {
         if (Array.isArray(data)) {
           const newData = data.filter(m => !m.isDeleted);
-          setAppModules(newData);
+          setAppModules(prev => {
+            if (prev.length === newData.length && JSON.stringify(prev) === JSON.stringify(newData)) {
+              return prev;
+            }
+            return newData;
+          });
         }
       })
       .catch(() => {});

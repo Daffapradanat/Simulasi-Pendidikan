@@ -80,7 +80,7 @@ export default function AdminDashboard({ user, onLogout, onNavigate, onUpdateUse
   // Form states
   const [moduleForm, setModuleForm] = useState({ 
     title: '', desc: '', level: categories.length > 0 ? categories[0].name : '', duration: '', 
-    category_id: 1, subject_id: 1,
+    category_id: 1, subject_id: 1, order: 0,
     objectives: '', theory: '', keyTerms: [] as {term: string, def: string}[], banner_url: '',
     is_restricted: false
   });
@@ -172,6 +172,7 @@ export default function AdminDashboard({ user, onLogout, onNavigate, onUpdateUse
       formData.append('category_id', moduleForm.category_id.toString());
       formData.append('subject_id', moduleForm.subject_id.toString());
       formData.append('duration', moduleForm.duration);
+      formData.append('order', (moduleForm.order !== undefined ? moduleForm.order : 0).toString());
       formData.append('banner_url', moduleForm.banner_url || '');
       formData.append('is_restricted', moduleForm.is_restricted ? 'true' : 'false');
       formData.append('material', JSON.stringify(material));
@@ -238,7 +239,7 @@ export default function AdminDashboard({ user, onLogout, onNavigate, onUpdateUse
       }
       setView('modules');
       setEditingModule(null);
-      setModuleForm({ title: '', desc: '', level: categories.length > 0 ? categories[0].name : '', duration: '', category_id: 1, subject_id: 1, objectives: '', theory: '', keyTerms: [], banner_url: '', is_restricted: false });
+      setModuleForm({ title: '', desc: '', level: categories.length > 0 ? categories[0].name : '', duration: '', category_id: 1, subject_id: 1, order: 0, objectives: '', theory: '', keyTerms: [], banner_url: '', is_restricted: false });
       setModuleGameFiles([]);
       setModuleQuestions([]);
     } catch (err: any) {

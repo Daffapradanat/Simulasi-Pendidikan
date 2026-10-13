@@ -128,62 +128,33 @@ export function ModulesView({ modules, subjects, user, onOpenModule, lastModuleI
           <div className="page-subtitle">Selesaikan setiap modul secara berurutan untuk membuka modul berikutnya.</div>
         </div>
 
-        {lastModuleId && modules.find(m => m.id === lastModuleId) && (
-          <div className="section-card continue-session-card" style={{ 
-            marginBottom: '28px', 
-            background: 'var(--primary)', 
-            color: 'white',
-            border: 'none', 
-            padding: '20px 24px', 
-            display: 'flex', 
-            flexWrap: 'wrap',
-            alignItems: 'center', 
-            justifyContent: 'space-between',
-            gap: '16px',
-            boxShadow: '0 8px 24px rgba(13,71,161,0.2)'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flex: '1 1 min-content' }}>
-              <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: 'rgba(255,255,255,0.2)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', flexShrink: 0 }}>
-                <i className="ti ti-player-play"></i>
-              </div>
-              <div style={{ minWidth: '150px' }}>
-                <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.8)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '4px' }}>Lanjutkan Sesi Terakhir</div>
-                <div style={{ fontSize: '18px', fontWeight: 700, color: 'white', lineHeight: 1.3 }}>{modules.find(m => m.id === lastModuleId)?.title}</div>
-              </div>
-            </div>
-            <button className="btn" style={{ background: 'white', color: 'var(--primary)', fontWeight: 700, padding: '10px 20px', whiteSpace: 'nowrap', border: 'none' }} onClick={() => onOpenModule(lastModuleId)}>
-              Lanjutkan Sekarang <i className="ti ti-arrow-right"></i>
-            </button>
-          </div>
-        )}
-
-        <div className="search-box" style={{ marginBottom: '24px', position: 'relative' }}>
-          <i className="ti ti-search" style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-light)', fontSize: '18px' }}></i>
+        <div className="search-box" style={{ marginBottom: "24px", position: "relative" }}>
+          <i className="ti ti-search" style={{ position: "absolute", left: "14px", top: "50%", transform: "translateY(-50%)", color: "var(--text-light)", fontSize: "18px" }}></i>
           <input 
             type="text" 
             className="form-input" 
             placeholder="Cari modul berdasarkan judul atau deskripsi..." 
             value={searchQuery} 
             onChange={e => setSearchQuery(e.target.value)} 
-            style={{ paddingLeft: '40px' }}
+            style={{ paddingLeft: "40px" }}
           />
         </div>
         
         <div>
           {currentModules.length === 0 ? (
-            <div className="empty-state" style={{ gridColumn: '1 / -1', padding: '48px 24px', textAlign: 'center', background: 'var(--card-bg, #ffffff)', borderRadius: '12px', border: '1px dashed var(--border, #e2e8f0)', marginTop: '20px' }}>
-              <div className="empty-icon" style={{ fontSize: '36px', marginBottom: '12px', color: 'var(--text-muted)' }}>
+            <div className="empty-state" style={{ gridColumn: "1 / -1", padding: "48px 24px", textAlign: "center", background: "var(--card-bg, #ffffff)", borderRadius: "12px", border: "1px dashed var(--border, #e2e8f0)", marginTop: "20px" }}>
+              <div className="empty-icon" style={{ fontSize: "36px", marginBottom: "12px", color: "var(--text-muted)" }}>
                 <i className={searchQuery ? "ti ti-search" : "ti ti-books"}></i>
               </div>
-              <h3 style={{ fontSize: '18px', fontWeight: 700, marginBottom: '8px', color: 'var(--text)' }}>
-                {searchQuery ? 'Modul Tidak Ditemukan' : 'Belum Ada Modul Pembelajaran'}
+              <h3 style={{ fontSize: "18px", fontWeight: 700, marginBottom: "8px", color: "var(--text)" }}>
+                {searchQuery ? "Modul Tidak Ditemukan" : "Belum Ada Modul Pembelajaran"}
               </h3>
-              <p style={{ color: 'var(--text-muted)', fontSize: '14px', maxWidth: '460px', margin: '0 auto', lineHeight: '1.6' }}>
+              <p style={{ color: "var(--text-muted)", fontSize: "14px", maxWidth: "460px", margin: "0 auto", lineHeight: "1.6" }}>
                 {searchQuery 
                   ? `Tidak ada modul yang cocok dengan kata kunci "${searchQuery}".` 
-                  : (user?.role === 'admin' || user?.role === 'guru' 
-                      ? 'Belum ada modul simulasi sains di sistem. Anda dapat membuat dan mengunggah modul baru melalui menu Dashboard.'
-                      : 'Belum ada modul pembelajaran yang tersedia saat ini. Silakan hubungi guru atau admin pengampu.')
+                  : (user?.role === "admin" || user?.role === "guru" 
+                      ? "Belum ada modul simulasi sains di sistem. Anda dapat membuat dan mengunggah modul baru melalui menu Dashboard."
+                      : "Belum ada modul pembelajaran yang tersedia saat ini. Silakan hubungi guru atau admin pengampu.")
                 }
               </p>
             </div>
@@ -193,82 +164,133 @@ export function ModulesView({ modules, subjects, user, onOpenModule, lastModuleI
                 const subjectModules = currentModules.filter(m => Number(m.subject_id) === Number(subject.id));
                 if (subjectModules.length === 0) return null;
                 return (
-                  <div key={subject.id} style={{ marginBottom: '40px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px', paddingBottom: '12px', borderBottom: '1px solid var(--border)' }}>
-                      <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', boxShadow: '0 4px 10px rgba(37, 99, 235, 0.25)' }}>
-                        <i className={`ti ${subject.icon || 'ti-book'}`} style={{ color: '#ffffff' }}></i>
+                  <div key={subject.id} style={{ marginBottom: "40px" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "20px", paddingBottom: "12px", borderBottom: "1px solid var(--border)" }}>
+                      <div style={{ width: "40px", height: "40px", borderRadius: "10px", background: "linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)", color: "#ffffff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "20px", boxShadow: "0 4px 10px rgba(37, 99, 235, 0.25)" }}>
+                        <i className={`ti ${subject.icon || "ti-book"}`} style={{ color: "#ffffff" }}></i>
                       </div>
-                      <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '20px', fontWeight: 800, color: 'var(--text)', margin: 0 }}>{subject.name}</h2>
+                      <h2 style={{ fontFamily: "var(--font-display)", fontSize: "20px", fontWeight: 800, color: "var(--text)", margin: 0 }}>{subject.name}</h2>
                     </div>
                     <div className="modules-grid">
-                      {subjectModules.map(mod => (
-                        <div key={mod.id} className={`module-card ${mod.status}`} onClick={() => { 
-                          if (mod.is_restricted && user?.isGuest) {
-                            onRequireLogin && onRequireLogin();
-                            return;
-                          }
-                          if (mod.status !== 'locked') onOpenModule(mod.id); 
-                        }} style={{ cursor: (mod.status === 'locked' && (!mod.is_restricted || !user?.isGuest)) ? 'not-allowed' : 'pointer', opacity: (mod.status === 'locked' && (!mod.is_restricted || !user?.isGuest)) ? 0.7 : 1 }}>
-                          {mod.banner_url ? (
-                            <div className="module-thumb" style={{ padding: 0, overflow: 'hidden' }}>
-                              <img src={(mod.banner_url || "").startsWith("/") ? `${getBaseUrl()}${(mod.banner_url).substring(1)}` : mod.banner_url} alt={mod.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                            </div>
-                          ) : (
-                            <div className="module-thumb" dangerouslySetInnerHTML={{ __html: MODULE_THUMBS[mod.id] || getFallbackThumb(mod.id) }} />
-                          )}
-                          <div className="module-card-inner">
-                            <div className="module-card-top">
-                              {mod.is_restricted && <span className="badge" style={{ background: '#f59e0b', color: 'white', position: 'absolute', top: '12px', right: '12px', zIndex: 10, border: 'none', padding: '4px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 'bold' }}><i className="ti ti-lock"></i> Terbatas</span>}
-                              {mod.status === 'locked' && (!mod.is_restricted || !user?.isGuest) && <span className="module-lock-icon"><i className="ti ti-lock"></i></span>}
-                              {mod.status === 'completed' && <span className="badge badge-success"><i className="ti ti-check"></i> Selesai</span>}
-                              {mod.status === 'unlocked' && <span className="badge badge-primary"><i className="ti ti-lock-open"></i> Tersedia</span>}
-                            </div>
-                            <div className="module-card-body">
-                              <div className="module-card-title">{mod.title}</div>
-                              <div className="module-card-desc">
-                                <div style={{ marginBottom: (mod.material && typeof mod.material === 'object' && mod.material.theory) ? '8px' : '0' }}>
-                                  <strong>Deskripsi:</strong> {mod.desc}
-                                </div>
-                                {(mod.material && typeof mod.material === 'object' && mod.material.theory) && (
-                                  <div>
-                                    <strong>Materi:</strong>{' '}
-                                    <div style={{ display: 'inline' }} dangerouslySetInnerHTML={{ __html: mod.material.theory.replace(/<[^>]+>/g, '').substring(0, 80) + '...' }}></div>
-                                  </div>
+                      {subjectModules.map(mod => {
+                        const isLastActive = mod.id === lastModuleId && mod.status !== 'completed';
+                        return (
+                          <div 
+                            key={mod.id} 
+                            className={`module-card ${mod.status}`} 
+                            onClick={() => { 
+                              if (mod.is_restricted && user?.isGuest) {
+                                onRequireLogin && onRequireLogin();
+                                return;
+                              }
+                              onOpenModule(mod.id); 
+                            }} 
+                            style={{ 
+                              cursor: "pointer",
+                              border: isLastActive ? "2px solid #f97316" : undefined,
+                              boxShadow: isLastActive ? "0 4px 16px rgba(249, 115, 22, 0.18)" : undefined
+                            }}
+                          >
+                            {mod.banner_url ? (
+                              <div className="module-thumb" style={{ padding: 0, overflow: "hidden" }}>
+                                <img src={(mod.banner_url || "").startsWith("/") ? `${getBaseUrl()}${(mod.banner_url).substring(1)}` : mod.banner_url} alt={mod.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                              </div>
+                            ) : (
+                              <div className="module-thumb" dangerouslySetInnerHTML={{ __html: MODULE_THUMBS[mod.id] || getFallbackThumb(mod.id) }} />
+                            )}
+                            <div className="module-card-inner">
+                              <div className="module-card-top">
+                                {mod.is_restricted && <span className="badge" style={{ background: "#f59e0b", color: "white", position: "absolute", top: "12px", right: "12px", zIndex: 10, border: "none", padding: "4px 8px", borderRadius: "6px", fontSize: "11px", fontWeight: "bold" }}><i className="ti ti-lock"></i> Terbatas</span>}
+                                {isLastActive ? (
+                                  <span className="badge" style={{ background: "#f97316", color: "#ffffff", border: "none", padding: "4px 8px", borderRadius: "6px", fontSize: "11px", fontWeight: 800, display: "inline-flex", alignItems: "center", gap: "4px" }}>
+                                    <i className="ti ti-play"></i> Sedang Berjalan
+                                  </span>
+                                ) : mod.status === "completed" ? (
+                                  <span className="badge badge-success"><i className="ti ti-check"></i> Selesai</span>
+                                ) : mod.status === "locked" ? (
+                                  <span className="badge" style={{ background: "#f8fafc", color: "#64748b", border: "1px solid #cbd5e1", padding: "4px 8px", borderRadius: "6px", fontSize: "11px", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: "4px" }}>
+                                    <i className="ti ti-lock"></i> Kuis Terkunci
+                                  </span>
+                                ) : (
+                                  <span className="badge badge-primary"><i className="ti ti-lock-open"></i> Tersedia</span>
                                 )}
                               </div>
-                            </div>
-                            <div className="module-card-footer">
-                              <div className="module-meta">
-                                <i className="ti ti-device-gamepad-2"></i> {mod.gameCount} game &nbsp;·&nbsp; <i className="ti ti-clock"></i> {mod.duration}
+                              <div className="module-card-body">
+                                <div className="module-card-title">{mod.title}</div>
+                                <div className="module-card-desc">
+                                  <div style={{ marginBottom: (mod.material && typeof mod.material === "object" && mod.material.theory) ? "8px" : "0" }}>
+                                    <strong>Deskripsi:</strong> {mod.desc}
+                                  </div>
+                                  {(mod.material && typeof mod.material === "object" && mod.material.theory) && (
+                                    <div>
+                                      <strong>Materi:</strong>{" "}
+                                      <div style={{ display: "inline" }} dangerouslySetInnerHTML={{ __html: mod.material.theory.replace(/<[^>]+>/g, "").substring(0, 80) + "..." }}></div>
+                                    </div>
+                                  )}
+                                </div>
                               </div>
-                              {renderLevelBadge(mod.level)}
+                              <div className="module-card-footer">
+                                <div className="module-meta">
+                                  <i className="ti ti-device-gamepad-2"></i> {mod.gameCount || 0} simulasi &nbsp;·&nbsp; <i className="ti ti-clock"></i> {mod.duration}
+                                </div>
+                                {renderLevelBadge(mod.level)}
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
                 );
               })
             ) : (
               <div className="modules-grid">
-                {currentModules.map(mod => (
-                  <div key={mod.id} className={`module-card ${mod.status}`} onClick={() => { 
-                    if (mod.is_restricted && user?.isGuest) {
-                      onRequireLogin && onRequireLogin();
-                      return;
-                    }
-                    if (mod.status !== 'locked') onOpenModule(mod.id); 
-                  }} style={{ cursor: (mod.status === 'locked' && (!mod.is_restricted || !user?.isGuest)) ? 'not-allowed' : 'pointer', opacity: (mod.status === 'locked' && (!mod.is_restricted || !user?.isGuest)) ? 0.7 : 1 }}>
-                    <div className="module-card-inner">
-                      <div className="module-card-top">
-                        {mod.is_restricted && <span className="badge" style={{ background: '#f59e0b', color: 'white', position: 'absolute', top: '12px', right: '12px', zIndex: 10, border: 'none', padding: '4px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 'bold' }}><i className="ti ti-lock"></i> Terbatas</span>}
-                        {mod.status === 'locked' && (!mod.is_restricted || !user?.isGuest) && <span className="module-lock-icon"><i className="ti ti-lock"></i></span>}
+                {currentModules.map(mod => {
+                  const isLastActive = mod.id === lastModuleId && mod.status !== 'completed';
+                  return (
+                    <div 
+                      key={mod.id} 
+                      className={`module-card ${mod.status}`} 
+                      onClick={() => { 
+                        if (mod.is_restricted && user?.isGuest) {
+                          onRequireLogin && onRequireLogin();
+                          return;
+                        }
+                        onOpenModule(mod.id); 
+                      }} 
+                      style={{ 
+                        cursor: "pointer",
+                        border: isLastActive ? "2px solid #f97316" : undefined,
+                        boxShadow: isLastActive ? "0 4px 16px rgba(249, 115, 22, 0.18)" : undefined
+                      }}
+                    >
+                      <div className="module-card-inner">
+                        <div className="module-card-top">
+                          {mod.is_restricted && <span className="badge" style={{ background: "#f59e0b", color: "white", position: "absolute", top: "12px", right: "12px", zIndex: 10, border: "none", padding: "4px 8px", borderRadius: "6px", fontSize: "11px", fontWeight: "bold" }}><i className="ti ti-lock"></i> Terbatas</span>}
+                          {isLastActive ? (
+                            <span className="badge" style={{ background: "#f97316", color: "#ffffff", border: "none", padding: "4px 8px", borderRadius: "6px", fontSize: "11px", fontWeight: 800, display: "inline-flex", alignItems: "center", gap: "4px" }}>
+                              <i className="ti ti-play"></i> Sedang Berjalan
+                            </span>
+                          ) : mod.status === "completed" ? (
+                            <span className="badge badge-success"><i className="ti ti-check"></i> Selesai</span>
+                          ) : mod.status === "locked" ? (
+                            <span className="badge" style={{ background: "#f8fafc", color: "#64748b", border: "1px solid #cbd5e1", padding: "4px 8px", borderRadius: "6px", fontSize: "11px", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: "4px" }}>
+                              <i className="ti ti-lock"></i> Kuis Terkunci
+                            </span>
+                          ) : (
+                            <span className="badge badge-primary"><i className="ti ti-lock-open"></i> Tersedia</span>
+                          )}
+                        </div>
+                        <div className="module-card-title">{mod.title}</div>
+                        <div className="module-card-footer" style={{ marginTop: "12px" }}>
+                          <div className="module-meta">
+                            <i className="ti ti-device-gamepad-2"></i> {mod.gameCount || 0} simulasi
+                          </div>
+                        </div>
                       </div>
-                      <div className="module-card-title">{mod.title}</div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )
           )}
