@@ -68,6 +68,9 @@ export function DetailView({
     return types[ext] || 'application/octet-stream';
   };
 
+  const [gameSessionKey, setGameSessionKey] = useState<number>(Date.now());
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
   useEffect(() => {
     const activeGame = module.games?.find(g => g.id === activeGameId);
     if (!activeGameId || !activeGame) {
@@ -76,9 +79,11 @@ export function DetailView({
     }
     
     let isMounted = true;
+    setGameSessionKey(Date.now());
     
     if (activeGame.path?.startsWith('http://') || activeGame.path?.startsWith('https://')) {
       setLocalGameSrc(activeGame.path);
+      setDownloadingGame(false);
       return;
     }
 
@@ -91,41 +96,11 @@ export function DetailView({
     }
 
     if (activeGame.path?.endsWith('.zip') || activeGame.path) {
-      const cacheName = 'local-games-cache';
       const base = getBaseUrl();
-      const gamePrefix = `${base}local-game-play/game_${activeGameId}/`;
       const serverGameUrl = `${base}games/game_${activeGameId}/${activeGame.entryPoint || ''}`;
       
       const loadSimulation = async () => {
         try {
-          // 1. Check if direct server simulation folder is available (Instant load, high-performance streaming)
-          try {
-            const headCheck = await fetch(serverGameUrl, { method: 'HEAD' });
-            if (headCheck.ok) {
-              if (isMounted) {
-                setDownloadingGame(false);
-                setLocalGameSrc(serverGameUrl);
-              }
-              return;
-            }
-          } catch(e) {}
-
-          // 2. Check if already extracted and ready in Service Worker cache (Offline-first)
-          if ('caches' in window) {
-            try {
-              const cache = await caches.open(cacheName);
-              const manifestResponse = await cache.match(gamePrefix + 'manifest.json') || await cache.match(`/local-game-play/game_${activeGameId}/manifest.json`);
-              if (manifestResponse) {
-                const manifest = await manifestResponse.json();
-                if (manifest.status === 'ready' && manifest.entryPoint) {
-                  if (isMounted) setLocalGameSrc(gamePrefix + manifest.entryPoint);
-                  return;
-                }
-              }
-            } catch(e) {}
-          }
-
-          // 3. Fallback: stream directly from server player URL
           if (isMounted) {
             setDownloadingGame(false);
             setLocalGameSrc(serverGameUrl);
@@ -168,6 +143,28 @@ export function DetailView({
       .catch(() => setQuestions([]));
   }, [module.id]);
   
+  useEffect(() => {
+    const handleFsChange = () => {
+      setIsFullscreen(Boolean(document.fullscreenElement));
+    };
+    document.addEventListener('fullscreenchange', handleFsChange);
+    return () => document.removeEventListener('fullscreenchange', handleFsChange);
+  }, []);
+
+  const toggleFullscreen = () => {
+    const el = document.getElementById('webgl-simulation-player');
+    if (!el) return;
+    if (!document.fullscreenElement) {
+      if (el.requestFullscreen) {
+        el.requestFullscreen().catch(() => {});
+      }
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen().catch(() => {});
+      }
+    }
+  };
+
   useEffect(() => {
     if (activeGameId !== null) {
       document.getElementById('webgl-simulation-player')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -412,8 +409,121 @@ export function DetailView({
                       {/* Active Game Player */}
                       
                       {activeGameId !== null && (
-                        <div id="webgl-simulation-player" className="modern-webgl-frame" style={{ border: 'none', overflow: 'hidden', borderRadius: '12px' }}>
-                          <div style={{ width: '100%', aspectRatio: '16/9', background: '#020617', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <div 
+                          id="webgl-simulation-player" 
+                          className="modern-webgl-frame" 
+                          style={{ 
+                            border: '1px solid #1e293b', 
+                            overflow: 'hidden', 
+                            borderRadius: '12px', 
+                            marginBottom: '20px',
+                            background: '#020617',
+                            display: 'flex',
+                            flexDirection: 'column'
+                          }}
+                        >
+                          {/* Simulation Control Toolbar */}
+                          <div style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            padding: '10px 16px',
+                            background: '#0f172a',
+                            borderBottom: '1px solid #1e293b',
+                            color: '#f8fafc',
+                            flexWrap: 'wrap',
+                            gap: '10px'
+                          }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                              <span style={{ 
+                                display: 'inline-flex', 
+                                alignItems: 'center', 
+                                gap: '6px', 
+                                fontSize: '11px', 
+                                fontWeight: 700, 
+                                background: '#166534', 
+                                color: '#bbf7d0', 
+                                padding: '3px 8px', 
+                                borderRadius: '6px' 
+                              }}>
+                                <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#4ade80', display: 'inline-block' }}></span>
+                                Simulasi Aktif
+                              </span>
+                              <span style={{ fontWeight: 600, fontSize: '13.5px', color: '#f1f5f9' }}>
+                                {activeGame?.title || 'Simulasi'}
+                              </span>
+                            </div>
+
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <button
+                                type="button"
+                                onClick={() => setGameSessionKey(Date.now())}
+                                title="Muat ulang simulasi jika terjadi kendala tampilan atau memori WebGL"
+                                style={{
+                                  background: '#1e293b',
+                                  border: '1px solid #334155',
+                                  color: '#e2e8f0',
+                                  padding: '5px 11px',
+                                  borderRadius: '6px',
+                                  cursor: 'pointer',
+                                  fontSize: '12px',
+                                  fontWeight: 600,
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '5px'
+                                }}
+                              >
+                                <i className="ti ti-rotate-clockwise"></i>
+                                Muat Ulang
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={toggleFullscreen}
+                                title={isFullscreen ? "Keluar layar penuh" : "Layar penuh"}
+                                style={{
+                                  background: '#1e293b',
+                                  border: '1px solid #334155',
+                                  color: '#e2e8f0',
+                                  padding: '5px 11px',
+                                  borderRadius: '6px',
+                                  cursor: 'pointer',
+                                  fontSize: '12px',
+                                  fontWeight: 600,
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '5px'
+                                }}
+                              >
+                                <i className={`ti ${isFullscreen ? 'ti-minimize' : 'ti-maximize'}`}></i>
+                                {isFullscreen ? 'Normal' : 'Layar Penuh'}
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={onCloseGame}
+                                title="Tutup simulasi ini"
+                                style={{
+                                  background: '#ef444422',
+                                  border: '1px solid #ef444460',
+                                  color: '#fca5a5',
+                                  padding: '5px 12px',
+                                  borderRadius: '6px',
+                                  cursor: 'pointer',
+                                  fontSize: '12px',
+                                  fontWeight: 700,
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '5px'
+                                }}
+                              >
+                                <i className="ti ti-x"></i>
+                                Tutup Simulasi
+                              </button>
+                            </div>
+                          </div>
+
+                          <div style={{ width: '100%', aspectRatio: isFullscreen ? undefined : '16/9', height: isFullscreen ? 'calc(100vh - 52px)' : undefined, background: '#020617', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
                             {activeGame?.path ? (
                               downloadingGame && !localGameSrc ? (
                                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px', color: '#94a3b8' }}>
@@ -422,10 +532,11 @@ export function DetailView({
                                 </div>
                               ) : localGameSrc ? (
                                 <iframe 
+                                  key={`${activeGameId}-${gameSessionKey}`}
                                   src={localGameSrc}
                                   style={{ width: '100%', height: '100%', border: 'none' }}
                                   title={activeGame.title}
-                                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
                                 ></iframe>
                               ) : (
                                 <div style={{ textAlign: 'center', color: '#cbd5e1', padding: '32px 20px', maxWidth: '460px' }}>
@@ -491,22 +602,63 @@ export function DetailView({
                                 </div>
 
                                 <div>
-                                  <button 
-                                    className={`btn ${isActive ? 'btn-outline' : 'btn-primary'}`}
-                                    onClick={() => onLaunchGame(game.id, game.title)}
-                                    style={{ 
-                                      padding: '8px 16px', 
-                                      fontSize: '13px', 
-                                      fontWeight: 700, 
-                                      borderRadius: '10px',
-                                      display: 'flex',
-                                      alignItems: 'center',
-                                      gap: '6px'
-                                    }}
-                                  >
-                                    <i className="ti ti-player-play"></i> 
-                                    {isActive ? 'Sedang Terbuka' : 'Mainkan'}
-                                  </button>
+                                  {isActive ? (
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                      <button 
+                                        type="button"
+                                        className="btn btn-outline"
+                                        onClick={() => {
+                                          document.getElementById('webgl-simulation-player')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                        }}
+                                        style={{ 
+                                          padding: '8px 12px', 
+                                          fontSize: '12.5px', 
+                                          fontWeight: 700, 
+                                          borderRadius: '8px',
+                                          display: 'flex',
+                                          alignItems: 'center',
+                                          gap: '4px'
+                                        }}
+                                      >
+                                        <i className="ti ti-eye"></i> Sedang Terbuka
+                                      </button>
+                                      <button 
+                                        type="button"
+                                        className="btn btn-outline"
+                                        onClick={onCloseGame}
+                                        style={{ 
+                                          padding: '8px 12px', 
+                                          fontSize: '12.5px', 
+                                          fontWeight: 700, 
+                                          borderRadius: '8px',
+                                          color: '#ef4444',
+                                          borderColor: '#fca5a5',
+                                          display: 'flex',
+                                          alignItems: 'center',
+                                          gap: '4px'
+                                        }}
+                                      >
+                                        <i className="ti ti-x"></i> Tutup
+                                      </button>
+                                    </div>
+                                  ) : (
+                                    <button 
+                                      className="btn btn-primary"
+                                      onClick={() => onLaunchGame(game.id, game.title)}
+                                      style={{ 
+                                        padding: '8px 16px', 
+                                        fontSize: '13px', 
+                                        fontWeight: 700, 
+                                        borderRadius: '10px',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '6px'
+                                      }}
+                                    >
+                                      <i className="ti ti-player-play"></i> 
+                                      Mainkan
+                                    </button>
+                                  )}
                                 </div>
                               </div>
                             );

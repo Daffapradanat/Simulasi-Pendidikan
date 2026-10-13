@@ -1,15 +1,37 @@
+const CACHE_NAME = 'local-games-cache-v2';
+
 self.addEventListener('install', (event) => {
   self.skipWaiting();
 });
 
 self.addEventListener('activate', (event) => {
-  event.waitUntil(self.clients.claim());
+  event.waitUntil(
+    caches.keys().then((cacheNames) => {
+      return Promise.all(
+        cacheNames.map((name) => {
+          if (name !== CACHE_NAME) {
+            return caches.delete(name);
+          }
+        })
+      );
+    }).then(() => self.clients.claim())
+  );
 });
 
 const getMimeType = (filename) => {
-  let cleanName = filename.toLowerCase();
+  if (!filename) return 'text/html; charset=utf-8';
+  let cleanName = filename.toLowerCase().split('?')[0].split('#')[0];
+  
+  // Jika URL merujuk ke direktori (misal /games/game_123/ atau /local-game-play/game_123/)
+  // atau segmen terakhir tidak memiliki ekstensi titik, perlakukan sebagai dokumen HTML utama
+  const lastSegment = cleanName.split('/').pop() || '';
+  if (cleanName.endsWith('/') || !lastSegment.includes('.')) {
+    return 'text/html; charset=utf-8';
+  }
+
   if (cleanName.endsWith('.gz')) cleanName = cleanName.slice(0, -3);
   if (cleanName.endsWith('.br')) cleanName = cleanName.slice(0, -3);
+  
   const ext = cleanName.split('.').pop() || '';
   
   const types = {
@@ -35,12 +57,18 @@ const getMimeType = (filename) => {
     'data': 'application/octet-stream',
     'unityweb': 'application/octet-stream',
     'mem': 'application/octet-stream',
-    'symbols': 'application/json'
+    'symbols': 'application/json',
+    'zip': 'application/zip'
   };
   return types[ext] || 'application/octet-stream';
 };
 
 self.addEventListener('fetch', (event) => {
+  // Hanya tangani GET requests. Cache API dan service worker tidak mendukung cache.put untuk HEAD/POST
+  if (event.request.method !== 'GET') {
+    return;
+  }
+
   const url = new URL(event.request.url);
   
   const isSimulationRequest = 
@@ -51,7 +79,7 @@ self.addEventListener('fetch', (event) => {
 
   if (isSimulationRequest) {
     event.respondWith(
-      caches.open('local-games-cache').then(async (cache) => {
+      caches.open(CACHE_NAME).then(async (cache) => {
         // 1. Direct match in offline cache
         let response = await cache.match(event.request, { ignoreSearch: true });
         
@@ -106,20 +134,37 @@ self.addEventListener('fetch', (event) => {
         }
 
         if (response) {
-          const reqPath = url.pathname.toLowerCase();
-          const matchedUrl = (response.url || '').toLowerCase();
+          const reqPath = url.pathname.toLowerCase().split('?')[0];
+          const matchedUrl = (response.url || '').toLowerCase().split('?')[0];
           const resHeaders = new Headers(response.headers);
           
-          // Ensure proper Content-Encoding
-          if (reqPath.endsWith('.gz') || matchedUrl.endsWith('.gz')) {
-            resHeaders.set('Content-Encoding', 'gzip');
-          } else if (reqPath.endsWith('.br') || matchedUrl.endsWith('.br')) {
-            resHeaders.set('Content-Encoding', 'br');
-          }
+          // Sangat krusial: Hapus Content-Disposition agar browser TIDAK mengunduh file HTML di iframe!
+          resHeaders.delete('Content-Disposition');
+
+          // Tentukan Content-Type yang valid dan benar
+          const lastSeg = reqPath.split('/').pop() || '';
+          const isDocRoot = reqPath.endsWith('/') || !lastSeg.includes('.') || reqPath.endsWith('.html') || reqPath.endsWith('.htm');
           
-          // Ensure valid Content-Type
-          const mime = getMimeType(url.pathname.endsWith('.gz') || url.pathname.endsWith('.br') ? url.pathname : (response.url || url.pathname));
+          let mime = '';
+          if (isDocRoot) {
+            mime = 'text/html; charset=utf-8';
+          } else {
+            mime = getMimeType(url.pathname.endsWith('.gz') || url.pathname.endsWith('.br') ? url.pathname : (response.url || url.pathname));
+          }
           resHeaders.set('Content-Type', mime);
+
+          // Pastikan Content-Encoding tepat: hanya untuk aset biner terkompresi, BUKAN untuk HTML biasa
+          if (!mime.includes('text/html')) {
+            if (reqPath.endsWith('.gz') || matchedUrl.endsWith('.gz')) {
+              resHeaders.set('Content-Encoding', 'gzip');
+            } else if (reqPath.endsWith('.br') || matchedUrl.endsWith('.br')) {
+              resHeaders.set('Content-Encoding', 'br');
+            }
+          } else {
+            if (resHeaders.get('Content-Encoding') === 'gzip' && !reqPath.endsWith('.gz') && !matchedUrl.endsWith('.gz')) {
+              resHeaders.delete('Content-Encoding');
+            }
+          }
           
           resHeaders.set('Accept-Ranges', 'bytes');
           resHeaders.set('Access-Control-Allow-Origin', '*');
@@ -138,9 +183,11 @@ self.addEventListener('fetch', (event) => {
         try {
           const networkResponse = await fetch(event.request);
           if (networkResponse && networkResponse.ok) {
-            try {
-              cache.put(event.request, networkResponse.clone());
-            } catch (err) {}
+            if (networkResponse.status === 200 && event.request.method === 'GET') {
+              try {
+                cache.put(event.request, networkResponse.clone());
+              } catch (err) {}
+            }
             return networkResponse;
           }
         } catch (netErr) {}
@@ -153,9 +200,11 @@ self.addEventListener('fetch', (event) => {
           const serverFallbackUrl = url.origin + fallbackPath + url.search;
           const networkResponse2 = await fetch(serverFallbackUrl);
           if (networkResponse2 && networkResponse2.ok) {
-            try {
-              cache.put(event.request, networkResponse2.clone());
-            } catch (err) {}
+            if (networkResponse2.status === 200 && event.request.method === 'GET') {
+              try {
+                cache.put(event.request, networkResponse2.clone());
+              } catch (err) {}
+            }
             return networkResponse2;
           }
         } catch (netErr2) {}
