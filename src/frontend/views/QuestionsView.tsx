@@ -206,7 +206,7 @@ export function QuestionsView({
     if (type === 'essay') return '(Sesuai dengan konsep materi sains yang telah dipelajari)';
     if (type === 'multiple_select') return (q.correctAnswers || []).map((i: number) => q.options?.[i]).join(', ');
     if (type === 'ordering') return (q.options || []).join(' → ');
-    if (type === 'matching') return (q.pairs || []).map((p: any) => `${p.left} → ${p.right}`).join('; ');
+    if (type === 'matching') return (q.pairs || []).map((p: any) => `${p.left} ➔ ${p.right}`).join('; ');
     return '-';
   };
 
@@ -230,7 +230,7 @@ export function QuestionsView({
     if (type === 'ordering') return Array.isArray(ans) ? ans.join(' → ') : '-';
     if (type === 'matching') {
       if (typeof ans !== 'object') return '-';
-      const items = Object.entries(ans).map(([k, v]) => `${k} → ${v}`);
+      const items = Object.entries(ans).map(([k, v]) => `${k} ➔ ${v}`);
       return items.length > 0 ? items.join('; ') : '(Tidak dijawab)';
     }
     return String(ans);
@@ -817,14 +817,14 @@ export function QuestionsView({
                   >
                     {qIdx + 1}
                     {isAns && !isCurrent && (
-                      <i className="ti ti-check" style={{
+                      <span style={{
                         position: 'absolute',
                         top: '2px',
                         right: '3px',
                         fontSize: '9px',
                         color: '#15803d',
                         fontWeight: 900
-                      }}></i>
+                      }}>✓</span>
                     )}
                   </button>
                 );

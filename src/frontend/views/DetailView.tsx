@@ -517,9 +517,8 @@ export function DetailView({
                                         Simulasi {idx + 1}
                                       </span>
                                       {isPlayed && (
-                                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', fontSize: '11px', fontWeight: 700, color: '#15803d', background: '#dcfce7', padding: '1px 6px', borderRadius: '4px' }}>
-                                          <i className="ti ti-check" style={{ fontSize: '12px' }}></i>
-                                          Selesai
+                                        <span style={{ fontSize: '11px', fontWeight: 700, color: '#15803d', background: '#dcfce7', padding: '1px 6px', borderRadius: '4px' }}>
+                                          ✓ Selesai
                                         </span>
                                       )}
                                     </div>
