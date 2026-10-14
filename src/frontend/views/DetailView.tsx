@@ -411,69 +411,23 @@ export function DetailView({
                       {activeGameId !== null && (
                         <div 
                           id="webgl-simulation-player" 
-                          className="modern-webgl-frame" 
-                          style={{ 
-                            border: '1px solid #1e293b', 
-                            overflow: 'hidden', 
-                            borderRadius: '12px', 
-                            marginBottom: '20px',
-                            background: '#020617',
-                            display: 'flex',
-                            flexDirection: 'column'
-                          }}
+                          className="modern-webgl-frame"
                         >
                           {/* Simulation Control Toolbar */}
-                          <div style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'space-between',
-                            padding: '10px 16px',
-                            background: '#0f172a',
-                            borderBottom: '1px solid #1e293b',
-                            color: '#f8fafc',
-                            flexWrap: 'wrap',
-                            gap: '10px'
-                          }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                              <span style={{ 
-                                display: 'inline-flex', 
-                                alignItems: 'center', 
-                                gap: '6px', 
-                                fontSize: '11px', 
-                                fontWeight: 700, 
-                                background: '#166534', 
-                                color: '#bbf7d0', 
-                                padding: '3px 8px', 
-                                borderRadius: '6px' 
-                              }}>
-                                <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#4ade80', display: 'inline-block' }}></span>
-                                Simulasi Aktif
-                              </span>
-                              <span style={{ fontWeight: 600, fontSize: '13.5px', color: '#f1f5f9' }}>
-                                {activeGame?.title || 'Simulasi'}
-                              </span>
+                          <div className="webgl-frame-header">
+                            <div className="webgl-toolbar-label">
+                              <i className="ti ti-device-gamepad-2" style={{ fontSize: '16px', color: '#0d47a1' }}></i>
+                              <span>Simulasi Interaktif</span>
                             </div>
 
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <div className="webgl-toolbar-actions">
                               <button
                                 type="button"
                                 onClick={() => setGameSessionKey(Date.now())}
                                 title="Muat ulang simulasi jika terjadi kendala tampilan atau memori WebGL"
-                                style={{
-                                  background: '#1e293b',
-                                  border: '1px solid #334155',
-                                  color: '#e2e8f0',
-                                  padding: '5px 11px',
-                                  borderRadius: '6px',
-                                  cursor: 'pointer',
-                                  fontSize: '12px',
-                                  fontWeight: 600,
-                                  display: 'inline-flex',
-                                  alignItems: 'center',
-                                  gap: '5px'
-                                }}
+                                className="webgl-btn"
                               >
-                                <i className="ti ti-rotate-clockwise"></i>
+                                <i className="ti ti-rotate-clockwise" style={{ fontSize: '14px' }}></i>
                                 Muat Ulang
                               </button>
 
@@ -481,43 +435,19 @@ export function DetailView({
                                 type="button"
                                 onClick={toggleFullscreen}
                                 title={isFullscreen ? "Keluar layar penuh" : "Layar penuh"}
-                                style={{
-                                  background: '#1e293b',
-                                  border: '1px solid #334155',
-                                  color: '#e2e8f0',
-                                  padding: '5px 11px',
-                                  borderRadius: '6px',
-                                  cursor: 'pointer',
-                                  fontSize: '12px',
-                                  fontWeight: 600,
-                                  display: 'inline-flex',
-                                  alignItems: 'center',
-                                  gap: '5px'
-                                }}
+                                className="webgl-btn"
                               >
-                                <i className={`ti ${isFullscreen ? 'ti-minimize' : 'ti-maximize'}`}></i>
-                                {isFullscreen ? 'Normal' : 'Layar Penuh'}
+                                <i className={`ti ${isFullscreen ? 'ti-minimize' : 'ti-maximize'}`} style={{ fontSize: '14px' }}></i>
+                                {isFullscreen ? 'Keluar Layar Penuh' : 'Layar Penuh'}
                               </button>
 
                               <button
                                 type="button"
                                 onClick={onCloseGame}
                                 title="Tutup simulasi ini"
-                                style={{
-                                  background: '#ef444422',
-                                  border: '1px solid #ef444460',
-                                  color: '#fca5a5',
-                                  padding: '5px 12px',
-                                  borderRadius: '6px',
-                                  cursor: 'pointer',
-                                  fontSize: '12px',
-                                  fontWeight: 700,
-                                  display: 'inline-flex',
-                                  alignItems: 'center',
-                                  gap: '5px'
-                                }}
+                                className="webgl-btn webgl-btn-close"
                               >
-                                <i className="ti ti-x"></i>
+                                <i className="ti ti-x" style={{ fontSize: '14px' }}></i>
                                 Tutup Simulasi
                               </button>
                             </div>
@@ -587,8 +517,9 @@ export function DetailView({
                                         Simulasi {idx + 1}
                                       </span>
                                       {isPlayed && (
-                                        <span style={{ fontSize: '11px', fontWeight: 700, color: '#15803d', background: '#dcfce7', padding: '1px 6px', borderRadius: '4px' }}>
-                                          ✓ Selesai
+                                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', fontSize: '11px', fontWeight: 700, color: '#15803d', background: '#dcfce7', padding: '1px 6px', borderRadius: '4px' }}>
+                                          <i className="ti ti-check" style={{ fontSize: '12px' }}></i>
+                                          Selesai
                                         </span>
                                       )}
                                     </div>

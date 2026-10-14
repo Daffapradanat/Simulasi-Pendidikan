@@ -136,7 +136,7 @@ export function ModuleResultView({
       return '-';
     }
     if (type === 'ordering') return (q.options || []).join(' → ');
-    if (type === 'matching') return (q.pairs || []).map((p: any) => `${p.left} ➔ ${p.right}`).join('; ');
+    if (type === 'matching') return (q.pairs || []).map((p: any) => `${p.left} → ${p.right}`).join('; ');
     return '-';
   };
 
@@ -154,7 +154,7 @@ export function ModuleResultView({
     if (type === 'ordering') return Array.isArray(ans) ? ans.join(' → ') : '-';
     if (type === 'matching') {
       if (typeof ans !== 'object') return '-';
-      const items = Object.entries(ans).map(([k, v]) => `${k} ➔ ${v}`);
+      const items = Object.entries(ans).map(([k, v]) => `${k} → ${v}`);
       return items.length > 0 ? items.join('; ') : '(Tidak dijawab)';
     }
     return String(ans);
