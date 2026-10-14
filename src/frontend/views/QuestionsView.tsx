@@ -5,12 +5,14 @@ import { Module, User } from '../../types';
 
 export function QuestionsView({ 
   questions = [], 
+  isLoading = false,
   module,
   user,
   onComplete,
   allPlayed = true
 }: { 
   questions: any[];
+  isLoading?: boolean;
   module?: Module;
   user?: User | null;
   onComplete: (reflection: string) => void;
@@ -48,30 +50,32 @@ export function QuestionsView({
       } catch (e) {}
     }
 
-    if (savedState) {
+    const isNewModule = prevModuleIdRef.current !== module?.id;
+
+    if (savedState && !isNewModule) {
       setAnswers(savedState.answers || initialAns);
       setReflection(savedState.reflection || '');
       setIsSubmitted(savedState.isSubmitted || false);
       if (typeof savedState.currentIdx === 'number' && savedState.currentIdx >= 0 && savedState.currentIdx < questions.length) {
         setCurrentIdx(savedState.currentIdx);
-      }
-    } else {
-      setAnswers(initialAns);
-      setIsSubmitted(false);
-      setReflection('');
-      if (prevModuleIdRef.current !== module?.id) {
+      } else {
         setCurrentIdx(0);
       }
+    } else {
+      setAnswers(savedState?.answers || initialAns);
+      setIsSubmitted(savedState?.isSubmitted || false);
+      setReflection(savedState?.reflection || '');
+      setCurrentIdx(0);
     }
     prevModuleIdRef.current = module?.id;
   }, [questions, module?.id, user?.id]);
 
   useEffect(() => {
-    if (module && user) {
+    if (module && user && questions.length > 0) {
       const storageKey = `draft_answers_${user.id}_${module.id}`;
       localStorage.setItem(storageKey, JSON.stringify({ answers, reflection, isSubmitted, currentIdx }));
     }
-  }, [answers, reflection, isSubmitted, currentIdx, module?.id, user?.id]);
+  }, [answers, reflection, isSubmitted, currentIdx, module?.id, user?.id, questions.length]);
 
   const handleSelect = (qIndex: number, answer: any) => {
     if (isSubmitted) return;
@@ -236,10 +240,17 @@ export function QuestionsView({
     return String(ans);
   };
 
-  const currentQ = questions[currentIdx];
-  const isCurrentAnswered = isQuestionAnswered(currentIdx);
+  // --- JIKA SOAL SEDANG DIMUAT DARI SERVER ---
+  if (isLoading) {
+    return (
+      <div style={{ padding: '40px 16px', textAlign: 'center', color: '#64748b' }}>
+        <div className="loading-spinner" style={{ margin: '0 auto 12px' }}></div>
+        <p style={{ margin: 0, fontSize: '13.5px', fontWeight: 600 }}>Memuat butir soal evaluasi...</p>
+      </div>
+    );
+  }
 
-  // --- JIKA TIDAK ADA SOAL DI MODUL ---
+  // --- JIKA TIDAK ADA SOAL DI MODUL (SETELAH SELESAI DIMUAT) ---
   if (!questions || questions.length === 0) {
     return (
       <div style={{ padding: '8px' }}>
@@ -280,6 +291,10 @@ export function QuestionsView({
       </div>
     );
   }
+
+  const validIdx = currentIdx >= 0 && currentIdx < questions.length ? currentIdx : 0;
+  const currentQ = questions[validIdx];
+  const isCurrentAnswered = isQuestionAnswered(validIdx);
 
   return (
     <div>

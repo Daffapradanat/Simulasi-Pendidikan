@@ -997,7 +997,7 @@ app.get('/api/question_types', authenticateToken, isAdmin, async (req, res) => {
   }
 });
 
-app.get('/api/modules/:id/questions', authenticateToken, (req, res) => {
+app.get('/api/modules/:id/questions', (req, res) => {
     const moduleId = parseInt(req.params.id as string);
     const questions = questionsData.filter(q => Number(q.module_id) === moduleId);
     res.json({ questions });

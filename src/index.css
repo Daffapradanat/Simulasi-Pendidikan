@@ -1140,12 +1140,14 @@ select.form-input {
 }
 
 .material-objectives li::before {
-  content: '✓';
+  content: '';
   position: absolute;
-  left: 0;
-  color: var(--success);
-  font-weight: 700;
-  font-size: 12px;
+  left: 2px;
+  top: 7px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--primary);
 }
 
 .material-theory {

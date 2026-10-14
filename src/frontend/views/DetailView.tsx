@@ -129,18 +129,32 @@ export function DetailView({
   const allPlayed = totalGames === 0 || isModuleCompleted || (module.games || []).every(g => playedGames.has(g.id));
   
   const [questions, setQuestions] = useState<any[]>([]);
+  const [isModuleLoading, setIsModuleLoading] = useState<boolean>(true);
   const [isMateriOpen, setIsMateriOpen] = useState(true);
   const [isGamesOpen, setIsGamesOpen] = useState(true);
   const [isQuestionsOpen, setIsQuestionsOpen] = useState(true);
   const [materiTab, setMateriTab] = useState<'theory' | 'glossary'>('theory');
 
-  
-  
   useEffect(() => {
+    setIsModuleLoading(true);
+    let isCurrent = true;
     fetchAuth(`/api/modules/${module.id}/questions`)
       .then(r => r.ok ? r.json() : { questions: [] })
-      .then(d => setQuestions(d.questions || []))
-      .catch(() => setQuestions([]));
+      .then(d => {
+        if (isCurrent) {
+          setQuestions(d.questions || []);
+          setIsModuleLoading(false);
+        }
+      })
+      .catch(() => {
+        if (isCurrent) {
+          setQuestions([]);
+          setIsModuleLoading(false);
+        }
+      });
+    return () => {
+      isCurrent = false;
+    };
   }, [module.id]);
   
   useEffect(() => {
@@ -170,6 +184,72 @@ export function DetailView({
       document.getElementById('webgl-simulation-player')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
   }, [activeGameId]);
+
+  if (isModuleLoading) {
+    return (
+      <div className="page active" style={{ paddingBottom: '60px', paddingTop: '24px' }}>
+        <div className="main-wrapper">
+          <div style={{ marginBottom: '24px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
+              <nav aria-label="Breadcrumb" className="breadcrumb" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13.5px' }}>
+                <button 
+                  id="btn-breadcrumb-back"
+                  onClick={onBack}
+                  style={{ 
+                    background: 'transparent', 
+                    border: 'none', 
+                    padding: 0, 
+                    cursor: 'pointer', 
+                    color: 'var(--primary)', 
+                    fontWeight: 600,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    fontSize: '13.5px'
+                  }}
+                >
+                  <i className="ti ti-layout-grid" style={{ fontSize: '16px' }}></i>
+                  <span>Daftar Modul</span>
+                </button>
+                <span className="sep" style={{ color: '#94a3b8', margin: '0 4px', fontSize: '15px' }}>›</span>
+                <span className="current" style={{ color: '#475569', fontWeight: 600 }}>
+                  {module.title}
+                </span>
+              </nav>
+
+              <button 
+                id="btn-back-to-modules"
+                className="btn btn-outline" 
+                onClick={onBack}
+                style={{ padding: '6px 14px', fontSize: '13px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}
+              >
+                <i className="ti ti-arrow-left"></i> Kembali ke Modul
+              </button>
+            </div>
+          </div>
+
+          <div style={{
+            background: '#ffffff',
+            border: '1px solid #e2e8f0',
+            borderRadius: '12px',
+            padding: '56px 24px',
+            textAlign: 'center',
+            boxShadow: '0 2px 8px rgba(15, 23, 42, 0.04)',
+            maxWidth: '540px',
+            margin: '40px auto 0'
+          }}>
+            <div className="loading-spinner" style={{ width: '42px', height: '42px', borderWidth: '3.5px', margin: '0 auto 18px', borderColor: '#e2e8f0', borderTopColor: '#0d47a1' }}></div>
+            <h2 style={{ fontSize: '18px', fontWeight: 800, color: '#0f172a', margin: '0 0 8px 0' }}>
+              Menyiapkan Modul Pembelajaran
+            </h2>
+            <p style={{ fontSize: '13.5px', color: '#64748b', margin: 0, lineHeight: 1.5 }}>
+              Memvalidasi data materi, bank soal evaluasi, dan simulasi &ldquo;{module.title}&rdquo;...
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="page active" style={{ paddingBottom: '60px', paddingTop: '24px' }}>
@@ -640,6 +720,7 @@ export function DetailView({
                     <div className="step-card-body" style={{ padding: '20px' }}>
                       <QuestionsView 
                         questions={questions}
+                        isLoading={false}
                         module={module}
                         user={user}
                         allPlayed={allPlayed}
