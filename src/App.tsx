@@ -27,7 +27,6 @@ import {
 
 // --- MAIN APP COMPONENT ---
 export default function App() {
-  console.log("App render", Date.now());
   const navigate = useNavigate();
   const location = useLocation();
   const [viewMode, setViewMode] = useState<'main' | 'profile' | 'result' | 'player'>('main');
@@ -171,6 +170,56 @@ export default function App() {
     return () => window.removeEventListener('auth_unauthorized', handleUnauthorized);
   }, [navigate]);
 
+  const refreshUserData = async (user: User) => {
+    setIsProgressLoaded(false);
+    try {
+      const isGuestUser = Boolean(user.isGuest || String(user.id).startsWith('guest_'));
+      if (isGuestUser) {
+        const localData = loadStudentProgress(user.name);
+        if (localData) {
+          setPlayedGames(new Set(localData.playedGames || []));
+          setCompletedModuleIds(new Set(localData.completedModuleIds || []));
+          setReflections(localData.reflections || {});
+          if (localData.lastModuleId) setLastModuleId(localData.lastModuleId);
+          else setLastModuleId(null);
+        } else {
+          setPlayedGames(new Set());
+          setCompletedModuleIds(new Set());
+          setReflections({});
+          setLastModuleId(null);
+        }
+        setIsProgressLoaded(true);
+        return;
+      }
+
+      const res = await fetchAuth(`/api/users/${user.id}/progress`);
+      if (res.ok) {
+         const data = await res.json();
+         if (data.playedGames && data.playedGames.length > 0) setPlayedGames(new Set(data.playedGames));
+         else setPlayedGames(new Set());
+         if (data.completedModuleIds && data.completedModuleIds.length > 0) setCompletedModuleIds(new Set(data.completedModuleIds));
+         else setCompletedModuleIds(new Set());
+         if (data.reflections) setReflections(data.reflections);
+         else setReflections({});
+      } else {
+         const played = localStorage.getItem(`simpend_played_${user.id}`);
+         if (played) setPlayedGames(new Set(JSON.parse(played)));
+         else setPlayedGames(new Set());
+         const completed = localStorage.getItem(`simpend_completed_${user.id}`);
+         if (completed) setCompletedModuleIds(new Set(JSON.parse(completed)));
+         else setCompletedModuleIds(new Set());
+         const savedReflections = localStorage.getItem(`simpend_reflections_${user.id}`);
+         if (savedReflections) setReflections(JSON.parse(savedReflections));
+         else setReflections({});
+      }
+      const lastMod = localStorage.getItem(`simpend_last_module_${user.id}`);
+      if (lastMod) setLastModuleId(parseInt(lastMod, 10));
+      setIsProgressLoaded(true);
+    } catch(e) {
+      setIsProgressLoaded(true);
+    }
+  };
+
   useEffect(() => {
     cleanupExpiredStudentProgress();
     const token = localStorage.getItem('simpend_token');
@@ -226,63 +275,8 @@ export default function App() {
     };
   }, []);
 
-  useEffect(() => {
-    // Whenever route changes (e.g. from admin/guru to student view), refresh modules
-    fetchModules();
-  }, [location.pathname]);
-
-  const refreshUserData = async (user: User) => {
-    setIsProgressLoaded(false);
-    try {
-      const isGuestUser = Boolean(user.isGuest || String(user.id).startsWith('guest_'));
-      if (isGuestUser) {
-        const localData = loadStudentProgress(user.name);
-        if (localData) {
-          setPlayedGames(new Set(localData.playedGames || []));
-          setCompletedModuleIds(new Set(localData.completedModuleIds || []));
-          setReflections(localData.reflections || {});
-          if (localData.lastModuleId) setLastModuleId(localData.lastModuleId);
-          else setLastModuleId(null);
-        } else {
-          setPlayedGames(new Set());
-          setCompletedModuleIds(new Set());
-          setReflections({});
-          setLastModuleId(null);
-        }
-        setIsProgressLoaded(true);
-        return;
-      }
-
-      const res = await fetchAuth(`/api/users/${user.id}/progress`);
-      if (res.ok) {
-         const data = await res.json();
-         if (data.playedGames && data.playedGames.length > 0) setPlayedGames(new Set(data.playedGames));
-         else setPlayedGames(new Set());
-         if (data.completedModuleIds && data.completedModuleIds.length > 0) setCompletedModuleIds(new Set(data.completedModuleIds));
-         else setCompletedModuleIds(new Set());
-         if (data.reflections) setReflections(data.reflections);
-         else setReflections({});
-      } else {
-         const played = localStorage.getItem(`simpend_played_${user.id}`);
-         if (played) setPlayedGames(new Set(JSON.parse(played)));
-         else setPlayedGames(new Set());
-         const completed = localStorage.getItem(`simpend_completed_${user.id}`);
-         if (completed) setCompletedModuleIds(new Set(JSON.parse(completed)));
-         else setCompletedModuleIds(new Set());
-         const savedReflections = localStorage.getItem(`simpend_reflections_${user.id}`);
-         if (savedReflections) setReflections(JSON.parse(savedReflections));
-         else setReflections({});
-      }
-      const lastMod = localStorage.getItem(`simpend_last_module_${user.id}`);
-      if (lastMod) setLastModuleId(parseInt(lastMod, 10));
-      setIsProgressLoaded(true);
-    } catch(e) {
-      setIsProgressLoaded(true);
-    }
-  };
-
-  const fetchModules = () => {
-    fetchAuth('/api/modules?_t=' + Date.now())
+  const fetchModules = useCallback(() => {
+    fetchAuth('/api/modules')
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data)) {
@@ -297,24 +291,34 @@ export default function App() {
       })
       .catch(() => {});
       
-    fetchAuth('/api/categories?_t=' + Date.now())
+    fetchAuth('/api/categories')
       .then(res => res.json())
       .then(data => { 
         if (Array.isArray(data)) {
-          setAppCategories(data);
+          setAppCategories(prev => {
+            if (prev.length === data.length && JSON.stringify(prev) === JSON.stringify(data)) {
+              return prev;
+            }
+            return data;
+          });
         }
       })
       .catch(() => {});
       
-    fetchAuth('/api/subjects?_t=' + Date.now())
+    fetchAuth('/api/subjects')
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data)) {
-          setAppSubjects(data);
+          setAppSubjects(prev => {
+            if (prev.length === data.length && JSON.stringify(prev) === JSON.stringify(data)) {
+              return prev;
+            }
+            return data;
+          });
         }
       })
       .catch(() => {});
-  };
+  }, []);
 
   useEffect(() => {
     if (currentUser) {
